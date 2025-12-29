@@ -30,6 +30,9 @@ from app.schemas.daily import (
 )
 from app.schemas.program import SessionResponse
 from app.llm import get_llm_provider, LLMConfig, Message, PromptBuilder
+from app.services.adaptation import adaptation_service
+from app.services.deload import deload_service
+from app.services.time_estimation import time_estimation_service
 
 router = APIRouter()
 settings = get_settings()
@@ -83,13 +86,36 @@ async def get_daily_plan(
     session = session_result.scalar_one_or_none()
     
     if not session:
+        # Check if it's a deload day
+        should_deload, deload_reason = await deload_service.should_trigger_deload(
+            db, user_id, program_id
+        )
+        
         # It's a rest day or no session planned
+        coach_message = "Rest day - take it easy and recover!"
+        if should_deload and microcycle and not microcycle.is_deload:
+            coach_message = f"Rest day. Note: Deload may be recommended ({deload_reason})"
+        
         return DailyPlanResponse(
             plan_date=target_date,
             session=None,
             is_rest_day=True,
-            coach_message="Rest day - take it easy and recover!",
+            coach_message=coach_message,
         )
+    
+    # Estimate duration if not already calculated
+    if not session.estimated_duration_minutes:
+        try:
+            duration_estimate = await time_estimation_service.estimate_session_duration(
+                db, user_id, session.id
+            )
+            session.estimated_duration_minutes = duration_estimate["total_minutes"]
+            session.warmup_duration_minutes = duration_estimate["breakdown"]["warmup_minutes"]
+            session.main_duration_minutes = duration_estimate["breakdown"]["main_minutes"]
+            session.cooldown_duration_minutes = duration_estimate["breakdown"]["cooldown_minutes"]
+        except Exception:
+            # If estimation fails, continue without it
+            pass
     
     # Convert to response
     session_response = SessionResponse(
@@ -105,6 +131,9 @@ async def get_daily_plan(
         finisher=session.finisher_json,
         cooldown=session.cooldown_json,
         estimated_duration_minutes=session.estimated_duration_minutes,
+        warmup_duration_minutes=session.warmup_duration_minutes,
+        main_duration_minutes=session.main_duration_minutes,
+        cooldown_duration_minutes=session.cooldown_duration_minutes,
         coach_notes=session.coach_notes,
     )
     

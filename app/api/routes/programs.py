@@ -24,6 +24,9 @@ from app.schemas.program import (
     SessionResponse,
     ProgramWithMicrocycleResponse,
 )
+from app.services.program import program_service
+from app.services.interference import interference_service
+from app.services.time_estimation import time_estimation_service
 
 router = APIRouter()
 settings = get_settings()
@@ -59,38 +62,26 @@ async def create_program(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    # Deactivate any existing active programs
-    existing_active = await db.execute(
-        select(Program).where(
-            and_(Program.user_id == user_id, Program.is_active == True)
+    # Validate goals before creation
+    is_valid, warnings = await interference_service.validate_goals(
+        db,
+        program_data.goals[0].goal,
+        program_data.goals[1].goal,
+        program_data.goals[2].goal,
+    )
+    if not is_valid:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Goal validation failed: {', '.join(warnings)}"
         )
-    )
-    for prog in existing_active.scalars():
-        prog.is_active = False
     
-    # Create program
-    program = Program(
-        user_id=user_id,
-        start_date=program_data.program_start_date or date.today(),
-        duration_weeks=program_data.duration_weeks,
-        goal_1=program_data.goals[0].goal,
-        goal_2=program_data.goals[1].goal,
-        goal_3=program_data.goals[2].goal,
-        goal_weight_1=program_data.goals[0].weight,
-        goal_weight_2=program_data.goals[1].weight,
-        goal_weight_3=program_data.goals[2].weight,
-        split_template=program_data.split_template,
-        progression_style=program_data.progression_style,
-        hybrid_definition=program_data.hybrid_definition.model_dump() if program_data.hybrid_definition else None,
-        deload_every_n_microcycles=program_data.deload_every_n_microcycles,
-        persona_tone=program_data.persona_tone or user.persona_tone,
-        persona_aggression=program_data.persona_aggression or user.persona_aggression,
-        is_active=True,
-    )
-    db.add(program)
-    await db.flush()
+    try:
+        # Use ProgramService to create program with microcycles and sessions
+        program = await program_service.create_program(db, user_id, program_data)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     
-    # Create movement rules if provided
+    # Create movement rules if provided (post-program creation)
     if program_data.movement_rules:
         for rule in program_data.movement_rules:
             user_rule = UserMovementRule(
@@ -114,8 +105,8 @@ async def create_program(
             )
             db.add(user_activity)
     
-    await db.commit()
-    await db.refresh(program)
+    if program_data.movement_rules or program_data.enjoyable_activities:
+        await db.commit()
     
     return program
 
@@ -165,9 +156,23 @@ async def get_program(
         )
         upcoming_sessions = list(sessions_result.scalars().all())
     
-    # Convert sessions to response format
+    # Convert sessions to response format with duration estimates
     session_responses = []
     for session in upcoming_sessions:
+        # Estimate duration if not already calculated
+        if not session.estimated_duration_minutes:
+            try:
+                duration_estimate = await time_estimation_service.estimate_session_duration(
+                    db, user_id, session.id
+                )
+                session.estimated_duration_minutes = duration_estimate["total_minutes"]
+                session.warmup_duration_minutes = duration_estimate["breakdown"]["warmup_minutes"]
+                session.main_duration_minutes = duration_estimate["breakdown"]["main_minutes"]
+                session.cooldown_duration_minutes = duration_estimate["breakdown"]["cooldown_minutes"]
+            except Exception:
+                # If estimation fails, use existing values or defaults
+                pass
+        
         session_responses.append(SessionResponse(
             id=session.id,
             microcycle_id=session.microcycle_id,
