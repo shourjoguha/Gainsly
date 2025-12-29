@@ -221,6 +221,14 @@ async def adapt_session(
     )
     recovery_signal = recovery_result.scalar_one_or_none()
     
+    # Assess recovery using AdaptationService
+    recovery_assessment = await adaptation_service._assess_recovery(db, user_id, request)
+    recovery_score = recovery_assessment.get("recovery_score", 50)
+    
+    # Get user movement rules for constraint context
+    movement_rules = await adaptation_service._get_movement_rules(db, user_id)
+    user_preferences = await adaptation_service._get_user_preferences(db, user_id)
+    
     # Build prompt for LLM
     prompt_builder = PromptBuilder()
     
@@ -238,8 +246,12 @@ async def adapt_session(
         "deload_every_n_microcycles": program.deload_every_n_microcycles,
     })
     
-    # Add constraints
-    constraints = {}
+    # Add constraints from both request and user rules
+    constraints = {
+        "recovery_score": recovery_score,
+        "user_movement_rules": movement_rules,
+        "user_preferences": user_preferences.get("enjoyable_activities", []),
+    }
     if request.excluded_movements:
         constraints["excluded_movements"] = request.excluded_movements
     if request.excluded_patterns:
@@ -254,7 +266,7 @@ async def adapt_session(
     if constraints:
         prompt_builder.add_constraints(constraints)
     
-    # Add recovery context
+    # Add recovery context with assessment
     soreness_data = [{"body_part": s.body_part, "soreness_1_5": s.soreness_1_5} for s in recent_soreness]
     recovery_data = None
     if recovery_signal:
@@ -333,8 +345,15 @@ async def adapt_session(
     
     await db.commit()
     
-    # Build response
+    # Build response with adaptation context
     adapted_plan = llm_response.get("adapted_plan", {})
+    
+    # Include adaptation assessment context
+    changes_made = llm_response.get("changes_made", [])
+    if recovery_score < 40:
+        changes_made.insert(0, f"Reduced volume due to low recovery score ({recovery_score}/100)")
+    elif recovery_score > 75:
+        changes_made.insert(0, f"Enhanced workout due to strong recovery score ({recovery_score}/100)")
     
     return AdaptationResponse(
         plan_date=target_date,
@@ -349,8 +368,8 @@ async def adapt_session(
             reasoning=adapted_plan.get("reasoning", ""),
             trade_offs=adapted_plan.get("trade_offs"),
         ),
-        changes_made=llm_response.get("changes_made", []),
-        reasoning=llm_response.get("reasoning", ""),
+        changes_made=changes_made,
+        reasoning=f"Recovery score: {recovery_score}/100. {llm_response.get('reasoning', '')}",
         trade_offs=llm_response.get("trade_offs"),
         alternative_suggestion=llm_response.get("alternative_suggestion"),
         follow_up_question=llm_response.get("follow_up_question"),
@@ -390,7 +409,13 @@ async def adapt_session_stream(
         db.add(thread)
         await db.flush()
         
-        # Build prompt (simplified for streaming)
+        # Get adaptation assessment for streaming context
+        recovery_assessment = await adaptation_service._assess_recovery(db, user_id, request)
+        recovery_score = recovery_assessment.get("recovery_score", 50)
+        movement_rules = await adaptation_service._get_movement_rules(db, user_id)
+        user_preferences = await adaptation_service._get_user_preferences(db, user_id)
+        
+        # Build prompt with adaptation context
         prompt_builder = PromptBuilder()
         prompt_builder.add_program_context({
             "goal_1": program.goal_1.value,
@@ -405,7 +430,28 @@ async def adapt_session_stream(
             "deload_every_n_microcycles": program.deload_every_n_microcycles,
         })
         
+        # Add constraints with recovery assessment
+        constraints = {
+            "recovery_score": recovery_score,
+            "user_movement_rules": movement_rules,
+            "user_preferences": user_preferences.get("enjoyable_activities", []),
+        }
+        if request.excluded_movements:
+            constraints["excluded_movements"] = request.excluded_movements
+        if request.excluded_patterns:
+            constraints["excluded_patterns"] = request.excluded_patterns
+        if request.focus_for_today:
+            constraints["focus"] = request.focus_for_today
+        if request.time_available_minutes:
+            constraints["time_available_minutes"] = request.time_available_minutes
+        
+        if constraints:
+            prompt_builder.add_constraints(constraints)
+        
         system_prompt = prompt_builder.build()
+        
+        # Send recovery score as early metadata
+        yield f"data: {json.dumps({"recovery_score": recovery_score})}\n\n"
         user_message = request.user_message or f"Adapt my session for {target_date}."
         
         messages = [

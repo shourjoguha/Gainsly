@@ -152,18 +152,18 @@ class InterferenceService:
         """
         Load interference rules from HeuristicConfig table.
         
-        Looks for config with key 'interference_rules'.
+        Looks for config with name 'interference_rules'.
         """
         if self._interference_rules is not None:
             return self._interference_rules
         
         result = await db.execute(
-            select(HeuristicConfig).where(HeuristicConfig.key == "interference_rules").limit(1)
+            select(HeuristicConfig).where(HeuristicConfig.name == "interference_rules", HeuristicConfig.active == True).limit(1)
         )
         config = result.scalar_one_or_none()
         
-        if config and config.value_json:
-            self._interference_rules = config.value_json
+        if config and config.json_blob:
+            self._interference_rules = config.json_blob
         else:
             # Default rules (empty, no conflicts)
             self._interference_rules = {}

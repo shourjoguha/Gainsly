@@ -183,7 +183,7 @@ async def test_microcycle(
         program_id=test_program.id,
         sequence_number=1,
         start_date=date.today(),
-        length_days=14,
+        length_days=7,
         status=MicrocycleStatus.PLANNED,
         is_deload=False,
     )
