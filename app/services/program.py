@@ -67,10 +67,11 @@ class ProgramService:
             raise ValueError("Exactly 3 goals required")
         
         # Check for goal interference
-        goal_objs = [g.goal for g in goals]
-        interference_check = await interference_service.detect_conflicts(db, user_id, goal_objs)
-        if interference_check["has_conflicts"] and interference_check.get("severity") == "high":
-            raise ValueError(f"High-severity goal conflicts detected: {interference_check['conflicts']}")
+        is_valid, warnings = await interference_service.validate_goals(
+            db, goals[0].goal, goals[1].goal, goals[2].goal
+        )
+        if not is_valid:
+            raise ValueError(f"Goal validation failed: {warnings}")
         
         # Create program
         from datetime import datetime as dt
@@ -79,7 +80,7 @@ class ProgramService:
         program = Program(
             user_id=user_id,
             split_template=request.split_template,
-            program_start_date=start_date,
+            start_date=start_date,
             duration_weeks=request.duration_weeks,
             goal_1=goals[0].goal,
             goal_2=goals[1].goal,
@@ -161,7 +162,7 @@ class ProgramService:
         microcycle = Microcycle(
             program_id=program_id,
             sequence_number=mc_index + 1,  # 1-indexed
-            micro_start_date=start_date,
+            start_date=start_date,
             length_days=14,  # 2 weeks
             status=MicrocycleStatus.PLANNED,
             is_deload=mc_type == "deload",
