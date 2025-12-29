@@ -270,6 +270,91 @@ class MetricsService:
         return should_deload, declining_patterns
 
 
+    async def get_volume_load(
+        self,
+        db: AsyncSession,
+        user_id: int,
+        pattern: MovementPattern,
+        lookback_days: int = 7,
+    ) -> int:
+        """
+        Calculate total volume (sets × reps) for a pattern in recent period.
+        
+        Args:
+            db: Database session
+            user_id: User ID
+            pattern: Movement pattern
+            lookback_days: Days to look back (default 7)
+        
+        Returns:
+            Total reps performed
+        """
+        from datetime import datetime, timedelta
+        
+        start_date = datetime.utcnow() - timedelta(days=lookback_days)
+        
+        exposures = await self.get_pattern_exposures(db, user_id, pattern, lookback_microcycles=10)
+        
+        total_volume = 0
+        for exp in exposures:
+            if exp.date >= start_date.date():
+                total_volume += exp.sets * exp.reps
+        
+        return total_volume
+    
+    async def get_recovery_status(
+        self,
+        db: AsyncSession,
+        user_id: int,
+    ) -> dict:
+        """
+        Aggregate recent recovery signals into a status summary.
+        
+        Args:
+            db: Database session
+            user_id: User ID
+        
+        Returns:
+            Dict with recovery metrics (sleep_avg, readiness_avg, hrv_avg)
+        """
+        from datetime import datetime, timedelta
+        from app.models import RecoverySignal
+        
+        start_date = datetime.utcnow() - timedelta(days=7)
+        
+        signals_result = await db.execute(
+            select(RecoverySignal)
+            .where(
+                and_(
+                    RecoverySignal.user_id == user_id,
+                    RecoverySignal.date >= start_date.date()
+                )
+            )
+            .order_by(RecoverySignal.date.desc())
+            .limit(7)
+        )
+        signals = list(signals_result.scalars().all())
+        
+        if not signals:
+            return {
+                "sleep_avg": None,
+                "readiness_avg": None,
+                "hrv_avg": None,
+                "signal_count": 0,
+            }
+        
+        sleep_scores = [s.sleep_score for s in signals if s.sleep_score is not None]
+        readiness_scores = [s.readiness for s in signals if s.readiness is not None]
+        hrv_scores = [s.hrv for s in signals if s.hrv is not None]
+        
+        return {
+            "sleep_avg": sum(sleep_scores) / len(sleep_scores) if sleep_scores else None,
+            "readiness_avg": sum(readiness_scores) / len(readiness_scores) if readiness_scores else None,
+            "hrv_avg": sum(hrv_scores) / len(hrv_scores) if hrv_scores else None,
+            "signal_count": len(signals),
+        }
+
+
 # Singleton instance
 metrics_service = MetricsService()
 
