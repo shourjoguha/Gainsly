@@ -199,3 +199,74 @@ Session tracking for continuous development with date/time headers. A new sessio
 **Commits in Session 4**:
 - 4044719 - Router integration (ProgramService, DeloadService, TimeEstimationService)
 - fcebba2 - End-to-end integration tests (5 full workflows)
+
+## Session 5: 2025-12-29 17:30:00 - 18:00:00 UTC
+
+**Objective**: Complete final two remaining tasks - AdaptationService router integration and performance testing
+
+**Key Accomplishments**:
+
+1. **AdaptationService Integration** (Commit d34a186):
+   - **days.py /adapt endpoint**:
+     - AdaptationService._assess_recovery() called to calculate recovery_score (0-100)
+     - Movement rules fetched via _get_movement_rules() for user constraints
+     - User preferences loaded via _get_user_preferences() for weighting
+     - Constraints enriched with recovery_score, movement_rules, user preferences
+     - Recovery score included in AdaptationResponse reasoning
+     - Changes_made list enhanced with volume adjustment notes based on recovery
+   - **days.py /adapt/stream endpoint**:
+     - Same AdaptationService integration applied for consistency
+     - Recovery score sent early as SSE metadata to client
+     - Constraints with recovery assessment passed to streaming LLM
+   - **Workflow**: Recovery signals → Assessment → Constraints applied → LLM adaptation
+
+2. **Performance Testing Framework** (Commit d34a186):
+   - Created tests/performance_test_locust.py (204 lines):
+     - ShowMeGainsUser class with realistic task distribution (plan 20%, adapt 15%, log 15%, deload 10%, program 5%, idle 35%)
+     - StressTestUser class with aggressive load profile (shorter think time, higher adaptation weight)
+     - Proper test data generation (program creation, recovery signals with variance)
+     - Catch response handling for graceful failure tracking
+   - Created PERFORMANCE_TESTING.md comprehensive guide:
+     - Setup instructions (Locust installation, app/Ollama setup)
+     - Load test scenarios (light, medium, stress)
+     - Spike testing instructions
+     - Endurance testing for memory leaks
+     - Success criteria (p95 < 500ms plan, < 2000ms adapt, 0% error at 50 users)
+     - Bottleneck identification and troubleshooting guide
+     - Sample results template
+
+3. **Bug Fixes**:
+   - Fixed microcycle test fixture: length_days=14 → 7 (complies with CHECK constraint)
+   - Fixed HeuristicConfig references in interference_service:
+     - Changed HeuristicConfig.key → HeuristicConfig.name
+     - Changed config.value_json → config.json_blob
+     - Added HeuristicConfig.active == True to query
+   - All interference_service tests now pass (8/8)
+
+**Technical Details**:
+- AdaptationService now used in request handling path, not just standalone
+- Recovery assessment happens before LLM call, enriching context
+- Performance tests follow realistic user behavior patterns
+- Locust framework provides detailed metrics (p50/p95/p99, throughput, error tracking)
+- Performance baseline ready for deployment metrics
+
+**Project Completion Status**:
+✅ MVP Backend Complete
+✅ 6 core services implemented (Interference, Metrics, Program, Deload, Adaptation, TimeEstimation)
+✅ 4 REST API routers (programs, days, logs, settings)
+✅ 60+ unit tests covering all services
+✅ 5 end-to-end integration tests
+✅ AdaptationService fully integrated into request handling
+✅ Performance testing framework ready
+✅ All critical features implemented and tested
+
+**Remaining Optional Work** (for future sessions):
+- Run baseline performance tests and document results
+- Database optimization (indexes, query optimization)
+- PostgreSQL migration from SQLite
+- Mobile client implementation
+- API documentation generation
+- Additional LLM-based suggestions for exercise substitutions
+
+**Commits in Session 5**:
+- d34a186 - AdaptationService integration + performance testing framework (524 lines added)
