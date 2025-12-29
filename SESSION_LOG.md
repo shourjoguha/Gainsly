@@ -74,3 +74,27 @@ Session tracking for continuous development with date/time headers. A new sessio
 - No update endpoints for movement rules/enjoyable activities
 - Heuristics are read-only (by design for MVP)
 - LLM streaming requires Ollama running locally
+
+## Session 2: 2025-12-29 16:09:26 - 16:35:00 UTC
+
+**Objective**: Implement all 5 core business logic services
+
+**Key Accomplishments**:
+1. Enhanced MetricsService with volume_load and recovery_status methods
+2. Created ProgramService (341 lines) - 8-12 week program generation with microcycles
+3. Created DeloadService (150 lines) - deload scheduling based on recovery/time triggers
+4. Created AdaptationService (400 lines) - session adaptation using soreness and rules
+5. Fixed all import issues and model references to work with existing codebase
+6. Verified all services import successfully
+7. Committed changes with: feat: implement core business logic services (d0cdf2c)
+
+**Technical Notes**:
+- All services use singleton pattern with async database operations
+- ProgramService creates microcycles automatically with deload every 4th cycle
+- AdaptationService MVP has placeholder for LLM suggestions
+- Removed nonexistent model dependencies (DeloadHistory, PSILog)
+
+**Remaining Work**:
+- Integrate services into REST API routers
+- Add unit/integration tests for each service
+- Implement LLMService for exercise substitutions
