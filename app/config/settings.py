@@ -1,0 +1,40 @@
+"""Application configuration settings."""
+from functools import lru_cache
+from typing import Literal
+
+from pydantic_settings import BaseSettings
+
+
+class Settings(BaseSettings):
+    """Application settings loaded from environment variables."""
+    
+    # Application
+    app_name: str = "Coach ShowMeGains"
+    debug: bool = True
+    
+    # Database
+    database_url: str = "sqlite+aiosqlite:///./workout_coach.db"
+    
+    # Ollama LLM settings
+    ollama_base_url: str = "http://localhost:11434"
+    ollama_model: str = "llama3.1:8b"
+    ollama_timeout: float = 120.0  # seconds
+    
+    # LLM Provider (for future cloud providers)
+    llm_provider: Literal["ollama", "openai", "anthropic"] = "ollama"
+    
+    # Default user settings (for MVP without auth)
+    default_user_id: int = 1
+    
+    # e1RM formula options
+    default_e1rm_formula: Literal["epley", "brzycki", "lombardi", "oconner"] = "epley"
+    
+    class Config:
+        env_file = ".env"
+        env_file_encoding = "utf-8"
+
+
+@lru_cache
+def get_settings() -> Settings:
+    """Get cached settings instance."""
+    return Settings()
