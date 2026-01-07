@@ -1,4 +1,4 @@
-# ShowMeGains - AI Workout Coach
+# Gainsly - AI Workout Coach
 
 An AI-enabled workout coach that creates adaptive 8-12 week strength/fitness programs and adapts daily sessions based on your preferences, constraints, and recovery signals.
 
@@ -32,7 +32,7 @@ An AI-enabled workout coach that creates adaptive 8-12 week strength/fitness pro
 
 ```bash
 # Navigate to project directory
-cd ShowMeGainsZues_1225
+cd Gainsly
 
 # Create virtual environment
 python -m venv venv
@@ -58,7 +58,7 @@ curl http://localhost:8000/health/llm
 ## Project Structure
 
 ```
-ShowMeGainsZues_1225/
+Gainsly/
 ├── app/
 │   ├── api/
 │   │   └── routes/          # API endpoint routers
