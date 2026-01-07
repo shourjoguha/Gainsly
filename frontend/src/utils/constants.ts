@@ -18,18 +18,18 @@ export const GOALS = [
 
 // Split Templates
 export const SPLIT_TEMPLATES = [
-  { value: 'UPPER_LOWER', label: 'Upper/Lower', description: '4 days/week, alternating upper and lower body' },
-  { value: 'PPL', label: 'Push/Pull/Legs', description: '6 days/week, Push/Pull/Legs rotation' },
-  { value: 'FULL_BODY', label: 'Full Body', description: '3 days/week, whole body each session' },
-  { value: 'HYBRID', label: 'Hybrid', description: 'Custom day-by-day or block composition' },
+  { value: 'upper_lower', label: 'Upper/Lower', description: '4 days/week, alternating upper and lower body' },
+  { value: 'ppl', label: 'Push/Pull/Legs', description: '6 days/week, Push/Pull/Legs rotation' },
+  { value: 'full_body', label: 'Full Body', description: '3 days/week, whole body each session' },
+  { value: 'hybrid', label: 'Hybrid', description: 'Custom day-by-day or block composition' },
 ] as const
 
 // Progression Styles
 export const PROGRESSION_STYLES = [
-  { value: 'SINGLE', label: 'Single Progression', description: 'Increase weight when hitting rep target' },
-  { value: 'DOUBLE', label: 'Double Progression', description: 'Increase reps, then weight' },
-  { value: 'PAUSED_VARIATIONS', label: 'Paused Variations', description: 'Add pauses for difficulty' },
-  { value: 'BUILD_TO_DROP', label: 'Build to Drop', description: 'Build reps, drop and add weight' },
+  { value: 'single_progression', label: 'Single Progression', description: 'Increase weight when hitting rep target' },
+  { value: 'double_progression', label: 'Double Progression', description: 'Increase reps, then weight' },
+  { value: 'paused_variations', label: 'Paused Variations', description: 'Add pauses for difficulty' },
+  { value: 'build_to_drop', label: 'Build to Drop', description: 'Build reps, drop and add weight' },
 ] as const
 
 // Persona Tones

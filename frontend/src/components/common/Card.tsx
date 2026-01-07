@@ -13,11 +13,11 @@ interface CardProps {
 }
 
 const variantStyles: Record<CardVariant, string> = {
-  default: 'bg-white border-secondary-200',
-  success: 'bg-success-50 border-success-200',
-  warning: 'bg-accent-50 border-accent-200',
-  error: 'bg-destructive-50 border-destructive-200',
-  info: 'bg-blue-50 border-blue-200',
+  default: 'bg-dark-850 border-dark-700 shadow-elevation',
+  success: 'bg-dark-850 border-neon-green-600 shadow-neon-green-sm',
+  warning: 'bg-dark-850 border-neon-amber-600 shadow-neon-amber',
+  error: 'bg-dark-850 border-neon-red-600 shadow-neon-red',
+  info: 'bg-dark-850 border-neon-cyan-600 shadow-neon-cyan-sm',
 }
 
 const paddingStyles: Record<string, string> = {
@@ -42,7 +42,7 @@ const Card: React.FC<CardProps> = ({
         'rounded-card border transition-all duration-base',
         variantStyles[variant],
         paddingStyles[padding],
-        hoverable && 'hover:shadow-elevation hover:border-secondary-300 cursor-pointer',
+        hoverable && 'hover:shadow-neon-cyan hover:border-neon-cyan-500 cursor-pointer',
         onClick && 'cursor-pointer',
         className
       )}
@@ -71,7 +71,7 @@ interface CardTitleProps {
 }
 
 const CardTitle: React.FC<CardTitleProps> = ({ className, children }) => (
-  <h3 className={clsx('text-lg font-bold text-secondary-900', className)}>{children}</h3>
+  <h3 className={clsx('text-lg font-bold text-white', className)}>{children}</h3>
 )
 
 interface CardDescriptionProps {
@@ -80,7 +80,7 @@ interface CardDescriptionProps {
 }
 
 const CardDescription: React.FC<CardDescriptionProps> = ({ className, children }) => (
-  <p className={clsx('text-sm text-secondary-600', className)}>{children}</p>
+  <p className={clsx('text-sm text-secondary-400', className)}>{children}</p>
 )
 
 interface CardContentProps {

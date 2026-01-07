@@ -17,35 +17,35 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary: clsx(
-    'bg-primary-500 text-white',
-    'hover:bg-primary-600 hover:shadow-elevation',
-    'active:bg-secondary-800',
-    'disabled:bg-gray-400 disabled:text-gray-600'
+    'bg-gradient-neon-cyan text-black font-semibold',
+    'hover:shadow-neon-cyan-lg hover:translate-y-0',
+    'active:translate-y-1 active:shadow-neon-cyan-sm',
+    'disabled:bg-secondary-700 disabled:text-secondary-500 disabled:shadow-none disabled:translate-y-0'
   ),
   secondary: clsx(
-    'bg-transparent text-secondary-900 border-2 border-secondary-300',
-    'hover:bg-secondary-100 hover:border-secondary-400',
-    'active:bg-secondary-200',
-    'disabled:border-gray-300 disabled:text-gray-400'
+    'bg-dark-850 text-neon-cyan-400 border-2 border-neon-cyan-400',
+    'hover:border-neon-cyan-300 hover:shadow-neon-cyan-sm hover:translate-y-0',
+    'active:bg-dark-800 active:translate-y-1',
+    'disabled:border-secondary-700 disabled:text-secondary-700 disabled:shadow-none disabled:translate-y-0'
   ),
   danger: clsx(
-    'bg-destructive-500 text-white',
-    'hover:bg-destructive-600',
-    'active:bg-destructive-700',
-    'disabled:bg-gray-400 disabled:text-gray-600'
+    'bg-gradient-neon-red text-black font-semibold',
+    'hover:shadow-neon-red hover:translate-y-0',
+    'active:translate-y-1 active:shadow-btn-hover',
+    'disabled:bg-secondary-700 disabled:text-secondary-500 disabled:shadow-none disabled:translate-y-0'
   ),
   ghost: clsx(
-    'bg-transparent text-primary-600',
-    'hover:bg-primary-50',
-    'active:bg-primary-100',
-    'disabled:text-gray-400'
+    'bg-transparent text-neon-cyan-400',
+    'hover:text-neon-cyan-300 hover:shadow-neon-cyan-sm',
+    'active:text-neon-cyan-500',
+    'disabled:text-secondary-700'
   ),
 }
 
 const sizeStyles: Record<ButtonSize, string> = {
-  sm: 'h-8 px-3 text-xs',
-  md: 'h-10 px-4 text-sm',
-  lg: 'h-12 px-6 text-base',
+  sm: 'h-10 px-4 text-sm',
+  md: 'h-12 px-6 text-base',
+  lg: 'h-14 px-8 text-lg',
 }
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -73,11 +73,12 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         className={clsx(
           // Base styles
           'inline-flex items-center justify-center',
-          'font-medium uppercase tracking-wide',
+          'font-semibold uppercase tracking-wider',
           'rounded-btn',
-          'transition-all duration-base ease-in-out',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2',
+          'transition-all duration-fast ease-in-out',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-cyan-500 focus-visible:ring-offset-2 focus-visible:ring-offset-black',
           'min-w-[44px]',
+          'shadow-btn',
           // Variant styles
           variantStyles[variant],
           // Size styles

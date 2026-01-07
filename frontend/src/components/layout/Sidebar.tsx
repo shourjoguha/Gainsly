@@ -1,5 +1,6 @@
 import React from 'react'
 import { clsx } from 'clsx'
+import { Link } from '@tanstack/react-router'
 import {
   CalendarDaysIcon,
   DocumentTextIcon,
@@ -42,14 +43,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, currentPath = '/' })
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar - Desktop (Static) and Mobile (Fixed) handled via MainLayout or classes */}
       <aside
         className={clsx(
-          'fixed top-16 bottom-0 left-0 z-40',
           'w-64 bg-white border-r border-secondary-200',
-          'transform transition-transform duration-base ease-in-out',
-          'lg:translate-x-0',
-          isOpen ? 'translate-x-0' : '-translate-x-full'
+          'flex-shrink-0',
+          // Mobile: Fixed drawer
+          'lg:static lg:h-full lg:transform-none lg:z-auto', 
+          'fixed inset-y-0 left-0 z-40',
+          'transition-transform duration-base ease-in-out',
+          isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         )}
       >
         {/* Close button (mobile only) */}
@@ -69,11 +72,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, currentPath = '/' })
         {/* Navigation */}
         <nav className="p-4 space-y-1">
           {navItems.map((item) => {
-            const isActive = currentPath === item.href
+            const isActive = currentPath === item.href ||
+              (item.href !== '/' && currentPath.startsWith(item.href))
             return (
-              <a
+              <Link
                 key={item.name}
-                href={item.href}
+                to={item.href}
+                onClick={onClose}
                 className={clsx(
                   'flex items-center gap-3 px-3 py-2.5 rounded-lg',
                   'text-sm font-medium transition-colors',
@@ -97,7 +102,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, currentPath = '/' })
                     {item.badge}
                   </span>
                 )}
-              </a>
+              </Link>
             )
           })}
         </nav>

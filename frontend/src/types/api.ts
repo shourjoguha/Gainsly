@@ -5,8 +5,8 @@
 
 // ============== Enums ==============
 export type Goal = 'strength' | 'hypertrophy' | 'endurance' | 'fat_loss' | 'mobility' | 'explosiveness' | 'speed'
-export type SplitTemplate = 'UPPER_LOWER' | 'PPL' | 'FULL_BODY' | 'HYBRID'
-export type ProgressionStyle = 'SINGLE' | 'DOUBLE' | 'PAUSED_VARIATIONS' | 'BUILD_TO_DROP'
+export type SplitTemplate = 'upper_lower' | 'ppl' | 'full_body' | 'hybrid'
+export type ProgressionStyle = 'single_progression' | 'double_progression' | 'paused_variations' | 'build_to_drop'
 export type PersonaTone = 'supportive' | 'neutral' | 'sarcastic' | 'drill_sergeant'
 export type PersonaAggression = 'conservative' | 'balanced' | 'aggressive'
 export type SessionType = 'upper' | 'lower' | 'push' | 'pull' | 'legs' | 'full_body' | 'cardio' | 'mobility' | 'rest'

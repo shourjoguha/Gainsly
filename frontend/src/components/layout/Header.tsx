@@ -11,10 +11,10 @@ const Header: React.FC<HeaderProps> = ({ onMenuToggle, className }) => {
   return (
     <header
       className={clsx(
-        'fixed top-0 left-0 right-0 z-40',
         'h-16 px-4 sm:px-6',
         'bg-white border-b border-secondary-200',
         'flex items-center justify-between',
+        'flex-shrink-0 z-30', // Prevent shrinking, keep z-index
         className
       )}
     >

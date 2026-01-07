@@ -1,18 +1,20 @@
 import React, { useState } from 'react'
 import { clsx } from 'clsx'
+import { useRouterState } from '@tanstack/react-router'
 import Header from './Header'
 import Sidebar from './Sidebar'
 
 interface MainLayoutProps {
   children: React.ReactNode
-  currentPath?: string
 }
 
-const MainLayout: React.FC<MainLayoutProps> = ({ children, currentPath }) => {
+const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const routerState = useRouterState()
+  const currentPath = routerState.location.pathname
 
   return (
-    <div className="min-h-screen bg-secondary-50">
+    <div className="h-screen w-full flex flex-col bg-secondary-50 overflow-hidden">
       {/* Skip to main content link for accessibility */}
       <a
         href="#main-content"
@@ -21,29 +23,34 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children, currentPath }) => {
         Skip to main content
       </a>
 
-      {/* Header */}
+      {/* Header - Stays at top */}
       <Header onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
 
-      {/* Sidebar */}
-      <Sidebar
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        currentPath={currentPath}
-      />
+      {/* Content Area - Flex Row for Sidebar + Main */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Sidebar - Static on desktop, drawer on mobile */}
+        <Sidebar
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+          currentPath={currentPath}
+        />
 
-      {/* Main content */}
-      <main
-        id="main-content"
-        className={clsx(
-          'pt-16', // Account for fixed header
-          'lg:pl-64', // Account for sidebar on large screens
-          'min-h-screen'
-        )}
-      >
-        <div className="p-4 sm:p-6 lg:p-8 animate-fade-in">
-          {children}
-        </div>
-      </main>
+        {/* Main content - Scrollable area */}
+        <main
+          id="main-content"
+          className={clsx(
+            'flex-1',
+            'overflow-y-auto',
+            'bg-secondary-50',
+            'w-full',
+            'relative' // Ensure context
+          )}
+        >
+          <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full animate-fade-in">
+            {children}
+          </div>
+        </main>
+      </div>
     </div>
   )
 }
