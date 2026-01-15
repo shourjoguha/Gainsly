@@ -2,7 +2,7 @@
 from datetime import date, datetime
 from sqlalchemy import (
     Boolean, Column, Integer, String, Date, DateTime,
-    ForeignKey, Text, Float, Enum as SQLEnum
+    ForeignKey, Text, Float, Enum as SQLEnum, JSON
 )
 from sqlalchemy.orm import relationship
 
@@ -29,6 +29,8 @@ class WorkoutLog(Base):
     # User feedback
     notes = Column(Text, nullable=True)
     perceived_difficulty = Column(Integer, nullable=True)  # 1-10
+    enjoyment_rating = Column(Integer, nullable=True)  # 1-5
+    feedback_tags = Column(JSON, default=list)  # e.g. ["too_hard", "boring"]
     
     # Timing
     actual_duration_minutes = Column(Integer, nullable=True)

@@ -1,0 +1,472 @@
+// ========================================
+// ENUMS (matching backend)
+// ========================================
+
+export enum Goal {
+  STRENGTH = 'strength',
+  HYPERTROPHY = 'hypertrophy',
+  ENDURANCE = 'endurance',
+  FAT_LOSS = 'fat_loss',
+  MOBILITY = 'mobility',
+  EXPLOSIVENESS = 'explosiveness',
+  SPEED = 'speed',
+}
+
+export enum SplitTemplate {
+  UPPER_LOWER = 'upper_lower',
+  PPL = 'ppl',
+  FULL_BODY = 'full_body',
+  HYBRID = 'hybrid',
+}
+
+export enum ProgressionStyle {
+  SINGLE_PROGRESSION = 'single_progression',
+  DOUBLE_PROGRESSION = 'double_progression',
+  PAUSED_VARIATIONS = 'paused_variations',
+  BUILD_TO_DROP = 'build_to_drop',
+}
+
+export enum SessionType {
+  UPPER = 'upper',
+  LOWER = 'lower',
+  PUSH = 'push',
+  PULL = 'pull',
+  LEGS = 'legs',
+  FULL_BODY = 'full_body',
+  CARDIO = 'cardio',
+  MOBILITY = 'mobility',
+  RECOVERY = 'recovery',
+  SKILL = 'skill',
+  CUSTOM = 'custom',
+}
+
+export enum MicrocycleStatus {
+  PLANNED = 'planned',
+  ACTIVE = 'active',
+  COMPLETE = 'complete',
+}
+
+export enum MovementPattern {
+  SQUAT = 'squat',
+  HINGE = 'hinge',
+  HORIZONTAL_PUSH = 'horizontal_push',
+  VERTICAL_PUSH = 'vertical_push',
+  HORIZONTAL_PULL = 'horizontal_pull',
+  VERTICAL_PULL = 'vertical_pull',
+  CARRY = 'carry',
+  CORE = 'core',
+  LUNGE = 'lunge',
+  ROTATION = 'rotation',
+  PLYOMETRIC = 'plyometric',
+  OLYMPIC = 'olympic',
+  ISOLATION = 'isolation',
+  MOBILITY = 'mobility',
+  ISOMETRIC = 'isometric',
+  CONDITIONING = 'conditioning',
+  CARDIO = 'cardio',
+}
+
+export enum MovementRuleType {
+  HARD_NO = 'hard_no',
+  HARD_YES = 'hard_yes',
+  PREFERRED = 'preferred',
+}
+
+export enum PersonaTone {
+  DRILL_SERGEANT = 'drill_sergeant',
+  SUPPORTIVE = 'supportive',
+  ANALYTICAL = 'analytical',
+  MOTIVATIONAL = 'motivational',
+  MINIMALIST = 'minimalist',
+}
+
+export enum PersonaAggression {
+  CONSERVATIVE = 1,
+  MODERATE_CONSERVATIVE = 2,
+  BALANCED = 3,
+  MODERATE_AGGRESSIVE = 4,
+  AGGRESSIVE = 5,
+}
+
+export enum RecoverySource {
+  DUMMY = 'dummy',
+  MANUAL = 'manual',
+  GARMIN = 'garmin',
+  APPLE = 'apple',
+  AURA_RING = 'aura_ring',
+  WHOOP_BAND = 'whoop_band',
+}
+
+// ========================================
+// PROGRAM TYPES
+// ========================================
+
+export interface GoalWeight {
+  goal: Goal;
+  weight: number;
+}
+
+export interface DisciplineWeight {
+  discipline: string;
+  weight: number;
+}
+
+export interface ProgramCreate {
+  goals: GoalWeight[];
+  duration_weeks: number;
+  program_start_date?: string;
+  split_template: SplitTemplate;
+  days_per_week: number;
+  progression_style: ProgressionStyle;
+  hybrid_definition?: HybridDefinition;
+  deload_every_n_microcycles?: number;
+  persona_tone?: PersonaTone;
+  persona_aggression?: PersonaAggression;
+  disciplines?: DisciplineWeight[];
+  movement_rules?: MovementRuleCreate[];
+  enjoyable_activities?: EnjoyableActivityCreate[];
+}
+
+export interface HybridDefinition {
+  mode: 'day_by_day' | 'block_composition';
+  days?: HybridDayDefinition[];
+  composition?: HybridBlockComposition;
+}
+
+export interface HybridDayDefinition {
+  day: number;
+  session_type: SessionType;
+  focus?: string[];
+  notes?: string;
+}
+
+export interface HybridBlockComposition {
+  blocks: string[];
+}
+
+export interface Program {
+  id: number;
+  user_id: number;
+  program_start_date?: string;
+  duration_weeks: number;
+  goal_1: Goal;
+  goal_2: Goal;
+  goal_3: Goal;
+  goal_weight_1: number;
+  goal_weight_2: number;
+  goal_weight_3: number;
+  split_template: SplitTemplate;
+  progression_style: ProgressionStyle;
+  hybrid_definition?: Record<string, unknown>;
+  deload_every_n_microcycles: number;
+  persona_tone?: PersonaTone;
+  persona_aggression?: PersonaAggression;
+  is_active: boolean;
+  created_at?: string;
+}
+
+export interface ProgramWithMicrocycle {
+  program: Program;
+  active_microcycle?: Microcycle;
+  upcoming_sessions: Session[];
+}
+
+// ========================================
+// MICROCYCLE & SESSION TYPES
+// ========================================
+
+export interface Microcycle {
+  id: number;
+  program_id: number;
+  micro_start_date?: string;
+  length_days: number;
+  sequence_number: number;
+  status: MicrocycleStatus;
+  is_deload: boolean;
+}
+
+export interface Session {
+  id: number;
+  microcycle_id: number;
+  session_date?: string;
+  day_number: number;
+  session_type: SessionType;
+  intent_tags: string[];
+  warmup?: ExerciseBlock[];
+  main?: ExerciseBlock[];
+  accessory?: ExerciseBlock[];
+  finisher?: FinisherBlock;
+  cooldown?: ExerciseBlock[];
+  estimated_duration_minutes?: number;
+  warmup_duration_minutes?: number;
+  main_duration_minutes?: number;
+  accessory_duration_minutes?: number;
+  finisher_duration_minutes?: number;
+  cooldown_duration_minutes?: number;
+  coach_notes?: string;
+}
+
+export interface ExerciseBlock {
+  movement: string;
+  movement_id?: number;
+  sets?: number;  // Optional for cooldown/stretches that only have duration
+  rep_range_min?: number;
+  rep_range_max?: number;
+  target_rpe?: number;
+  target_rir?: number;
+  duration_seconds?: number;
+  rest_seconds?: number;
+  superset_with?: string;
+  notes?: string;
+}
+
+export interface FinisherBlock {
+  type: string;
+  duration_minutes?: number;
+  rounds?: number;
+  exercises?: ExerciseBlock[];
+  notes?: string;
+}
+
+// ========================================
+// DAILY PLANNING TYPES
+// ========================================
+
+export interface DailyPlan {
+  plan_date?: string;
+  session?: Session;
+  is_rest_day: boolean;
+  recommended_activities?: string[];
+  coach_message?: string;
+}
+
+export interface AdaptationRequest {
+  program_id: number;
+  focus_for_today?: string;
+  preference?: 'lift' | 'calisthenics' | 'cardio' | 'sport' | 'any';
+  excluded_movements?: string[];
+  excluded_patterns?: string[];
+  time_available_minutes?: number;
+  soreness?: SorenessInput[];
+  recovery?: RecoveryInput;
+  activity_yesterday?: string;
+  adherence_vs_optimality?: 'adherence' | 'optimality' | 'balanced';
+  persona_tone_override?: PersonaTone;
+  persona_aggression_override?: PersonaAggression;
+  thread_id?: number;
+  user_message?: string;
+}
+
+export interface SorenessInput {
+  body_part: string;
+  level: number;
+}
+
+export interface RecoveryInput {
+  sleep_quality?: 'poor' | 'fair' | 'good' | 'excellent';
+  sleep_hours?: number;
+  energy_level?: number;
+  stress_level?: number;
+  notes?: string;
+}
+
+export interface AdaptationResponse {
+  plan_date?: string;
+  original_session_type?: SessionType;
+  adapted_plan?: AdaptedSessionPlan;
+  changes_made: string[];
+  reasoning: string;
+  trade_offs?: string;
+  alternative_suggestion?: string;
+  follow_up_question?: string;
+  thread_id?: number;
+}
+
+export interface AdaptedSessionPlan {
+  warmup?: ExerciseBlock[];
+  main?: ExerciseBlock[];
+  accessory?: ExerciseBlock[];
+  finisher?: FinisherBlock;
+  cooldown?: ExerciseBlock[];
+  estimated_duration_minutes: number;
+  reasoning: string;
+  trade_offs?: string;
+}
+
+// ========================================
+// LOGGING TYPES
+// ========================================
+
+export interface WorkoutLogCreate {
+  session_id?: number;
+  log_date?: string;
+  started_at?: string;
+  ended_at?: string;
+  completed?: boolean;
+  top_sets?: TopSetCreate[];
+  exercises_completed?: Record<string, unknown>[];
+  notes?: string;
+  perceived_exertion?: number;
+  energy_level?: number;
+  adherence_percentage?: number;
+  coach_feedback_request?: string;
+}
+
+export interface TopSetCreate {
+  movement_id: number;
+  weight: number;
+  reps: number;
+  rpe?: number;
+  rir?: number;
+}
+
+export interface WorkoutLog {
+  id: number;
+  user_id?: number;
+  session_id?: number;
+  log_date?: string;
+  started_at?: string;
+  ended_at?: string;
+  completed: boolean;
+  notes?: string;
+  perceived_exertion?: number;
+  energy_level?: number;
+  adherence_percentage?: number;
+  coach_feedback_request?: string;
+  exercises_completed?: Record<string, unknown>[];
+  top_sets: TopSetLog[];
+  created_at?: string;
+}
+
+export interface TopSetLog {
+  id: number;
+  movement_id: number;
+  movement_name?: string;
+  weight: number;
+  reps: number;
+  rpe?: number;
+  e1rm?: number;
+  is_pr: boolean;
+}
+
+export interface SorenessLogCreate {
+  log_date?: string;
+  body_part: string;
+  soreness_1_5: number;
+  notes?: string;
+}
+
+export interface SorenessLog {
+  id: number;
+  log_date?: string;
+  body_part: string;
+  soreness_1_5: number;
+  notes?: string;
+}
+
+export interface RecoverySignalCreate {
+  log_date?: string;
+  source?: RecoverySource;
+  hrv?: number;
+  resting_hr?: number;
+  sleep_score?: number;
+  sleep_hours?: number;
+  readiness?: number;
+  raw_payload?: Record<string, unknown>;
+  notes?: string;
+}
+
+export interface RecoverySignal {
+  id: number;
+  log_date?: string;
+  source: RecoverySource;
+  hrv?: number;
+  resting_hr?: number;
+  sleep_score?: number;
+  sleep_hours?: number;
+  readiness?: number;
+  notes?: string;
+}
+
+// ========================================
+// SETTINGS TYPES
+// ========================================
+
+export interface UserSettings {
+  id: number;
+  persona_coaching_style?: string;
+  persona_strictness?: number;
+  persona_humor?: number;
+  persona_explanation_level?: number;
+  notification_preference?: string;
+  preferred_units?: string;
+  default_session_duration_minutes?: number;
+  e1rm_formula?: string;
+}
+
+export interface Movement {
+  id: number;
+  name: string;
+  primary_pattern?: MovementPattern;
+  secondary_patterns?: string[];
+  primary_muscles?: string[];
+  secondary_muscles?: string[];
+  primary_region?: string;
+  default_equipment?: string;
+  complexity?: number;
+  is_compound?: boolean;
+  cns_demand?: number;
+}
+
+export interface MovementRuleCreate {
+  movement_id: number;
+  rule_type: MovementRuleType | string;
+  cadence?: string;
+  notes?: string;
+}
+
+export interface MovementRule {
+  id: number;
+  movement_id: number;
+  movement_name?: string;
+  rule_type: string;
+  substitute_movement_id?: number;
+  substitute_movement_name?: string;
+  cadence?: string;
+  reason?: string;
+  notes?: string;
+}
+
+export interface EnjoyableActivityCreate {
+  activity_type: string;
+  custom_name?: string;
+  recommend_every_days?: number;
+}
+
+export interface EnjoyableActivity {
+  id: number;
+  activity_name?: string;
+  activity_type?: string;
+  category?: string;
+  typical_duration_minutes?: number;
+  recommend_every_days?: number;
+  enabled?: boolean;
+}
+
+// ========================================
+// API RESPONSE TYPES
+// ========================================
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface HealthCheck {
+  status: 'healthy' | 'unhealthy';
+  app?: string;
+  provider?: string;
+  model?: string;
+}

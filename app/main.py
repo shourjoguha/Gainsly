@@ -14,7 +14,9 @@ async def lifespan(app: FastAPI):
     # Startup: Initialize database
     await init_db()
     yield
-    # Shutdown: Cleanup (if needed)
+    # Shutdown: Cleanup resources
+    from app.llm import cleanup_llm_provider
+    await cleanup_llm_provider()
 
 
 def create_app() -> FastAPI:

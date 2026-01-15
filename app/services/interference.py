@@ -40,11 +40,14 @@ class InterferenceService:
         goal_3: Goal,
     ) -> Tuple[bool, List[str]]:
         """
-        Validate that three goals don't have disqualifying conflicts.
+        Validate that goals don't have disqualifying conflicts.
+        
+        Note: Accepts 3 goals for API compatibility, but duplicates are allowed
+        (used for padding when user selects fewer than 3 goals).
         
         Args:
             db: Database session
-            goal_1, goal_2, goal_3: The three program goals
+            goal_1, goal_2, goal_3: Program goals (may contain duplicates for padding)
         
         Returns:
             (is_valid, list_of_warnings)
@@ -52,17 +55,21 @@ class InterferenceService:
         warnings = []
         goal_list = [goal_1, goal_2, goal_3]
         
-        # Check for duplicates
-        if len(set(goal_list)) != 3:
-            return False, ["Goals must be unique"]
+        # Get unique goals only (to handle padding)
+        unique_goals = list(dict.fromkeys(goal_list))  # Preserves order, removes duplicates
+        
+        # If only 1 unique goal, no conflicts possible
+        if len(unique_goals) == 1:
+            return True, []
         
         # Load interference rules
         rules = await self._load_interference_rules(db)
         
-        # Check pairwise conflicts
-        for i in range(3):
-            for j in range(i + 1, 3):
-                g1, g2 = goal_list[i], goal_list[j]
+        # Check pairwise conflicts (only between unique goals)
+        n = len(unique_goals)
+        for i in range(n):
+            for j in range(i + 1, n):
+                g1, g2 = unique_goals[i], unique_goals[j]
                 conflict_key = f"{g1.value}_{g2.value}"
                 reverse_key = f"{g2.value}_{g1.value}"
                 

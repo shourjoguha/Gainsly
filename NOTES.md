@@ -78,6 +78,84 @@ def get_current_user_id() -> int:
 
 ---
 
+## Movement Variety & Pattern Interference System
+
+### Core Enhancement Features
+1. **Intra-Session Deduplication**: Prevents same exercise appearing multiple times within a session
+2. **Inter-Session Variety Enforcement**: Improves movement variety across the week using movement group tracking
+3. **Intelligent Replacement System**: Preserves session philosophy by replacing removed exercises with muscle-group appropriate alternatives
+4. **Pattern Interference Rules**: Enforces movement pattern diversity for main lifts across the microcycle
+
+### Pattern Interference Rules
+- **No same main pattern on consecutive training days** (Day 5 squat → Day 6 hinge)
+- **No same main pattern within 2 days** (Day 3 squat → Day 5 hinge, not squat)
+- **Maximum 2 uses per pattern per week** (squat max 2x in 7 days)
+- **Pattern priority hierarchy**: squat → hinge → lunge for lower body
+
+### Pattern Alternatives Configuration
+```python
+pattern_alternatives = {
+    "squat": ["hinge", "lunge"],           # Knee-dominant → hip-dominant
+    "hinge": ["squat", "lunge"],           # Hip-dominant → knee-dominant  
+    "lunge": ["squat", "hinge"],           # Unilateral → bilateral
+    "horizontal_push": ["vertical_push"],   # Horizontal → vertical plane
+    "vertical_pull": ["horizontal_pull"],   # Vertical → horizontal plane
+}
+```
+
+### Implementation Files
+- **`app/services/program.py`**: Added pattern interference detection and resolution
+- **`app/llm/prompts.py`**: Enhanced prompts with pattern focus context and critical pattern rules
+
+---
+
+## Frontend Implementation Strategy
+
+### Design System
+- **Color System**: Vibrant teal primary (#06B6D4), deep slate backgrounds (#1E293B), amber warnings (#F59E0B)
+- **Typography**: Inter font family with clear hierarchy (H1: 32px, H2: 24px, H3: 18px, Body: 16px)
+- **Button System**: Unified 40px height, 8px border-radius, 200ms transitions with hover effects
+- **Accessibility**: WCAG AA compliant contrast ratios, focus indicators, semantic HTML
+
+### Tech Stack
+- **Framework**: React 19 + TypeScript + Vite
+- **Routing**: TanStack Router (type-safe, modern)
+- **State**: TanStack Query (server state) + Zustand (UI state)
+- **Forms**: React Hook Form + Zod validation
+- **Styling**: Tailwind CSS with custom design tokens
+- **Testing**: Vitest + React Testing Library + MSW
+
+### Implementation Phases
+1. **Foundation** (Week 1): Project setup, component library, layout, API client
+2. **Core Features** (Week 2): Onboarding, daily plan, session adaptation with SSE streaming, workout logging
+3. **Polish** (Week 3): Settings, program history, error handling, performance optimization
+4. **Mobile** (Week 4): Responsive design, mobile refinements, documentation
+
+---
+
+## Program Creation Flow Implementation
+
+### Current State Analysis
+- Backend creates Program → Microcycles → Sessions (empty shells)
+- LLM infrastructure exists but not integrated into program creation
+- Frontend wizard collects preferences but no program display page exists
+- Dashboard shows hardcoded data instead of real API data
+
+### Implementation Strategy
+1. **Session Generation Service**: Create `app/services/session_generator.py` to populate sessions with exercises using Ollama
+2. **Integration**: Modify `program_service.create_program()` to call session generator after creating session shells
+3. **Program Detail Route**: Create `/program/$id` route to display program with sessions
+4. **Dashboard Connection**: Replace hardcoded data with real API data
+5. **Navigation Flow**: Redirect post-creation to program page instead of dashboard
+
+### Session Generation Approach
+- **Synchronous generation** for MVP (30-60s program creation but complete program)
+- Uses `SESSION_PLAN_SCHEMA` for structured JSON output
+- System prompt includes goals, session type, movement library context, progression style
+- Generates warmup, main, accessory, finisher (optional), cooldown blocks
+
+---
+
 ## API Endpoint Pattern
 
 All endpoints follow this structure:

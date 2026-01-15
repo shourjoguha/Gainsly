@@ -23,6 +23,12 @@ class GoalWeight(BaseModel):
     weight: int = Field(ge=0, le=10)
 
 
+class DisciplineWeight(BaseModel):
+    """Single discipline/training style with its weight."""
+    discipline: str  # e.g., "bodybuilding", "powerlifting", "crossfit"
+    weight: int = Field(ge=0, le=10)
+
+
 class HybridDayDefinition(BaseModel):
     """Day definition for hybrid splits."""
     day: int = Field(ge=1, le=10)
@@ -68,8 +74,8 @@ class EnjoyableActivityCreate(BaseModel):
 
 class ProgramCreate(BaseModel):
     """Schema for creating a new program."""
-    # Goals (3 required, weights must sum to 10)
-    goals: list[GoalWeight] = Field(min_length=3, max_length=3)
+    # Goals (1-3 required, weights must sum to 10)
+    goals: list[GoalWeight] = Field(min_length=1, max_length=3)
     
     # Duration
     duration_weeks: int = Field(ge=8, le=12)
@@ -77,6 +83,7 @@ class ProgramCreate(BaseModel):
     
     # Structure
     split_template: SplitTemplate
+    days_per_week: int = Field(ge=2, le=7)  # User's training frequency preference
     progression_style: ProgressionStyle
     hybrid_definition: HybridDefinition | None = None
     
@@ -86,6 +93,9 @@ class ProgramCreate(BaseModel):
     # Persona (optional - uses user defaults if not provided)
     persona_tone: PersonaTone | None = None
     persona_aggression: PersonaAggression | None = None
+    
+    # Disciplines/Training styles (optional - ten dollar method, weights sum to 10)
+    disciplines: list[DisciplineWeight] | None = None
     
     # Movement rules (optional)
     movement_rules: list[MovementRuleCreate] | None = None
@@ -159,7 +169,7 @@ class ExerciseBlock(BaseModel):
     """Exercise within a session block."""
     movement: str
     movement_id: int | None = None
-    sets: int
+    sets: int | None = None  # Optional for cooldown/stretches that only have duration
     rep_range_min: int | None = None
     rep_range_max: int | None = None
     target_rpe: float | None = None
@@ -175,6 +185,8 @@ class FinisherBlock(BaseModel):
     type: str  # EMOM, AMRAP, circuit, etc.
     duration_minutes: int | None = None
     rounds: int | None = None
+    duration_seconds: int | None = None
+    rest_seconds: int | None = None
     exercises: list[ExerciseBlock] | None = None
     notes: str | None = None
 

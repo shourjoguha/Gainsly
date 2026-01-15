@@ -1,5 +1,5 @@
 """Movement repository models."""
-from sqlalchemy import Boolean, Column, Integer, String, Text, JSON, Enum as SQLEnum
+from sqlalchemy import Boolean, Column, Integer, String, Text, JSON
 from sqlalchemy.orm import relationship
 
 from app.db.database import Base
@@ -21,14 +21,14 @@ class Movement(Base):
     name = Column(String(200), nullable=False, unique=True, index=True)
     
     # Movement classification
-    pattern = Column(SQLEnum(MovementPattern), nullable=False, index=True)
-    primary_muscle = Column(SQLEnum(PrimaryMuscle), nullable=False, index=True)
-    primary_region = Column(SQLEnum(PrimaryRegion), nullable=False, index=True)
+    pattern = Column(String(50), nullable=False, index=True)  # Stores enum value
+    primary_muscle = Column(String(50), nullable=False, index=True)  # Stores enum value
+    primary_region = Column(String(50), nullable=False, index=True)  # Stores enum value
     secondary_muscles = Column(JSON, default=list)  # List of PrimaryMuscle values
     
     # Load and complexity
-    cns_load = Column(SQLEnum(CNSLoad), nullable=False, default=CNSLoad.MODERATE)
-    skill_level = Column(SQLEnum(SkillLevel), nullable=False, default=SkillLevel.INTERMEDIATE)
+    cns_load = Column(String(50), nullable=False, default="moderate")  # Stores enum value
+    skill_level = Column(String(50), nullable=False, default="intermediate")  # Stores enum value
     
     # Movement characteristics
     compound = Column(Boolean, default=True)
@@ -36,7 +36,7 @@ class Movement(Base):
     is_unilateral = Column(Boolean, default=False)
     
     # Measurement
-    metric_type = Column(SQLEnum(MetricType), nullable=False, default=MetricType.REPS)
+    metric_type = Column(String(50), nullable=False, default="reps")  # Stores enum value
     
     # Categorization
     discipline_tags = Column(JSON, default=list)  # e.g., ["powerlifting", "olympic", "calisthenics"]

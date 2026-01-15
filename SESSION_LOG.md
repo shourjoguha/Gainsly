@@ -59,22 +59,6 @@ Session tracking for continuous development with date/time headers. A new sessio
 
 ---
 
-## Next Session Notes
-
-**Current state**: All 4 routers fully implemented. App starts successfully.
-
-**Priority for next session**:
-1. Initialize git repository and make initial commit
-2. Create GitHub issues for remaining TODO items
-3. Begin ProgramService implementation (program generation logic)
-4. Add unit/integration tests
-
-**Known limitations**:
-- No authentication (MVP uses hardcoded user_id=1)
-- No update endpoints for movement rules/enjoyable activities
-- Heuristics are read-only (by design for MVP)
-- LLM streaming requires Ollama running locally
-
 ## Session 2: 2025-12-29 16:09:26 - 16:35:00 UTC
 
 **Objective**: Implement all 5 core business logic services
@@ -98,6 +82,8 @@ Session tracking for continuous development with date/time headers. A new sessio
 - Integrate services into REST API routers
 - Add unit/integration tests for each service
 - Implement LLMService for exercise substitutions
+
+---
 
 ## Session 3: 2025-12-29 16:35:00 - 17:00:00 UTC
 
@@ -147,6 +133,8 @@ Session tracking for continuous development with date/time headers. A new sessio
 - Full end-to-end integration tests
 - Performance/load testing
 - Documentation updates
+
+---
 
 ## Session 4: 2025-12-29 17:00:00 - 17:30:00 UTC
 
@@ -199,6 +187,8 @@ Session tracking for continuous development with date/time headers. A new sessio
 **Commits in Session 4**:
 - 4044719 - Router integration (ProgramService, DeloadService, TimeEstimationService)
 - fcebba2 - End-to-end integration tests (5 full workflows)
+
+---
 
 ## Session 5: 2025-12-29 17:30:00 - 18:00:00 UTC
 
@@ -271,6 +261,8 @@ Session tracking for continuous development with date/time headers. A new sessio
 **Commits in Session 5**:
 - d34a186 - AdaptationService integration + performance testing framework (524 lines added)
 
+---
+
 ## Session 6: 2025-12-30 14:31:29 - 15:27:44 UTC
 
 **Objective**: Verify Ollama integration and redesign frontend with dark neon aesthetic
@@ -302,4 +294,69 @@ Session tracking for continuous development with date/time headers. A new sessio
 - Chunky buttons with 3D press feedback (4px shadow drop)
 - WCAG AA contrast compliant
 
-**Files Modified**: tailwind.config.ts, index.css, Button.tsx, Card.tsx, MainLayout.tsx
+---
+
+## Session 7: 2026-01-10 18:00:00 - 22:45:00 UTC
+
+**Objective**: Fix program generation issues, enhance heuristics, and add feedback features
+
+**Key Accomplishments**:
+
+1. **Fixed Program Generation Flow**:
+   - **Dynamic Split Generation**: Implemented `_generate_full_body_structure` to adapt splits dynamically to user's `days_per_week` preference (2-7 days), replacing rigid heuristic configs.
+   - **Preference Persistence**: Added `days_per_week` and `disciplines_json` to `Program` model to persist user choices.
+   - **LLM Context**: Updated `SessionGenerator` to pass full context (disciplines, movement rules, days/week) to the LLM.
+   - **Timeout Adjustment**: Increased Ollama timeout to 1100s (18+ mins) to accommodate complex multi-session generation.
+
+2. **Enhanced Heuristics & Intelligence**:
+   - **Interference Logic**: Implemented `daily_muscle_volume` tracking in `ProgramService`.
+     - Tracks volume load per muscle across the microcycle.
+     - Passes "Fatigued Muscles" list to LLM prompt to prevent back-to-back heavy loading (e.g., heavy Quads on consecutive days).
+   - **Movement Variety**: Added `used_movements` tracking within `_generate_session_content` loop.
+     - Passes "Recent History" to LLM to enforce variety and avoid repeating exercises within a week.
+   - **Supersets & Conditioning**: Updated prompts to explicitly request supersets for accessory work and allow BOTH Accessory and Finisher blocks if time permits.
+
+3. **New Feedback Features**:
+   - **Model Updates**: Added `enjoyment_rating` (1-5) and `feedback_tags` (JSON) to `WorkoutLog` model.
+   - **API Integration**: Updated `create_workout_log` endpoint and schemas to accept and store user feedback.
+
+4. **Data & Validation Improvements**:
+   - **Seeding**: Imported 82 new movements from CSV, enriching database with detailed discipline tags (CrossFit, Powerlifting, etc.) and muscle targets.
+   - **Data Normalization**: Standardized `skill_level` to numeric 1-5 scale and enforced minimum skill levels for complex patterns (Olympic lifting).
+   - **Enum Updates**: Added `CONDITIONING` and `CARDIO` to `MovementPattern` enum in both backend and frontend to support new movement types.
+
+**Technical Implementation**:
+- `ProgramService`: Now maintains state (`daily_muscle_volume`, `used_movements`) during the session generation loop.
+- `SessionGenerator`: Accepts dynamic state constraints and injects them into the `build_full_session_prompt`.
+- `Migrations`: Applied SQLite migrations for new columns (`enjoyment_rating`, `feedback_tags`, `days_per_week`, `disciplines_json`).
+
+**Status**:
+- Program creation creates correct number of days (e.g. 4) with appropriate structure.
+- Sessions include Warmup, Main, Cooldown, and Accessory/Finisher.
+- Interference rules prevent same-muscle burnout on consecutive days.
+- User feedback mechanism is ready for frontend integration.
+
+---
+
+## Session 8: 2026-01-14 [Current Session]
+
+**Objective**: Consolidate documentation and clean up project structure
+
+**Key Accomplishments**:
+
+1. **Documentation Consolidation**:
+   - Consolidated `MOVEMENT_VARIETY_ENHANCEMENTS.md`, `ShowMeGains Frontend Implementation Plan.md`, and `Complete Program Creation Flow & Display Implementation.md` into existing documentation files
+   - Enhanced `NOTES.md` with movement variety system details and frontend implementation strategy
+   - Updated `README.md` with comprehensive feature list, frontend tech stack, and testing information
+   - Preserved all important technical details while removing redundant files
+
+2. **File Organization Recommendations**:
+   - Identified temporary files for deletion: `backend.log`, `backend.pid`
+   - Recommended moving `check_program_status.py` to `scripts/` directory
+   - Suggested creating `data/` directory for database files to reduce root clutter
+
+**Technical Details**:
+- Movement variety system includes pattern interference rules and intelligent replacement
+- Frontend uses React 19 + TypeScript + Vite with comprehensive design system
+- Program creation flow integrates LLM-powered session generation
+- All documentation now consolidated into 4 core files: NOTES.md, README.md, SESSION_LOG.md, WARP.md

@@ -47,7 +47,7 @@ async def create_program(
     Create a new training program.
     
     Requires:
-    - 3 goals with weights summing to 10
+    - 1-3 goals with weights summing to 10
     - Duration of 8-12 weeks
     - Split template selection
     - Progression style selection
@@ -62,18 +62,24 @@ async def create_program(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    # Validate goals before creation
-    is_valid, warnings = await interference_service.validate_goals(
-        db,
-        program_data.goals[0].goal,
-        program_data.goals[1].goal,
-        program_data.goals[2].goal,
-    )
-    if not is_valid:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Goal validation failed: {', '.join(warnings)}"
+    # Validate goals before creation (only if multiple goals provided)
+    if len(program_data.goals) >= 2:
+        # Pad goals to 3 for validation if needed
+        goals_for_validation = [g.goal for g in program_data.goals]
+        while len(goals_for_validation) < 3:
+            goals_for_validation.append(goals_for_validation[0])  # Duplicate first goal
+        
+        is_valid, warnings = await interference_service.validate_goals(
+            db,
+            goals_for_validation[0],
+            goals_for_validation[1],
+            goals_for_validation[2],
         )
+        if not is_valid:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Goal validation failed: {', '.join(warnings)}"
+            )
     
     try:
         # Use ProgramService to create program with microcycles and sessions

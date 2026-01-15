@@ -1,160 +1,107 @@
-import { apiClient } from './client'
-import type {
-  UserSettingsUpdate,
-  UserSettingsResponse,
-  UserProfileUpdate,
-  UserProfileResponse,
-  MovementResponse,
-  MovementListResponse,
-  MovementRuleResponse,
-  MovementRuleCreate,
-  MovementRuleUpdate,
-  EnjoyableActivityResponse,
-  EnjoyableActivityCreate,
-  EnjoyableActivityUpdate,
-  HeuristicConfigListResponse,
-} from '../types/api'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiClient } from './client';
+import type { Movement, MovementPattern, MovementRule, MovementRuleCreate } from '@/types';
 
-/**
- * Settings API service
- * Endpoints: /settings/*
- */
-export const settingsApi = {
-  // ============== User Settings ==============
+// Query keys
+export const settingsKeys = {
+  all: ['settings'] as const,
+  movements: () => [...settingsKeys.all, 'movements'] as const,
+  movementsList: (filters: MovementsFilters) => [...settingsKeys.movements(), filters] as const,
+  movement: (id: number) => [...settingsKeys.movements(), id] as const,
+  movementRules: () => [...settingsKeys.all, 'movement-rules'] as const,
+};
 
-  /**
-   * Get user settings
-   * GET /settings
-   */
-  getSettings: async (): Promise<UserSettingsResponse> => {
-    return apiClient.get<UserSettingsResponse>('/settings')
-  },
+// Types
+export interface MovementsFilters {
+  pattern?: MovementPattern;
+  equipment?: string;
+  search?: string;
+  limit?: number;
+  offset?: number;
+}
 
-  /**
-   * Update user settings
-   * PUT /settings
-   */
-  updateSettings: async (data: UserSettingsUpdate): Promise<UserSettingsResponse> => {
-    return apiClient.put<UserSettingsResponse>('/settings', data)
-  },
+export interface MovementListResponse {
+  movements: Movement[];
+  total: number;
+  limit: number;
+  offset: number;
+}
 
-  // ============== User Profile ==============
+// API functions
+async function fetchMovements(filters: MovementsFilters = {}): Promise<MovementListResponse> {
+  const params = new URLSearchParams();
+  if (filters.pattern) params.append('pattern', filters.pattern);
+  if (filters.equipment) params.append('equipment', filters.equipment);
+  if (filters.search) params.append('search', filters.search);
+  if (filters.limit) params.append('limit', String(filters.limit));
+  if (filters.offset) params.append('offset', String(filters.offset));
+  
+  const { data } = await apiClient.get('/settings/movements', { params });
+  return data;
+}
 
-  /**
-   * Get user profile
-   * GET /settings/profile
-   */
-  getProfile: async (): Promise<UserProfileResponse> => {
-    return apiClient.get<UserProfileResponse>('/settings/profile')
-  },
+async function fetchMovement(id: number): Promise<Movement> {
+  const { data } = await apiClient.get(`/settings/movements/${id}`);
+  return data;
+}
 
-  /**
-   * Update user profile
-   * PUT /settings/profile
-   */
-  updateProfile: async (data: UserProfileUpdate): Promise<UserProfileResponse> => {
-    return apiClient.put<UserProfileResponse>('/settings/profile', data)
-  },
+// React Query hooks
+export function useMovements(filters: MovementsFilters = {}) {
+  return useQuery({
+    queryKey: settingsKeys.movementsList(filters),
+    queryFn: () => fetchMovements(filters),
+  });
+}
 
-  // ============== Movements ==============
+export function useMovement(id: number) {
+  return useQuery({
+    queryKey: settingsKeys.movement(id),
+    queryFn: () => fetchMovement(id),
+    enabled: !!id,
+  });
+}
 
-  /**
-   * List movements (repository)
-   * GET /settings/movements
-   */
-  listMovements: async (params?: {
-    pattern?: string
-    region?: string
-    search?: string
-    limit?: number
-    offset?: number
-  }): Promise<MovementListResponse> => {
-    return apiClient.get<MovementListResponse>('/settings/movements', { params })
-  },
+// Movement Rules (Favorites) API
+async function fetchMovementRules(): Promise<MovementRule[]> {
+  const { data } = await apiClient.get('/settings/movement-rules');
+  return data;
+}
 
-  /**
-   * Get a single movement
-   * GET /settings/movements/{id}
-   */
-  getMovement: async (id: number): Promise<MovementResponse> => {
-    return apiClient.get<MovementResponse>(`/settings/movements/${id}`)
-  },
+async function createMovementRule(rule: MovementRuleCreate): Promise<MovementRule> {
+  const { data } = await apiClient.post('/settings/movement-rules', rule);
+  return data;
+}
 
-  // ============== Movement Rules ==============
+async function deleteMovementRule(ruleId: number): Promise<void> {
+  await apiClient.delete(`/settings/movement-rules/${ruleId}`);
+}
 
-  /**
-   * Get all movement rules for the user
-   * GET /settings/movement-rules
-   */
-  listMovementRules: async (): Promise<MovementRuleResponse[]> => {
-    return apiClient.get<MovementRuleResponse[]>('/settings/movement-rules')
-  },
+// React Query hooks for movement rules
+export function useMovementRules() {
+  return useQuery({
+    queryKey: settingsKeys.movementRules(),
+    queryFn: fetchMovementRules,
+  });
+}
 
-  /**
-   * Create a movement rule
-   * POST /settings/movement-rules
-   */
-  createMovementRule: async (data: MovementRuleCreate): Promise<MovementRuleResponse> => {
-    return apiClient.post<MovementRuleResponse>('/settings/movement-rules', data)
-  },
+export function useCreateMovementRule() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: createMovementRule,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: settingsKeys.movementRules() });
+    },
+  });
+}
 
-  /**
-   * Update a movement rule
-   * PUT /settings/movement-rules/{id}
-   */
-  updateMovementRule: async (id: number, data: MovementRuleUpdate): Promise<MovementRuleResponse> => {
-    return apiClient.put<MovementRuleResponse>(`/settings/movement-rules/${id}`, data)
-  },
-
-  /**
-   * Delete a movement rule
-   * DELETE /settings/movement-rules/{id}
-   */
-  deleteMovementRule: async (id: number): Promise<{ success: boolean }> => {
-    return apiClient.delete<{ success: boolean }>(`/settings/movement-rules/${id}`)
-  },
-
-  // ============== Enjoyable Activities ==============
-
-  /**
-   * Get all enjoyable activities for the user
-   * GET /settings/enjoyable-activities
-   */
-  listEnjoyableActivities: async (): Promise<EnjoyableActivityResponse[]> => {
-    return apiClient.get<EnjoyableActivityResponse[]>('/settings/enjoyable-activities')
-  },
-
-  /**
-   * Create an enjoyable activity
-   * POST /settings/enjoyable-activities
-   */
-  createEnjoyableActivity: async (data: EnjoyableActivityCreate): Promise<EnjoyableActivityResponse> => {
-    return apiClient.post<EnjoyableActivityResponse>('/settings/enjoyable-activities', data)
-  },
-
-  /**
-   * Update an enjoyable activity
-   * PUT /settings/enjoyable-activities/{id}
-   */
-  updateEnjoyableActivity: async (id: number, data: EnjoyableActivityUpdate): Promise<EnjoyableActivityResponse> => {
-    return apiClient.put<EnjoyableActivityResponse>(`/settings/enjoyable-activities/${id}`, data)
-  },
-
-  /**
-   * Delete an enjoyable activity
-   * DELETE /settings/enjoyable-activities/{id}
-   */
-  deleteEnjoyableActivity: async (id: number): Promise<{ success: boolean }> => {
-    return apiClient.delete<{ success: boolean }>(`/settings/enjoyable-activities/${id}`)
-  },
-
-  // ============== Heuristics (Read-Only) ==============
-
-  /**
-   * Get all heuristic configurations
-   * GET /settings/heuristics
-   */
-  listHeuristics: async (): Promise<HeuristicConfigListResponse> => {
-    return apiClient.get<HeuristicConfigListResponse>('/settings/heuristics')
-  },
+export function useDeleteMovementRule() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: deleteMovementRule,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: settingsKeys.movementRules() });
+    },
+  });
 }

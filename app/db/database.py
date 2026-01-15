@@ -1,4 +1,5 @@
 """Database connection and session management."""
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 
@@ -10,6 +11,10 @@ engine = create_async_engine(
     settings.database_url,
     echo=settings.debug,
     future=True,
+    connect_args={
+        "check_same_thread": False,
+        "timeout": 30,
+    } if settings.database_url.startswith("sqlite") else {},
 )
 
 async_session_maker = async_sessionmaker(
@@ -39,5 +44,12 @@ async def get_db() -> AsyncSession:
 
 async def init_db():
     """Initialize database tables."""
+    # Enable WAL mode for SQLite to support concurrent access
+    if settings.database_url.startswith("sqlite"):
+        async with engine.connect() as conn:
+            await conn.execute(text("PRAGMA journal_mode=WAL"))
+            await conn.execute(text("PRAGMA busy_timeout=30000"))
+            await conn.commit()
+    
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

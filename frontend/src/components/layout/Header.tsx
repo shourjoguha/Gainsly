@@ -1,79 +1,55 @@
-import React from 'react'
-import { clsx } from 'clsx'
-import { Bars3Icon, UserCircleIcon } from '@heroicons/react/24/outline'
+import { Link, useRouter } from '@tanstack/react-router';
+import { Bell, Menu, ArrowLeft } from 'lucide-react';
+import { useUIStore } from '@/stores/ui-store';
+import { cn } from '@/lib/utils';
 
-interface HeaderProps {
-  onMenuToggle?: () => void
-  className?: string
-}
+export function Header() {
+  const router = useRouter();
+  const { toggleMenu } = useUIStore();
+  
+  const canGoBack = router.history.length > 1;
+  const isRootPath = router.state.location.pathname === '/';
 
-const Header: React.FC<HeaderProps> = ({ onMenuToggle, className }) => {
   return (
-    <header
-      className={clsx(
-        'h-16 px-4 sm:px-6',
-        'bg-white border-b border-secondary-200',
-        'flex items-center justify-between',
-        'flex-shrink-0 z-30', // Prevent shrinking, keep z-index
-        className
-      )}
-    >
-      {/* Left side: Menu button (mobile) + Logo */}
-      <div className="flex items-center gap-3">
-        <button
-          onClick={onMenuToggle}
-          className={clsx(
-            'lg:hidden p-2 -ml-2',
-            'rounded-lg text-secondary-600',
-            'hover:bg-secondary-100',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500'
+    <header className="sticky top-0 z-40 safe-top bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+      <div className="container-app flex h-14 items-center justify-between">
+        {/* Left side - Back button or Logo */}
+        <div className="flex items-center gap-2">
+          {!isRootPath && canGoBack ? (
+            <button
+              onClick={() => router.history.back()}
+              className="flex h-10 w-10 items-center justify-center rounded-lg text-foreground-muted transition-colors hover:bg-background-elevated hover:text-foreground"
+              aria-label="Go back"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+          ) : (
+            <Link to="/" className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent">
+                <span className="text-sm font-bold text-background">G</span>
+              </div>
+              <span className="text-lg font-semibold text-foreground">Gainsly</span>
+            </Link>
           )}
-          aria-label="Toggle menu"
-        >
-          <Bars3Icon className="w-6 h-6" />
-        </button>
+        </div>
 
-        {/* Logo */}
-        <a
-          href="/"
-          className="flex items-center gap-2 text-secondary-900 hover:text-primary-600 transition-colors"
-        >
-          <svg
-            className="w-8 h-8 text-primary-500"
-            viewBox="0 0 32 32"
-            fill="currentColor"
+        {/* Right side - Notifications and Menu */}
+        <div className="flex items-center gap-1">
+          <button
+            className="flex h-10 w-10 items-center justify-center rounded-lg text-foreground-muted transition-colors hover:bg-background-elevated hover:text-foreground"
+            aria-label="Notifications"
           >
-            <path d="M16 2L4 8v16l12 6 12-6V8L16 2zm0 4l8 4v8l-8 4-8-4v-8l8-4z" />
-            <circle cx="16" cy="16" r="4" />
-          </svg>
-          <span className="text-xl font-bold tracking-tight hidden sm:block">
-            ShowMeGains
-          </span>
-        </a>
-      </div>
-
-      {/* Center: Quick stats or breadcrumb (expandable) */}
-      <div className="hidden md:flex items-center gap-4 text-sm text-secondary-600">
-        {/* Could show current program info, week number, etc. */}
-      </div>
-
-      {/* Right side: User menu */}
-      <div className="flex items-center gap-2">
-        <button
-          className={clsx(
-            'flex items-center gap-2 p-2',
-            'rounded-lg text-secondary-600',
-            'hover:bg-secondary-100',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500'
-          )}
-          aria-label="User menu"
-        >
-          <UserCircleIcon className="w-6 h-6" />
-          <span className="hidden sm:block text-sm font-medium">User</span>
-        </button>
+            <Bell className="h-5 w-5" />
+          </button>
+          <button
+            onClick={toggleMenu}
+            className="flex h-10 w-10 items-center justify-center rounded-lg text-foreground-muted transition-colors hover:bg-background-elevated hover:text-foreground"
+            aria-label="Open menu"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+        </div>
       </div>
     </header>
-  )
+  );
 }
-
-export default Header

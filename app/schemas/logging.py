@@ -54,6 +54,8 @@ class WorkoutLogCreate(BaseModel):
     notes: str | None = None
     perceived_exertion: int | None = Field(default=None, ge=1, le=10)
     perceived_difficulty: int | None = Field(default=None, ge=1, le=10)
+    enjoyment_rating: int | None = Field(default=None, ge=1, le=5)
+    feedback_tags: list[str] | None = None
     energy_level: int | None = Field(default=None, ge=1, le=10)
     adherence_percentage: float | None = Field(default=None, ge=0, le=100)
     coach_feedback_request: str | None = None
@@ -72,6 +74,8 @@ class WorkoutLogResponse(BaseModel):
     notes: str | None = None
     perceived_exertion: int | None = None
     perceived_difficulty: int | None = None
+    enjoyment_rating: int | None = None
+    feedback_tags: list[str] | None = None
     energy_level: int | None = None
     adherence_percentage: float | None = None
     coach_feedback_request: str | None = None

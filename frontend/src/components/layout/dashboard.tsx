@@ -1,0 +1,213 @@
+import { Link } from '@tanstack/react-router';
+import { Play, MessageSquare, RefreshCw, Plus, ChevronLeft, ChevronRight, Eye, History } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Spinner } from '@/components/common/Spinner';
+import { usePrograms } from '@/api/programs';
+import { useDashboardStats } from '@/api/stats';
+
+export function Dashboard() {
+  const userName = "Gain Smith";
+  
+  // Fetch active program
+  const { data: programs, isLoading: programsLoading } = usePrograms(true);
+  const activeProgram = programs?.[0];
+  
+  // Fetch dashboard stats
+  const { data: stats, isLoading: statsLoading } = useDashboardStats();
+  
+  // Determine current week (from active program's microcycle)
+  const currentWeek = 1; // Will be dynamic when we have active microcycle data
+  const weekPhase = activeProgram ? "Active" : "No Program";
+
+  // Format helpers
+  const formatWeight = (weight: number | null | undefined) => {
+    if (weight === null || weight === undefined) return "—";
+    return `${weight}kg`;
+  };
+  
+  const formatDuration = (minutes: number | null | undefined) => {
+    if (minutes === null || minutes === undefined) return "—";
+    return `${minutes}m`;
+  };
+  
+  const formatDate = (dateStr: string | null | undefined) => {
+    if (!dateStr) return "";
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' });
+  };
+  
+  const formatPercentage = (value: number | null | undefined) => {
+    if (value === null || value === undefined) return "—";
+    return `${Math.round(value)}%`;
+  };
+
+  return (
+    <div className="container-app py-6 space-y-6 animate-fade-in">
+      {/* Header title */}
+      <h1 className="text-xl font-semibold">{userName}'s Dashboard</h1>
+
+      {/* Week navigation */}
+      <div className="flex items-center justify-between">
+        <button className="p-2 text-foreground-muted hover:text-foreground transition-colors">
+          <ChevronLeft className="h-5 w-5" />
+        </button>
+        <div className="text-center">
+          <span className="font-semibold">Week {currentWeek}</span>
+          <span className="ml-2 text-foreground-muted">{weekPhase}</span>
+        </div>
+        <button className="p-2 text-foreground-muted hover:text-foreground transition-colors">
+          <ChevronRight className="h-5 w-5" />
+        </button>
+      </div>
+
+      {/* Primary CTA - Select/Start Workout */}
+      {activeProgram ? (
+        <Button variant="cta" size="lg" className="w-full" asChild>
+          <Link to="/program/$programId" params={{ programId: String(activeProgram.id) }}>
+            <Play className="h-5 w-5 mr-2" />
+            View Program
+            <ChevronRight className="h-5 w-5 ml-auto" />
+          </Link>
+        </Button>
+      ) : (
+        <Button variant="cta" size="lg" className="w-full" asChild>
+          <Link to="/program/new">
+            <Plus className="h-5 w-5 mr-2" />
+            Create Your First Program
+            <ChevronRight className="h-5 w-5 ml-auto" />
+          </Link>
+        </Button>
+      )}
+
+      {/* Secondary actions */}
+      <div className="flex gap-3">
+        <Button variant="secondary" className="flex-1" asChild>
+          <Link to="/">
+            <MessageSquare className="h-4 w-4 mr-2" />
+            Adapt Session
+          </Link>
+        </Button>
+        <Button variant="secondary" className="flex-1" asChild>
+          <Link to="/program/new">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            New Program
+          </Link>
+        </Button>
+        {activeProgram && (
+          <Button variant="ghost" size="icon" aria-label="View program" asChild>
+            <Link to="/program/$programId" params={{ programId: String(activeProgram.id) }}>
+              <Eye className="h-4 w-4" />
+            </Link>
+          </Button>
+        )}
+        <Button variant="ghost" size="icon" aria-label="History">
+          <History className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {/* Log custom workout */}
+      <Button variant="outline" className="w-full" asChild>
+        <Link to="/">
+          <Plus className="h-4 w-4 mr-2" />
+          Log Custom Workout
+        </Link>
+      </Button>
+
+      {/* Stats cards - top row */}
+      {statsLoading ? (
+        <div className="flex justify-center py-4">
+          <Spinner size="sm" />
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-3 gap-3">
+            <StatCard 
+              value={stats?.heaviest_lift ? formatWeight(stats.heaviest_lift.weight) : "—"}
+              label="Heaviest Lift" 
+              sublabel={stats?.heaviest_lift?.movement || ""}
+            />
+            <StatCard 
+              value={stats?.longest_workout ? formatDuration(stats.longest_workout.minutes) : "—"}
+              label="Longest Workout" 
+              sublabel={stats?.longest_workout ? formatDate(stats.longest_workout.date) : ""}
+            />
+            <StatCard 
+              value={formatWeight(stats?.total_volume_this_month)}
+              label="Volume This Month" 
+            />
+          </div>
+
+          {/* Stats cards - bottom row */}
+          <div className="grid grid-cols-3 gap-3">
+            <StatCard 
+              value={String(stats?.total_workouts ?? 0)} 
+              label="Workouts Done" 
+            />
+            <StatCard 
+              value={String(stats?.week_streak ?? 0)} 
+              label="Week Streak" 
+            />
+            <StatCard 
+              value={formatPercentage(stats?.average_adherence)} 
+              label="Adherence" 
+            />
+          </div>
+        </>
+      )}
+
+      {/* Program status card */}
+      {programsLoading ? (
+        <Card className="p-6 text-center">
+          <Spinner size="sm" />
+        </Card>
+      ) : activeProgram ? (
+        <Card className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm text-foreground-muted">Active Program</div>
+              <div className="font-medium capitalize">
+                {activeProgram.split_template.replace('_', ' ')}
+              </div>
+              <div className="text-xs text-foreground-muted">
+                {activeProgram.duration_weeks} weeks
+              </div>
+            </div>
+            <Link 
+              to="/program/$programId" 
+              params={{ programId: String(activeProgram.id) }}
+              className="text-accent hover:underline text-sm"
+            >
+              View Details →
+            </Link>
+          </div>
+        </Card>
+      ) : (
+        <Card className="p-6 text-center">
+          <div className="text-foreground-muted">No active program</div>
+          <Link to="/program/new" className="text-accent hover:underline text-sm mt-2 inline-block">
+            Create one now
+          </Link>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+interface StatCardProps {
+  value: string;
+  label: string;
+  sublabel?: string;
+}
+
+function StatCard({ value, label, sublabel }: StatCardProps) {
+  return (
+    <Card className="p-4 text-center">
+      <div className="text-2xl font-bold text-accent">{value}</div>
+      <div className="text-xs text-foreground-muted mt-1">{label}</div>
+      {sublabel && (
+        <div className="text-xs text-foreground-subtle mt-0.5">{sublabel}</div>
+      )}
+    </Card>
+  );
+}

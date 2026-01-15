@@ -19,13 +19,15 @@ class MovementPattern(str, Enum):
     ISOLATION = "isolation"
     MOBILITY = "mobility"
     ISOMETRIC = "isometric"
+    CONDITIONING = "conditioning"
+    CARDIO = "cardio"
 
 class PrimaryRegion(str, Enum):
     ANTERIOR_LOWER = "anterior lower"
     POSTERIOR_LOWER = "posterior lower"
     SHOULDER = "shoulder"
     ANTERIOR_UPPER = "anterior upper"
-    POSTERIOR_UPPER = "anterrior lower"
+    POSTERIOR_UPPER = "posterior upper"
     FULL_BODY = "full body"
 
 class PrimaryMuscle(str, Enum):

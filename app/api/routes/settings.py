@@ -121,18 +121,14 @@ async def list_movement_rules(
     responses = []
     for rule in rules:
         movement = await db.get(Movement, rule.movement_id)
-        substitute = None
-        if rule.substitute_movement_id:
-            substitute = await db.get(Movement, rule.substitute_movement_id)
         
         responses.append(MovementRuleResponse(
             id=rule.id,
             movement_id=rule.movement_id,
             movement_name=movement.name if movement else "Unknown",
-            rule_type=rule.rule_type,
-            substitute_movement_id=rule.substitute_movement_id,
-            substitute_movement_name=substitute.name if substitute else None,
-            reason=rule.reason,
+            rule_type=rule.rule_type.value if rule.rule_type else None,
+            cadence=rule.cadence.value if rule.cadence else None,
+            notes=rule.notes,
         ))
     
     return responses
@@ -145,24 +141,33 @@ async def create_movement_rule(
     user_id: int = Depends(get_current_user_id),
 ):
     """Create a new movement rule (exclude, substitute, prefer)."""
+    from app.models.enums import MovementRuleType, RuleCadence
+    
     # Verify movement exists
     movement = await db.get(Movement, rule.movement_id)
     if not movement:
         raise HTTPException(status_code=404, detail="Movement not found")
     
-    # Verify substitute if provided
-    substitute = None
-    if rule.substitute_movement_id:
-        substitute = await db.get(Movement, rule.substitute_movement_id)
-        if not substitute:
-            raise HTTPException(status_code=404, detail="Substitute movement not found")
+    # Parse rule_type enum
+    try:
+        rule_type_enum = MovementRuleType(rule.rule_type.upper())
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Invalid rule_type: {rule.rule_type}")
+    
+    # Parse cadence enum if provided
+    cadence_enum = RuleCadence.PER_MICROCYCLE
+    if rule.cadence:
+        try:
+            cadence_enum = RuleCadence(rule.cadence.upper())
+        except ValueError:
+            pass  # Use default
     
     movement_rule = UserMovementRule(
         user_id=user_id,
         movement_id=rule.movement_id,
-        rule_type=rule.rule_type,
-        substitute_movement_id=rule.substitute_movement_id,
-        reason=rule.reason,
+        rule_type=rule_type_enum,
+        cadence=cadence_enum,
+        notes=rule.notes,
     )
     db.add(movement_rule)
     await db.commit()
@@ -171,10 +176,9 @@ async def create_movement_rule(
         id=movement_rule.id,
         movement_id=movement_rule.movement_id,
         movement_name=movement.name,
-        rule_type=movement_rule.rule_type,
-        substitute_movement_id=movement_rule.substitute_movement_id,
-        substitute_movement_name=substitute.name if substitute else None,
-        reason=movement_rule.reason,
+        rule_type=movement_rule.rule_type.value,
+        cadence=movement_rule.cadence.value if movement_rule.cadence else None,
+        notes=movement_rule.notes,
     )
 
 
@@ -325,9 +329,7 @@ async def list_movements(
     query = select(Movement)
     
     if pattern:
-        query = query.where(Movement.primary_pattern == pattern)
-    if equipment:
-        query = query.where(Movement.default_equipment == equipment)
+        query = query.where(Movement.pattern == pattern)
     if search:
         query = query.where(Movement.name.ilike(f"%{search}%"))
     
@@ -335,9 +337,7 @@ async def list_movements(
     from sqlalchemy import func
     count_query = select(func.count(Movement.id))
     if pattern:
-        count_query = count_query.where(Movement.primary_pattern == pattern)
-    if equipment:
-        count_query = count_query.where(Movement.default_equipment == equipment)
+        count_query = count_query.where(Movement.pattern == pattern)
     if search:
         count_query = count_query.where(Movement.name.ilike(f"%{search}%"))
     
@@ -354,15 +354,15 @@ async def list_movements(
             MovementResponse(
                 id=m.id,
                 name=m.name,
-                primary_pattern=m.primary_pattern,
-                secondary_patterns=m.secondary_patterns_json,
-                primary_muscles=m.primary_muscles_json,
-                secondary_muscles=m.secondary_muscles_json,
+                primary_pattern=m.pattern,
+                secondary_patterns=m.secondary_muscles,
+                primary_muscles=[m.primary_muscle],
+                secondary_muscles=m.secondary_muscles,
                 primary_region=m.primary_region,
-                default_equipment=m.default_equipment,
-                complexity=m.complexity,
-                is_compound=m.is_compound,
-                cns_demand=m.cns_demand,
+                default_equipment=m.equipment_tags[0] if m.equipment_tags else None,
+                complexity=m.skill_level,
+                is_compound=m.compound,
+                cns_load=m.cns_load,
             )
             for m in movements
         ],
@@ -386,13 +386,13 @@ async def get_movement(
     return MovementResponse(
         id=movement.id,
         name=movement.name,
-        primary_pattern=movement.primary_pattern,
-        secondary_patterns=movement.secondary_patterns_json,
-        primary_muscles=movement.primary_muscles_json,
-        secondary_muscles=movement.secondary_muscles_json,
+        primary_pattern=movement.pattern,
+        secondary_patterns=movement.secondary_muscles,
+        primary_muscles=[movement.primary_muscle],
+        secondary_muscles=movement.secondary_muscles,
         primary_region=movement.primary_region,
-        default_equipment=movement.default_equipment,
-        complexity=movement.complexity,
-        is_compound=movement.is_compound,
-        cns_demand=movement.cns_demand,
+        default_equipment=movement.equipment_tags[0] if movement.equipment_tags else None,
+        complexity=movement.skill_level,
+        is_compound=movement.compound,
+        cns_load=movement.cns_load,
     )

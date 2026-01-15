@@ -41,11 +41,16 @@ class Program(Base):
     
     # Program structure
     split_template = Column(SQLEnum(SplitTemplate), nullable=False)
+    days_per_week = Column(Integer, nullable=False)  # User's training frequency (2-7)
     progression_style = Column(SQLEnum(ProgressionStyle), nullable=False)
     
     # Hybrid split definition (for SplitTemplate.HYBRID)
     # Stores the custom day-by-day structure or block composition
     hybrid_definition = Column(JSON, nullable=True)
+    
+    # Disciplines/Training styles snapshot (ten-dollar method weights)
+    # Format: [{"discipline": "powerlifting", "weight": 5}, {"discipline": "crossfit", "weight": 5}]
+    disciplines_json = Column(JSON, nullable=True)
     
     # Deload configuration
     deload_every_n_microcycles = Column(Integer, nullable=False, default=4)

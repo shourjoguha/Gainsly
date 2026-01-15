@@ -70,6 +70,8 @@ async def create_workout_log(
         coach_feedback_request=log.coach_feedback_request,
         exercises_completed_json=log.exercises_completed,
         notes=log.notes,
+        enjoyment_rating=log.enjoyment_rating,
+        feedback_tags=log.feedback_tags,
     )
     db.add(workout_log)
     await db.flush()
@@ -167,6 +169,8 @@ async def create_workout_log(
         coach_feedback_request=workout_log.coach_feedback_request,
         exercises_completed=workout_log.exercises_completed_json,
         notes=workout_log.notes,
+        enjoyment_rating=workout_log.enjoyment_rating,
+        feedback_tags=workout_log.feedback_tags,
         top_sets=top_sets_response,
     )
 
@@ -239,6 +243,8 @@ async def list_workout_logs(
             coach_feedback_request=log.coach_feedback_request,
             exercises_completed=log.exercises_completed_json,
             notes=log.notes,
+            enjoyment_rating=log.enjoyment_rating,
+            feedback_tags=log.feedback_tags,
             top_sets=top_set_responses,
         ))
     
@@ -294,6 +300,8 @@ async def get_workout_log(
         coach_feedback_request=log.coach_feedback_request,
         exercises_completed=log.exercises_completed_json,
         notes=log.notes,
+        enjoyment_rating=log.enjoyment_rating,
+        feedback_tags=log.feedback_tags,
         top_sets=top_set_responses,
     )
 
@@ -460,6 +468,134 @@ async def get_latest_recovery(
         hrv=signal.hrv,
         resting_hr=signal.resting_hr,
     )
+
+
+# Dashboard stats
+@router.get("/stats")
+async def get_dashboard_stats(
+    db: AsyncSession = Depends(get_db),
+    user_id: int = Depends(get_current_user_id),
+):
+    """
+    Get aggregated stats for the dashboard.
+    
+    Returns workout count, streak, heaviest lift, total volume, etc.
+    """
+    from datetime import timedelta
+    from sqlalchemy import desc
+    
+    today = date.today()
+    month_start = today.replace(day=1)
+    
+    # Total workouts
+    total_workouts_result = await db.execute(
+        select(func.count(WorkoutLog.id)).where(WorkoutLog.user_id == user_id)
+    )
+    total_workouts = total_workouts_result.scalar() or 0
+    
+    # Workouts this month
+    month_workouts_result = await db.execute(
+        select(func.count(WorkoutLog.id)).where(
+            and_(
+                WorkoutLog.user_id == user_id,
+                WorkoutLog.date >= month_start
+            )
+        )
+    )
+    workouts_this_month = month_workouts_result.scalar() or 0
+    
+    # Calculate week streak (consecutive weeks with at least one workout)
+    # Get all workout dates
+    dates_result = await db.execute(
+        select(WorkoutLog.date)
+        .where(WorkoutLog.user_id == user_id)
+        .order_by(desc(WorkoutLog.date))
+    )
+    workout_dates = [row[0] for row in dates_result.fetchall()]
+    
+    week_streak = 0
+    if workout_dates:
+        # Get current week's Monday
+        current_week_monday = today - timedelta(days=today.weekday())
+        checking_week = current_week_monday
+        
+        while True:
+            week_end = checking_week + timedelta(days=6)
+            has_workout = any(
+                checking_week <= d <= week_end for d in workout_dates
+            )
+            if has_workout:
+                week_streak += 1
+                checking_week -= timedelta(days=7)
+            else:
+                break
+    
+    # Heaviest lift (by e1RM)
+    heaviest_result = await db.execute(
+        select(TopSetLog, Movement)
+        .join(WorkoutLog)
+        .join(Movement, TopSetLog.movement_id == Movement.id)
+        .where(WorkoutLog.user_id == user_id)
+        .order_by(desc(TopSetLog.e1rm_value))
+        .limit(1)
+    )
+    heaviest_row = heaviest_result.first()
+    heaviest_lift = None
+    if heaviest_row:
+        top_set, movement = heaviest_row
+        heaviest_lift = {
+            "weight": top_set.weight,
+            "movement": movement.name,
+            "e1rm": top_set.e1rm_value,
+        }
+    
+    # Longest workout (by duration)
+    longest_result = await db.execute(
+        select(WorkoutLog)
+        .where(
+            and_(
+                WorkoutLog.user_id == user_id,
+                WorkoutLog.actual_duration_minutes.isnot(None),
+            )
+        )
+        .order_by(
+            desc(WorkoutLog.actual_duration_minutes)
+        )
+        .limit(1)
+    )
+    longest_workout = longest_result.scalar_one_or_none()
+    longest_duration = None
+    if longest_workout and longest_workout.actual_duration_minutes:
+        longest_duration = {
+            "minutes": longest_workout.actual_duration_minutes,
+            "date": longest_workout.date.isoformat() if longest_workout.date else None,
+        }
+    
+    # Total volume this month (sum of weight * reps for all top sets)
+    volume_result = await db.execute(
+        select(func.sum(TopSetLog.weight * TopSetLog.reps))
+        .join(WorkoutLog)
+        .where(
+            and_(
+                WorkoutLog.user_id == user_id,
+                WorkoutLog.date >= month_start
+            )
+        )
+    )
+    total_volume = volume_result.scalar() or 0
+    
+    # Note: adherence_percentage field doesn't exist in WorkoutLog model yet
+    # TODO: Add adherence tracking when workout logging is implemented
+    
+    return {
+        "total_workouts": total_workouts,
+        "workouts_this_month": workouts_this_month,
+        "week_streak": week_streak,
+        "heaviest_lift": heaviest_lift,
+        "longest_workout": longest_duration,
+        "total_volume_this_month": round(total_volume, 1),
+        "average_adherence": None,  # Not tracked yet
+    }
 
 
 # Pattern exposure

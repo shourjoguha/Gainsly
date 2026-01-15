@@ -84,6 +84,8 @@ User -> Programs -> Microcycles -> Sessions -> SessionExercises
 #### Key Services
 - **Metrics Service** (`app/services/metrics.py`): e1RM calculations and Pattern Strength Index (PSI)
 - **Time Estimation Service** (`app/services/time_estimation.py`): Session duration predictions
+- **Program Service** (`app/services/program.py`): Program generation with pattern interference rules
+- **Session Generator** (`app/services/session_generator.py`): LLM-powered session creation
 - **LLM Integration** (`app/llm/`): Abstraction layer for LLM providers (currently Ollama)
 
 #### LLM Integration
@@ -103,23 +105,30 @@ Sessions have flexible, optional sections stored as JSON:
 - **Pattern Strength Index (PSI)**: Tracks strength across movement patterns
 - **Top Set Logging**: Key performance indicators for progression
 
+#### Movement Variety System
+- **Pattern Interference Rules**: Prevents same movement patterns on consecutive days
+- **Intra-Session Deduplication**: No exercise appears twice in same session
+- **Inter-Session Variety**: Tracks movement usage across the week
+- **Intelligent Replacement**: Preserves session philosophy when removing duplicates
+
 ### Testing Strategy
 - Tests use in-memory SQLite with async sessions (defined in `conftest.py`)
 - Fixtures provide test data for users, movements, programs, and logs
 - Service tests focus on business logic isolation
+- Performance testing with Locust framework
 
 ### Frontend Architecture
 - **React 19** with TypeScript
 - **TanStack Router** for routing
 - **React Query** for server state management
-- **Tailwind CSS** for styling
+- **Tailwind CSS** for styling with dark neon theme
 - **Zustand** for client-side state management
 - **React Hook Form** for form handling
 
 ### Data Flow
 1. User creates a program with goals and split template
 2. Microcycles are generated (7-10 day blocks)
-3. Sessions are planned within microcycles
+3. Sessions are planned within microcycles with LLM-generated exercises
 4. Daily adaptation adjusts sessions based on constraints and recovery
 5. Workout logs drive progression and PSI calculations
 
@@ -141,10 +150,18 @@ The system supports real-time session adaptation using SSE (Server-Sent Events) 
 - Equipment availability
 - Recovery status
 
+### Pattern Interference System
+The movement variety system prevents:
+- Same exercise appearing multiple times in one session
+- Same movement patterns on consecutive training days
+- Excessive muscle group fatigue through intelligent tracking
+- Poor recovery management through pattern rotation
+
 ### Key Directories
 - `app/models/`: Database models and enums
 - `app/api/routes/`: API endpoint definitions
 - `app/services/`: Business logic and calculations
-- `app/llm/`: LLM provider abstractions
+- `app/llm/`: LLM provider abstractions and prompts
 - `seed_data/`: Default data for movement library and configurations
 - `tests/`: Test suite with fixtures
+- `frontend/src/`: React application with component library

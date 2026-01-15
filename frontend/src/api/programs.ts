@@ -1,80 +1,87 @@
-import { apiClient } from './client'
-import type {
-  ProgramCreate,
-  ProgramResponse,
-  ProgramWithMicrocycleResponse,
-  MicrocycleResponse,
-  SessionResponse,
-} from '../types/api'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiClient } from './client';
+import type { Program, ProgramCreate, ProgramWithMicrocycle } from '@/types';
 
-/**
- * Programs API service
- * Endpoints: /programs/*
- */
-export const programsApi = {
-  /**
-   * Create a new program
-   * POST /programs
-   */
-  create: async (data: ProgramCreate): Promise<ProgramResponse> => {
-    return apiClient.post<ProgramResponse>('/programs', data)
-  },
+// Query keys
+export const programKeys = {
+  all: ['programs'] as const,
+  lists: () => [...programKeys.all, 'list'] as const,
+  list: (filters: { active_only?: boolean }) => [...programKeys.lists(), filters] as const,
+  details: () => [...programKeys.all, 'detail'] as const,
+  detail: (id: number) => [...programKeys.details(), id] as const,
+};
 
-  /**
-   * Get all programs for the current user
-   * GET /programs
-   */
-  list: async (params?: { active_only?: boolean }): Promise<ProgramResponse[]> => {
-    return apiClient.get<ProgramResponse[]>('/programs', { params })
-  },
+// API functions
+async function fetchPrograms(activeOnly = false): Promise<Program[]> {
+  const params = activeOnly ? { active_only: true } : {};
+  const { data } = await apiClient.get('/programs', { params });
+  return data;
+}
 
-  /**
-   * Get a single program by ID
-   * GET /programs/{id}
-   */
-  get: async (id: number): Promise<ProgramWithMicrocycleResponse> => {
-    return apiClient.get<ProgramWithMicrocycleResponse>(`/programs/${id}`)
-  },
+async function fetchProgram(id: number): Promise<ProgramWithMicrocycle> {
+  const { data } = await apiClient.get(`/programs/${id}`);
+  return data;
+}
 
-  /**
-   * Update a program
-   * PUT /programs/{id}
-   */
-  update: async (id: number, data: Partial<ProgramCreate>): Promise<ProgramResponse> => {
-    return apiClient.put<ProgramResponse>(`/programs/${id}`, data)
-  },
+async function createProgram(program: ProgramCreate): Promise<Program> {
+  const { data } = await apiClient.post('/programs', program);
+  return data;
+}
 
-  /**
-   * Delete a program
-   * DELETE /programs/{id}
-   */
-  delete: async (id: number): Promise<{ success: boolean }> => {
-    return apiClient.delete<{ success: boolean }>(`/programs/${id}`)
-  },
+async function deleteProgram(id: number): Promise<void> {
+  await apiClient.delete(`/programs/${id}`);
+}
 
-  /**
-   * Generate the next microcycle for a program
-   * POST /programs/{id}/microcycles/generate-next
-   */
-  generateNextMicrocycle: async (programId: number): Promise<MicrocycleResponse> => {
-    return apiClient.post<MicrocycleResponse>(`/programs/${programId}/microcycles/generate-next`)
-  },
+async function activateProgram(id: number): Promise<Program> {
+  const { data } = await apiClient.patch(`/programs/${id}/activate`);
+  return data;
+}
 
-  /**
-   * Get all microcycles for a program
-   * GET /programs/{id}/microcycles
-   */
-  getMicrocycles: async (programId: number): Promise<MicrocycleResponse[]> => {
-    return apiClient.get<MicrocycleResponse[]>(`/programs/${programId}/microcycles`)
-  },
+// React Query hooks
+export function usePrograms(activeOnly = false) {
+  return useQuery({
+    queryKey: programKeys.list({ active_only: activeOnly }),
+    queryFn: () => fetchPrograms(activeOnly),
+  });
+}
 
-  /**
-   * Get sessions for a microcycle
-   * GET /programs/{program_id}/microcycles/{microcycle_id}/sessions
-   */
-  getSessions: async (programId: number, microcycleId: number): Promise<SessionResponse[]> => {
-    return apiClient.get<SessionResponse[]>(
-      `/programs/${programId}/microcycles/${microcycleId}/sessions`
-    )
-  },
+export function useProgram(id: number) {
+  return useQuery({
+    queryKey: programKeys.detail(id),
+    queryFn: () => fetchProgram(id),
+    enabled: !!id,
+  });
+}
+
+export function useCreateProgram() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: createProgram,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: programKeys.all });
+    },
+  });
+}
+
+export function useDeleteProgram() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: deleteProgram,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: programKeys.all });
+    },
+  });
+}
+
+export function useActivateProgram() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: activateProgram,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: programKeys.all });
+    },
+  });
 }

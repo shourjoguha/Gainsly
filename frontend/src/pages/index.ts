@@ -1,6 +1,0 @@
-export { default as Home } from './Home'
-export { default as DailyPlan } from './DailyPlan'
-export { default as Onboarding } from './Onboarding'
-export { default as Logging } from './Logging'
-export { default as Settings } from './Settings'
-export { default as Programs } from './Programs'
