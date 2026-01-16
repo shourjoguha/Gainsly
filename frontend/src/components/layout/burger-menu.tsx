@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { X, Users, Settings, Dumbbell, Heart } from 'lucide-react';
+import { X, Users, Settings, Dumbbell, Heart, History, Flame } from 'lucide-react';
 import { useUIStore } from '@/stores/ui-store';
 import { cn } from '@/lib/utils';
 
@@ -7,6 +7,8 @@ export function BurgerMenu() {
   const { isMenuOpen, setMenuOpen } = useUIStore();
 
   const menuItems = [
+    { to: '/programs', label: 'Programs', icon: History },
+    { to: '/circuits', label: 'Circuits', icon: Flame },
     { to: '/favorites', label: 'Favorites', icon: Heart },
     { to: '/movements', label: 'Movements', icon: Dumbbell },
     { to: '/friends', label: 'Friends', icon: Users },

@@ -23,6 +23,7 @@ from app.schemas.program import (
     MicrocycleResponse,
     SessionResponse,
     ProgramWithMicrocycleResponse,
+    ProgramUpdate,
 )
 from app.services.program import program_service
 from app.services.interference import interference_service
@@ -54,6 +55,7 @@ async def create_program(
     - Progression style selection
     
     Optional:
+    - Name (for historic tracking)
     - Persona overrides
     - Movement rules
     - Enjoyable activities
@@ -307,7 +309,7 @@ async def delete_program(
     db: AsyncSession = Depends(get_db),
     user_id: int = Depends(get_current_user_id),
 ):
-    """Delete a program (soft delete by deactivating)."""
+    """Delete a program."""
     program = await db.get(Program, program_id)
     
     if not program:
@@ -316,8 +318,31 @@ async def delete_program(
     if program.user_id != user_id:
         raise HTTPException(status_code=403, detail="Not authorized")
     
-    program.is_active = False
+    await db.delete(program)
     await db.commit()
+
+
+@router.patch("/{program_id}", response_model=ProgramResponse)
+async def update_program(
+    program_id: int,
+    program_update: ProgramUpdate,
+    db: AsyncSession = Depends(get_db),
+    user_id: int = Depends(get_current_user_id),
+):
+    """Update program details (name, status)."""
+    program = await db.get(Program, program_id)
+    if not program:
+        raise HTTPException(status_code=404, detail="Program not found")
+    if program.user_id != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    update_data = program_update.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(program, field, value)
+    
+    await db.commit()
+    await db.refresh(program)
+    return program
 
 
 @router.patch("/{program_id}/activate", response_model=ProgramResponse)

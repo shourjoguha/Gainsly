@@ -122,10 +122,17 @@ class ProgramCreate(BaseModel):
         return self
 
 
+class ProgramUpdate(BaseModel):
+    """Schema for updating a program."""
+    name: str | None = None
+    is_active: bool | None = None
+
+
 class ProgramResponse(BaseModel):
     """Program response schema."""
     id: int
     user_id: int
+    name: str | None = None
     program_start_date: DateType | None = None  # Renamed to avoid shadowing
     duration_weeks: int
     goal_1: Goal

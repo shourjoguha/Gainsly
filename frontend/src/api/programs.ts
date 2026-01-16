@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from './client';
-import type { Program, ProgramCreate, ProgramWithMicrocycle } from '@/types';
+import type { Program, ProgramCreate, ProgramWithMicrocycle, ProgramUpdate } from '@/types';
 
 // Query keys
 export const programKeys = {
@@ -30,6 +30,12 @@ async function createProgram(program: ProgramCreate): Promise<Program> {
 
 async function deleteProgram(id: number): Promise<void> {
   await apiClient.delete(`/programs/${id}`);
+}
+
+async function updateProgram(params: { id: number; data: ProgramUpdate }): Promise<Program> {
+  const { id, data } = params;
+  const { data: response } = await apiClient.patch(`/programs/${id}`, data);
+  return response;
 }
 
 async function activateProgram(id: number): Promise<Program> {
@@ -80,6 +86,17 @@ export function useActivateProgram() {
   
   return useMutation({
     mutationFn: activateProgram,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: programKeys.all });
+    },
+  });
+}
+
+export function useUpdateProgram() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: updateProgram,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: programKeys.all });
     },

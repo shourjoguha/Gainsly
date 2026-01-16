@@ -125,6 +125,7 @@ class ProgramService:
         
         program = Program(
             user_id=user_id,
+            name=request.name,  # Add name from request
             split_template=request.split_template,
             days_per_week=request.days_per_week,
             start_date=start_date,

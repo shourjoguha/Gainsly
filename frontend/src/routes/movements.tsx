@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
-import { Filter, Search, Settings2, Plus, ArrowUp, ArrowDown, User, X, Check } from 'lucide-react';
+import { Filter, Search, Settings2, Plus, ArrowUp, ArrowDown, User, X } from 'lucide-react';
 import { useMovements, useCreateMovement, useMovementFilters } from '@/api/settings';
 import { 
   MovementPattern, 
@@ -163,7 +163,7 @@ function AddMovementModal({ onClose, equipmentOptions }: { onClose: () => void; 
     try {
       await createMutation.mutateAsync(formData);
       onClose();
-    } catch (err) {
+    } catch {
       setError('Failed to create movement. Name might be taken.');
     }
   };
@@ -420,8 +420,8 @@ function MovementsPage() {
 
     if (sortConfig) {
       result = [...result].sort((a, b) => {
-        let aValue: any = a[sortConfig.key as keyof Movement];
-        let bValue: any = b[sortConfig.key as keyof Movement];
+        let aValue = a[sortConfig.key as keyof Movement];
+        let bValue = b[sortConfig.key as keyof Movement];
 
         // Handle specific columns if needed
         if (sortConfig.key === 'is_compound') {
@@ -432,8 +432,11 @@ function MovementsPage() {
         if (aValue == null) aValue = '';
         if (bValue == null) bValue = '';
 
-        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
-        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+        const aString = String(aValue).toLowerCase();
+        const bString = String(bValue).toLowerCase();
+
+        if (aString < bString) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aString > bString) return sortConfig.direction === 'asc' ? 1 : -1;
         return 0;
       });
     }

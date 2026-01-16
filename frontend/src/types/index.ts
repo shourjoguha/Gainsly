@@ -128,6 +128,16 @@ export enum MovementRuleType {
   PREFERRED = 'preferred',
 }
 
+export enum CircuitType {
+  ROUNDS_FOR_TIME = 'rounds_for_time',
+  AMRAP = 'amrap',
+  EMOM = 'emom',
+  LADDER = 'ladder',
+  TABATA = 'tabata',
+  CHIPPER = 'chipper',
+  STATION = 'station',
+}
+
 export enum PersonaTone {
   DRILL_SERGEANT = 'drill_sergeant',
   SUPPORTIVE = 'supportive',
@@ -168,6 +178,7 @@ export interface DisciplineWeight {
 }
 
 export interface ProgramCreate {
+  name?: string;
   goals: GoalWeight[];
   duration_weeks: number;
   program_start_date?: string;
@@ -203,6 +214,7 @@ export interface HybridBlockComposition {
 export interface Program {
   id: number;
   user_id: number;
+  name?: string;
   program_start_date?: string;
   duration_weeks: number;
   goal_1: Goal;
@@ -212,6 +224,7 @@ export interface Program {
   goal_weight_2: number;
   goal_weight_3: number;
   split_template: SplitTemplate;
+  days_per_week: number;
   progression_style: ProgressionStyle;
   hybrid_definition?: Record<string, unknown>;
   deload_every_n_microcycles: number;
@@ -219,6 +232,11 @@ export interface Program {
   persona_aggression?: PersonaAggression;
   is_active: boolean;
   created_at?: string;
+}
+
+export interface ProgramUpdate {
+  name?: string | null;
+  is_active?: boolean;
 }
 
 export interface ProgramWithMicrocycle {
@@ -282,6 +300,22 @@ export interface FinisherBlock {
   rounds?: number;
   exercises?: ExerciseBlock[];
   notes?: string;
+}
+
+// ========================================
+// CIRCUIT TYPES
+// ========================================
+
+export interface CircuitTemplate {
+  id: number;
+  name: string;
+  description?: string;
+  circuit_type: CircuitType;
+  exercises_json: Record<string, unknown>[];
+  default_rounds?: number;
+  default_duration_seconds?: number;
+  tags: string[];
+  difficulty_tier: number;
 }
 
 // ========================================

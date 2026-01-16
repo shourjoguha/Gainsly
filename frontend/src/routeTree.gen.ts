@@ -11,9 +11,11 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TeamsRouteImport } from './routes/teams'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as ProgramsRouteImport } from './routes/programs'
 import { Route as MovementsRouteImport } from './routes/movements'
 import { Route as FriendsRouteImport } from './routes/friends'
 import { Route as FavoritesRouteImport } from './routes/favorites'
+import { Route as CircuitsRouteImport } from './routes/circuits'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProgramWizardRouteImport } from './routes/program.wizard'
 import { Route as ProgramNewRouteImport } from './routes/program.new'
@@ -30,6 +32,11 @@ const SettingsRoute = SettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProgramsRoute = ProgramsRouteImport.update({
+  id: '/programs',
+  path: '/programs',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MovementsRoute = MovementsRouteImport.update({
   id: '/movements',
   path: '/movements',
@@ -43,6 +50,11 @@ const FriendsRoute = FriendsRouteImport.update({
 const FavoritesRoute = FavoritesRouteImport.update({
   id: '/favorites',
   path: '/favorites',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CircuitsRoute = CircuitsRouteImport.update({
+  id: '/circuits',
+  path: '/circuits',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -73,9 +85,11 @@ const ProgramProgramIdRoute = ProgramProgramIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/circuits': typeof CircuitsRoute
   '/favorites': typeof FavoritesRoute
   '/friends': typeof FriendsRoute
   '/movements': typeof MovementsRoute
+  '/programs': typeof ProgramsRoute
   '/settings': typeof SettingsRoute
   '/teams': typeof TeamsRoute
   '/program/$programId': typeof ProgramProgramIdRoute
@@ -85,9 +99,11 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/circuits': typeof CircuitsRoute
   '/favorites': typeof FavoritesRoute
   '/friends': typeof FriendsRoute
   '/movements': typeof MovementsRoute
+  '/programs': typeof ProgramsRoute
   '/settings': typeof SettingsRoute
   '/teams': typeof TeamsRoute
   '/program/$programId': typeof ProgramProgramIdRoute
@@ -98,9 +114,11 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/circuits': typeof CircuitsRoute
   '/favorites': typeof FavoritesRoute
   '/friends': typeof FriendsRoute
   '/movements': typeof MovementsRoute
+  '/programs': typeof ProgramsRoute
   '/settings': typeof SettingsRoute
   '/teams': typeof TeamsRoute
   '/program/$programId': typeof ProgramProgramIdRoute
@@ -112,9 +130,11 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/circuits'
     | '/favorites'
     | '/friends'
     | '/movements'
+    | '/programs'
     | '/settings'
     | '/teams'
     | '/program/$programId'
@@ -124,9 +144,11 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/circuits'
     | '/favorites'
     | '/friends'
     | '/movements'
+    | '/programs'
     | '/settings'
     | '/teams'
     | '/program/$programId'
@@ -136,9 +158,11 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/circuits'
     | '/favorites'
     | '/friends'
     | '/movements'
+    | '/programs'
     | '/settings'
     | '/teams'
     | '/program/$programId'
@@ -149,9 +173,11 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CircuitsRoute: typeof CircuitsRoute
   FavoritesRoute: typeof FavoritesRoute
   FriendsRoute: typeof FriendsRoute
   MovementsRoute: typeof MovementsRoute
+  ProgramsRoute: typeof ProgramsRoute
   SettingsRoute: typeof SettingsRoute
   TeamsRoute: typeof TeamsRoute
   ProgramProgramIdRoute: typeof ProgramProgramIdRoute
@@ -176,6 +202,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/programs': {
+      id: '/programs'
+      path: '/programs'
+      fullPath: '/programs'
+      preLoaderRoute: typeof ProgramsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/movements': {
       id: '/movements'
       path: '/movements'
@@ -195,6 +228,13 @@ declare module '@tanstack/react-router' {
       path: '/favorites'
       fullPath: '/favorites'
       preLoaderRoute: typeof FavoritesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/circuits': {
+      id: '/circuits'
+      path: '/circuits'
+      fullPath: '/circuits'
+      preLoaderRoute: typeof CircuitsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -237,9 +277,11 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CircuitsRoute: CircuitsRoute,
   FavoritesRoute: FavoritesRoute,
   FriendsRoute: FriendsRoute,
   MovementsRoute: MovementsRoute,
+  ProgramsRoute: ProgramsRoute,
   SettingsRoute: SettingsRoute,
   TeamsRoute: TeamsRoute,
   ProgramProgramIdRoute: ProgramProgramIdRoute,

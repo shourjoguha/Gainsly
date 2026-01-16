@@ -66,11 +66,13 @@ def create_app() -> FastAPI:
         days_router,
         logs_router,
         settings_router,
+        circuits_router,
     )
     app.include_router(programs_router, prefix="/programs", tags=["Programs"])
     app.include_router(days_router, prefix="/days", tags=["Daily Planning"])
     app.include_router(logs_router, prefix="/logs", tags=["Logging"])
     app.include_router(settings_router, prefix="/settings", tags=["Settings"])
+    app.include_router(circuits_router, prefix="/circuits", tags=["Circuits"])
     
     return app
 

@@ -27,6 +27,7 @@ class Program(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    name = Column(String(100), nullable=True)  # Added for historic programs
     
     # Program duration
     start_date = Column(Date, nullable=False)
