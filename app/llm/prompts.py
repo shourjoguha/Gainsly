@@ -49,6 +49,7 @@ Generate workout session based on program goals and guidance.
 - Sets, reps, and RPE based on goals
 - Session duration based on time available and goals
 - Whether to include finisher (consider goals and disciplines)
+- Finisher format (AMRAP, EMOM, RFT, Ladder) based on user disciplines (e.g., CrossFit uses AMRAP/EMOM)
 - Superset combinations for efficiency
 - Movement progressions and variations
 
@@ -57,7 +58,7 @@ Generate workout session based on program goals and guidance.
   "warmup": [{{"movement": "Name", "sets": 2, "reps": 10}}],
   "main": [{{"movement": "Name", "sets": 4, "rep_range_min": 6, "rep_range_max": 8, "target_rpe": 7.5, "rest_seconds": 120}}],
   "accessory": [{{"movement": "Name", "sets": 3, "rep_range_min": 10, "rep_range_max": 15, "target_rpe": 7, "rest_seconds": 60, "superset_with": "Other Exercise"}}],
-  "finisher": {{"type": "AMRAP", "duration_minutes": 8, "exercises": [{{"movement": "Name", "reps": 10}}]}},
+  "finisher": {{"type": "AMRAP|EMOM|RFT|Ladder", "duration_minutes": 8, "notes": "Optional details", "exercises": [{{"movement": "Name", "reps": 10}}]}},
   "cooldown": [{{"movement": "Stretch", "duration_seconds": 60}}],
   "estimated_duration_minutes": 55,
   "reasoning": "Brief explanation"

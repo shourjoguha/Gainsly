@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useProgram } from '@/api/programs';
-import { ArrowLeft, Play, MessageSquare, Calendar, Target, Dumbbell } from 'lucide-react';
+import { ArrowLeft, Play, MessageSquare, Calendar, Target, Dumbbell, LineChart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Spinner } from '@/components/common/Spinner';
@@ -21,6 +21,14 @@ const GOAL_CONFIG: Record<Goal, { label: string; color: string }> = {
   [Goal.MOBILITY]: { label: 'Mobility', color: 'bg-green-500' },
   [Goal.EXPLOSIVENESS]: { label: 'Explosiveness', color: 'bg-yellow-500' },
   [Goal.SPEED]: { label: 'Speed', color: 'bg-cyan-500' },
+};
+
+const PROGRESSION_DESCRIPTIONS: Record<string, string> = {
+  single_progression: "Focus on increasing weight once you hit the top of your rep range.",
+  double_progression: "Increase reps first. Once you hit the top of the range for all sets, increase the weight.",
+  wave_loading: "Vary intensity in waves (e.g., 7-5-3 reps) to manage fatigue and break plateaus.",
+  paused_variations: "Use pauses to increase difficulty without adding weight.",
+  build_to_drop: "Build to a top heavy set, then drop weight for volume work."
 };
 
 function useProgramWithGeneration(programId: number) {
@@ -158,6 +166,25 @@ function ProgramDetailPage() {
               );
             })}
           </div>
+        </section>
+
+        {/* Progression Strategy Recommendation */}
+        <section>
+          <h2 className="text-sm font-medium text-foreground-muted mb-3 flex items-center gap-2">
+            <LineChart className="h-4 w-4" />
+            Progression Strategy
+          </h2>
+          <Card className="p-4 bg-background-elevated border-none">
+             <div className="flex items-center justify-between mb-2">
+                <span className="font-medium text-foreground capitalize">
+                  {program.progression_style.replace(/_/g, ' ')}
+                </span>
+                <span className="text-xs bg-accent/20 text-accent px-2 py-1 rounded">Recommended</span>
+             </div>
+             <p className="text-sm text-foreground-muted">
+               {PROGRESSION_DESCRIPTIONS[program.progression_style] || "Follow the prescribed sets and reps."}
+             </p>
+          </Card>
         </section>
 
         {/* Microcycle Info */}

@@ -8,14 +8,12 @@ import {
   GoalsStep,
   SplitStep,
   DisciplinesStep,
-  ProgressionStep,
   MovementsStep,
   ActivitiesStep,
   CoachStep,
 } from '@/components/wizard';
 import { 
   SplitTemplate, 
-  ProgressionStyle, 
   PersonaTone, 
   PersonaAggression,
   type ProgramCreate 
@@ -30,7 +28,6 @@ const STEP_LABELS = [
   'Set Your Goals',
   'Choose Your Schedule',
   'Training Styles',
-  'Progression Method',
   'Exercise Preferences',
   'Favorite Activities',
   'Meet Your Coach',
@@ -57,7 +54,6 @@ function ProgramWizardPage() {
     daysPerWeek,
     disciplines,
     isDisciplinesValid,
-    progressionStyle,
     movementRules,
     enjoyableActivities,
     communicationStyle,
@@ -81,13 +77,11 @@ function ProgramWizardPage() {
         // If user hasn't allocated any dollars, they can skip
         // If they started allocating, they must allocate all 10
         return disciplines.length === 0 || isDisciplinesValid();
-      case 3: // Progression
-        return progressionStyle !== null;
-      case 4: // Movements (optional)
+      case 3: // Movements (optional)
         return true;
-      case 5: // Activities (optional)
+      case 4: // Activities (optional)
         return true;
-      case 6: // Coach
+      case 5: // Coach
         return true;
       default:
         return false;
@@ -113,7 +107,7 @@ function ProgramWizardPage() {
       duration_weeks: durationWeeks,
       split_template: splitPreference || SplitTemplate.FULL_BODY,
       days_per_week: daysPerWeek,  // User's training frequency preference
-      progression_style: progressionStyle || ProgressionStyle.DOUBLE_PROGRESSION,
+      // progression_style is now auto-assigned by backend based on experience level
       persona_tone: TONE_MAP[communicationStyle] || PersonaTone.SUPPORTIVE,
       persona_aggression: pushIntensity as PersonaAggression,
       disciplines: disciplines.length > 0 ? disciplines : undefined,  // Training style preferences
@@ -173,12 +167,10 @@ function ProgramWizardPage() {
       case 2:
         return <DisciplinesStep />;
       case 3:
-        return <ProgressionStep />;
-      case 4:
         return <MovementsStep />;
-      case 5:
+      case 4:
         return <ActivitiesStep />;
-      case 6:
+      case 5:
         return <CoachStep />;
       default:
         return null;

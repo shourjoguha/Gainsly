@@ -84,7 +84,7 @@ class ProgramCreate(BaseModel):
     # Structure
     split_template: SplitTemplate
     days_per_week: int = Field(ge=2, le=7)  # User's training frequency preference
-    progression_style: ProgressionStyle
+    progression_style: ProgressionStyle | None = None
     hybrid_definition: HybridDefinition | None = None
     
     # Deload

@@ -20,7 +20,8 @@ from app.models import (
 )
 from app.schemas.program import ProgramCreate
 from app.models.enums import (
-    Goal, SplitTemplate, SessionType, MicrocycleStatus, PersonaTone, PersonaAggression
+    Goal, SplitTemplate, SessionType, MicrocycleStatus, PersonaTone, PersonaAggression,
+    ProgressionStyle
 )
 from app.services.interference import interference_service
 from app.services.session_generator import session_generator
@@ -98,6 +99,18 @@ class ProgramService:
         # Get user for defaults
         user = await db.get(User, user_id)
         
+        # Determine progression style if not provided
+        progression_style = request.progression_style
+        if not progression_style:
+            # Default based on experience level
+            if user and user.experience_level == "beginner":
+                progression_style = ProgressionStyle.SINGLE_PROGRESSION
+            elif user and user.experience_level in ["advanced", "expert"]:
+                progression_style = ProgressionStyle.WAVE_LOADING
+            else:
+                # Intermediate defaults to Double Progression
+                progression_style = ProgressionStyle.DOUBLE_PROGRESSION
+        
         # Determine persona settings (from request or user defaults)
         persona_tone = request.persona_tone or (user.persona_tone if user else PersonaTone.SUPPORTIVE)
         persona_aggression = request.persona_aggression or (user.persona_aggression if user else PersonaAggression.BALANCED)
@@ -122,7 +135,7 @@ class ProgramService:
             goal_weight_1=goals[0].weight,
             goal_weight_2=goals[1].weight,
             goal_weight_3=goals[2].weight,
-            progression_style=request.progression_style,
+            progression_style=progression_style,
             deload_every_n_microcycles=request.deload_every_n_microcycles or 4,
             persona_tone=persona_tone,
             persona_aggression=persona_aggression,
@@ -705,7 +718,7 @@ class ProgramService:
             ["squat", "horizontal_push", "horizontal_pull"],
             ["hinge", "vertical_push", "vertical_pull"],
             ["lunge", "horizontal_push", "vertical_pull"],
-            ["squat", "vertical_push", "horizontal_pull"],
+            ["hinge", "vertical_push", "horizontal_pull"],
         ]
         
         # Generate structure based on days_per_week
@@ -757,7 +770,7 @@ class ProgramService:
                 {"day": 4, "type": "full_body", "focus": focus_patterns[2]},
                 {"day": 5, "type": "full_body", "focus": focus_patterns[3]},
                 {"day": 6, "type": "rest"},
-                {"day": 7, "type": "full_body", "focus": focus_patterns[0]},
+                {"day": 7, "type": "full_body", "focus": focus_patterns[2]},
             ]
             training_day_count = 5
         elif days_per_week == 6:

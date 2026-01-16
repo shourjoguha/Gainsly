@@ -105,6 +105,7 @@ class ProgressionStyle(str, Enum):
     DOUBLE_PROGRESSION = "double_progression"  # Increase reps then weight
     PAUSED_VARIATIONS = "paused_variations"  # Add pauses for progression
     BUILD_TO_DROP = "build_to_drop"  # Build to rep range, drop reps + increase load
+    WAVE_LOADING = "wave_loading"  # Vary load/reps in waves (e.g. 7-5-3)
 
 
 class MovementRuleType(str, Enum):

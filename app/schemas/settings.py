@@ -86,7 +86,7 @@ class MovementResponse(BaseModel):
     secondary_muscles: list[str] | None = None
     primary_region: PrimaryRegion | str | None = None
     default_equipment: str | None = None
-    complexity: int | None = None
+    complexity: str | None = None
     cns_load: str | None = None
     cns_demand: int | None = None
     skill_level: int | None = None

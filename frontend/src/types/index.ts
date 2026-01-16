@@ -24,6 +24,7 @@ export enum ProgressionStyle {
   DOUBLE_PROGRESSION = 'double_progression',
   PAUSED_VARIATIONS = 'paused_variations',
   BUILD_TO_DROP = 'build_to_drop',
+  WAVE_LOADING = 'wave_loading',
 }
 
 export enum SessionType {
@@ -117,7 +118,7 @@ export interface ProgramCreate {
   program_start_date?: string;
   split_template: SplitTemplate;
   days_per_week: number;
-  progression_style: ProgressionStyle;
+  progression_style?: ProgressionStyle;
   hybrid_definition?: HybridDefinition;
   deload_every_n_microcycles?: number;
   persona_tone?: PersonaTone;
@@ -413,7 +414,7 @@ export interface Movement {
   secondary_muscles?: string[];
   primary_region?: string;
   default_equipment?: string;
-  complexity?: number;
+  complexity?: string;
   is_compound?: boolean;
   cns_demand?: number;
 }

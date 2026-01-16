@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MovementRuleType } from '@/types';
+import { MovementPattern, MovementRuleType } from '@/types';
 import { useProgramWizardStore } from '@/stores/program-wizard-store';
 import { useMovements } from '@/api/settings';
 import { Card } from '@/components/ui/card';
@@ -9,9 +9,33 @@ import { Search, ThumbsUp, ThumbsDown, X } from 'lucide-react';
 export function MovementsStep() {
   const { movementRules, addMovementRule, removeMovementRule } = useProgramWizardStore();
   const [search, setSearch] = useState('');
-  const { data: movementsData, isLoading } = useMovements({ search, limit: 20 });
+  const [selectedPattern, setSelectedPattern] = useState<MovementPattern | 'all'>('all');
+  const [selectedRegion, setSelectedRegion] = useState<string | 'all'>('all');
+  const [selectedType, setSelectedType] = useState<'all' | 'compound' | 'accessory'>('all');
+  const { data: movementsData, isLoading, error } = useMovements({ limit: 200 });
 
   const movements = movementsData?.movements ?? [];
+  const filteredMovements = movements.filter((movement) => {
+    const matchesSearch = movement.name
+      .toLowerCase()
+      .includes(search.toLowerCase());
+
+    const matchesPattern =
+      selectedPattern === 'all' ||
+      movement.primary_pattern === selectedPattern;
+
+    const matchesRegion =
+      selectedRegion === 'all' ||
+      (movement.primary_region &&
+        movement.primary_region.toLowerCase() === selectedRegion);
+
+    const matchesType =
+      selectedType === 'all' ||
+      (selectedType === 'compound' && movement.is_compound) ||
+      (selectedType === 'accessory' && movement.is_compound === false);
+
+    return matchesSearch && matchesPattern && matchesRegion && matchesType;
+  });
   
   const getRule = (movementId: number) => {
     return movementRules.find((r) => r.movement_id === movementId);
@@ -39,6 +63,58 @@ export function MovementsStep() {
         </p>
       </div>
 
+      {/* Filters */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <select
+          value={selectedPattern}
+          onChange={(e) =>
+            setSelectedPattern(
+              e.target.value === 'all'
+                ? 'all'
+                : (e.target.value as MovementPattern),
+            )
+          }
+          className="h-9 rounded-lg bg-background-elevated border border-border px-2 text-xs"
+        >
+          <option value="all">All Patterns</option>
+          <option value={MovementPattern.SQUAT}>Squat</option>
+          <option value={MovementPattern.HINGE}>Hinge</option>
+          <option value={MovementPattern.HORIZONTAL_PUSH}>Horizontal Push</option>
+          <option value={MovementPattern.VERTICAL_PUSH}>Vertical Push</option>
+          <option value={MovementPattern.HORIZONTAL_PULL}>Horizontal Pull</option>
+          <option value={MovementPattern.VERTICAL_PULL}>Vertical Pull</option>
+          <option value={MovementPattern.LUNGE}>Lunge</option>
+          <option value={MovementPattern.CORE}>Core</option>
+          <option value={MovementPattern.CARRY}>Carry</option>
+        </select>
+
+        <select
+          value={selectedRegion}
+          onChange={(e) => setSelectedRegion(e.target.value as typeof selectedRegion)}
+          className="h-9 rounded-lg bg-background-elevated border border-border px-2 text-xs"
+        >
+          <option value="all">All Body Parts</option>
+          <option value="anterior lower">Anterior Lower</option>
+          <option value="posterior lower">Posterior Lower</option>
+          <option value="anterior upper">Anterior Upper</option>
+          <option value="posterior upper">Posterior Upper</option>
+          <option value="shoulder">Shoulder</option>
+          <option value="full body">Full Body</option>
+        </select>
+
+        <select
+          value={selectedType}
+          onChange={(e) =>
+            setSelectedType(e.target.value as 'all' | 'compound' | 'accessory')
+          }
+          className="h-9 rounded-lg bg-background-elevated border border-border px-2 text-xs"
+        >
+          <option value="all">All Types</option>
+          <option value="compound">Compound</option>
+          <option value="accessory">Accessory</option>
+        </select>
+      </div>
+
       {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-foreground-muted" />
@@ -63,7 +139,10 @@ export function MovementsStep() {
                   key={rule.movement_id}
                   className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-cta/20 text-cta"
                 >
-                  <ThumbsUp className="h-3 w-3" />
+                  <span className="inline-flex items-center">
+                    <ThumbsUp className="h-3 w-3" />
+                    <ThumbsUp className="h-3 w-3 -ml-1" />
+                  </span>
                   Movement #{rule.movement_id}
                   <button onClick={() => removeMovementRule(rule.movement_id)}>
                     <X className="h-3 w-3" />
@@ -80,7 +159,8 @@ export function MovementsStep() {
                   key={rule.movement_id}
                   className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-accent/20 text-accent"
                 >
-                  ★ Movement #{rule.movement_id}
+                  <ThumbsUp className="h-3 w-3" />
+                  Movement #{rule.movement_id}
                   <button onClick={() => removeMovementRule(rule.movement_id)}>
                     <X className="h-3 w-3" />
                   </button>
@@ -112,12 +192,16 @@ export function MovementsStep() {
       <div className="space-y-2 max-h-64 overflow-y-auto">
         {isLoading ? (
           <div className="text-center py-8 text-foreground-muted">Loading movements...</div>
-        ) : movements.length === 0 ? (
+        ) : error ? (
           <div className="text-center py-8 text-foreground-muted">
-            {search ? 'No movements found' : 'Search for movements above'}
+            Failed to load movements. Please check your connection.
+          </div>
+        ) : filteredMovements.length === 0 ? (
+          <div className="text-center py-8 text-foreground-muted">
+            No movements match your filters.
           </div>
         ) : (
-          movements.map((movement) => {
+          filteredMovements.map((movement) => {
             const rule = getRule(movement.id);
             return (
               <Card key={movement.id} className="p-3">
@@ -139,7 +223,10 @@ export function MovementsStep() {
                       )}
                       title="Must include"
                     >
-                      <ThumbsUp className="h-4 w-4" />
+                      <span className="flex items-center">
+                        <ThumbsUp className="h-4 w-4" />
+                        <ThumbsUp className="h-4 w-4 -ml-1" />
+                      </span>
                     </button>
                     <button
                       onClick={() => handleSetRule(movement.id, MovementRuleType.PREFERRED)}
@@ -151,7 +238,7 @@ export function MovementsStep() {
                       )}
                       title="Prefer"
                     >
-                      ★
+                      <ThumbsUp className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => handleSetRule(movement.id, MovementRuleType.HARD_NO)}
