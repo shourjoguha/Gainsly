@@ -21,12 +21,16 @@ from app.models.enums import (
     PersonaAggression,
     ExperienceLevel,
     Visibility,
+    RelationshipType,
+    CircuitType,
+    StressBucket,
 )
-from app.models.movement import Movement
+from app.models.movement import Movement, MovementRelationship
 from app.models.user import User, UserMovementRule, UserEnjoyableActivity, UserSettings
 from app.models.program import Program, Microcycle, Session, SessionExercise
 from app.models.logging import WorkoutLog, TopSetLog, PatternExposure, SorenessLog, RecoverySignal
 from app.models.config import HeuristicConfig, ConversationThread, ConversationTurn
+from app.models.circuit import CircuitTemplate
 
 __all__ = [
     # Enums
@@ -51,8 +55,12 @@ __all__ = [
     "PersonaAggression",
     "ExperienceLevel",
     "Visibility",
+    "RelationshipType",
+    "CircuitType",
+    "StressBucket",
     # Models
     "Movement",
+    "MovementRelationship",
     "User",
     "UserMovementRule",
     "UserEnjoyableActivity",
@@ -69,4 +77,5 @@ __all__ = [
     "HeuristicConfig",
     "ConversationThread",
     "ConversationTurn",
+    "CircuitTemplate",
 ]

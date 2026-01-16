@@ -27,6 +27,7 @@ from app.schemas.settings import (
     MovementResponse,
     MovementListResponse,
     MovementCreate,
+    MovementFiltersResponse,
 )
 
 router = APIRouter()
@@ -322,7 +323,7 @@ async def list_movements(
     pattern: Optional[MovementPattern] = None,
     equipment: Optional[str] = None,
     search: Optional[str] = None,
-    limit: int = Query(default=50, le=200),
+    limit: int = Query(default=1000, le=1000),
     offset: int = 0,
     db: AsyncSession = Depends(get_db),
     user_id: int = Depends(get_current_user_id),
@@ -377,6 +378,44 @@ async def list_movements(
         total=total,
         limit=limit,
         offset=offset,
+    )
+
+
+@router.get("/movements/filters", response_model=MovementFiltersResponse)
+async def get_movement_filters(
+    db: AsyncSession = Depends(get_db),
+    user_id: int = Depends(get_current_user_id),
+):
+    """Return distinct movement filters available to the current user.
+
+    This endpoint is designed for frontend filter UIs so they always
+    reflect whatever values exist in the movements table, while still
+    respecting access control (system movements + this user's movements).
+    """
+    # Reuse the same visibility rules as list_movements
+    query = select(Movement).where((Movement.user_id.is_(None)) | (Movement.user_id == user_id))
+    result = await db.execute(query)
+    movements = list(result.scalars().all())
+
+    patterns = sorted({m.pattern for m in movements if m.pattern})
+    regions = sorted({m.primary_region for m in movements if m.primary_region})
+    disciplines = sorted({getattr(m, "primary_discipline", None) for m in movements if getattr(m, "primary_discipline", None)})
+
+    equipment_set: set[str] = set()
+    for m in movements:
+        tags = getattr(m, "equipment_tags", None) or []
+        for tag in tags:
+            if tag:
+                equipment_set.add(tag)
+
+    types = ["compound", "accessory"]
+
+    return MovementFiltersResponse(
+        patterns=patterns,
+        regions=regions,
+        equipment=sorted(equipment_set),
+        primary_disciplines=disciplines,
+        types=types,
     )
 
 

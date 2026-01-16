@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { MovementPattern, MovementRuleType } from '@/types';
 import { useProgramWizardStore } from '@/stores/program-wizard-store';
-import { useMovements } from '@/api/settings';
+import { useMovements, useMovementFilters } from '@/api/settings';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Search, ThumbsUp, ThumbsDown, X } from 'lucide-react';
@@ -12,9 +12,20 @@ export function MovementsStep() {
   const [selectedPattern, setSelectedPattern] = useState<MovementPattern | 'all'>('all');
   const [selectedRegion, setSelectedRegion] = useState<string | 'all'>('all');
   const [selectedType, setSelectedType] = useState<'all' | 'compound' | 'accessory'>('all');
-  const { data: movementsData, isLoading, error } = useMovements({ limit: 200 });
+  const { data: movementsData, isLoading, error } = useMovements({ limit: 1000 });
+  const { data: filtersData } = useMovementFilters();
 
   const movements = movementsData?.movements ?? [];
+
+  const patternOptions = useMemo(
+    () => filtersData?.patterns ?? [],
+    [filtersData],
+  );
+
+  const regionOptions = useMemo(
+    () => filtersData?.regions ?? [],
+    [filtersData],
+  );
   const filteredMovements = movements.filter((movement) => {
     const matchesSearch = movement.name
       .toLowerCase()
@@ -24,10 +35,9 @@ export function MovementsStep() {
       selectedPattern === 'all' ||
       movement.primary_pattern === selectedPattern;
 
-    const matchesRegion =
+ const matchesRegion =
       selectedRegion === 'all' ||
-      (movement.primary_region &&
-        movement.primary_region.toLowerCase() === selectedRegion);
+      (movement.primary_region && movement.primary_region === selectedRegion);
 
     const matchesType =
       selectedType === 'all' ||
@@ -71,21 +81,17 @@ export function MovementsStep() {
             setSelectedPattern(
               e.target.value === 'all'
                 ? 'all'
-                : (e.target.value as MovementPattern),
+                : (e.target.value as MovementPattern)
             )
           }
           className="h-9 rounded-lg bg-background-elevated border border-border px-2 text-xs"
         >
           <option value="all">All Patterns</option>
-          <option value={MovementPattern.SQUAT}>Squat</option>
-          <option value={MovementPattern.HINGE}>Hinge</option>
-          <option value={MovementPattern.HORIZONTAL_PUSH}>Horizontal Push</option>
-          <option value={MovementPattern.VERTICAL_PUSH}>Vertical Push</option>
-          <option value={MovementPattern.HORIZONTAL_PULL}>Horizontal Pull</option>
-          <option value={MovementPattern.VERTICAL_PULL}>Vertical Pull</option>
-          <option value={MovementPattern.LUNGE}>Lunge</option>
-          <option value={MovementPattern.CORE}>Core</option>
-          <option value={MovementPattern.CARRY}>Carry</option>
+          {patternOptions.map((pattern) => (
+            <option key={pattern} value={pattern}>
+              {pattern.replace('_', ' ')}
+            </option>
+          ))}
         </select>
 
         <select
@@ -94,12 +100,11 @@ export function MovementsStep() {
           className="h-9 rounded-lg bg-background-elevated border border-border px-2 text-xs"
         >
           <option value="all">All Body Parts</option>
-          <option value="anterior lower">Anterior Lower</option>
-          <option value="posterior lower">Posterior Lower</option>
-          <option value="anterior upper">Anterior Upper</option>
-          <option value="posterior upper">Posterior Upper</option>
-          <option value="shoulder">Shoulder</option>
-          <option value="full body">Full Body</option>
+          {regionOptions.map((region) => (
+            <option key={region} value={region}>
+              {region.replace('_', ' ')}
+            </option>
+          ))}
         </select>
 
         <select

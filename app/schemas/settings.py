@@ -133,6 +133,15 @@ class MovementListResponse(BaseModel):
     filters_applied: dict[str, Any] | None = None
 
 
+class MovementFiltersResponse(BaseModel):
+    """Distinct movement filters available in the repository."""
+    patterns: list[str]
+    regions: list[str]
+    equipment: list[str]
+    primary_disciplines: list[str]
+    types: list[str] | None = None
+
+
 # ============== Heuristic Config Schemas ==============
 
 class HeuristicConfigCreate(BaseModel):

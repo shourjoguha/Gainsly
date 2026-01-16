@@ -9,6 +9,7 @@ export const settingsKeys = {
   movementsList: (filters: MovementsFilters) => [...settingsKeys.movements(), filters] as const,
   movement: (id: number) => [...settingsKeys.movements(), id] as const,
   movementRules: () => [...settingsKeys.all, 'movement-rules'] as const,
+  movementFilters: () => [...settingsKeys.movements(), 'filters'] as const,
 };
 
 // Types
@@ -25,6 +26,14 @@ export interface MovementListResponse {
   total: number;
   limit: number;
   offset: number;
+}
+
+export interface MovementFiltersResponse {
+  patterns: string[];
+  regions: string[];
+  equipment: string[];
+  primary_disciplines: string[];
+  types?: string[];
 }
 
 // API functions
@@ -45,6 +54,11 @@ async function fetchMovement(id: number): Promise<Movement> {
   return data;
 }
 
+async function fetchMovementFilters(): Promise<MovementFiltersResponse> {
+  const { data } = await apiClient.get('/settings/movements/filters');
+  return data;
+}
+
 // React Query hooks
 export function useMovements(filters: MovementsFilters = {}) {
   return useQuery({
@@ -58,6 +72,13 @@ export function useMovement(id: number) {
     queryKey: settingsKeys.movement(id),
     queryFn: () => fetchMovement(id),
     enabled: !!id,
+  });
+}
+
+export function useMovementFilters() {
+  return useQuery({
+    queryKey: settingsKeys.movementFilters(),
+    queryFn: fetchMovementFilters,
   });
 }
 

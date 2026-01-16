@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { Filter, Search, Settings2, Plus, ArrowUp, ArrowDown, User, X, Check } from 'lucide-react';
-import { useMovements, useCreateMovement } from '@/api/settings';
+import { useMovements, useCreateMovement, useMovementFilters } from '@/api/settings';
 import { 
   MovementPattern, 
   PrimaryRegion, 
@@ -357,7 +357,8 @@ function AddMovementModal({ onClose, equipmentOptions }: { onClose: () => void; 
 }
 
 function MovementsPage() {
-  const { data, isLoading, error } = useMovements({ limit: 200 });
+  const { data, isLoading, error } = useMovements({ limit: 1000 });
+  const { data: filtersData } = useMovementFilters();
   const [search, setSearch] = useState('');
   const [selectedPattern, setSelectedPattern] = useState<MovementPattern | 'all'>('all');
   const [selectedEquipment, setSelectedEquipment] = useState<string | 'all'>('all');
@@ -371,28 +372,23 @@ function MovementsPage() {
     [data],
   );
 
-  const patternOptions: { value: MovementPattern | 'all'; label: string }[] = [
-    { value: 'all', label: 'All Patterns' },
-    { value: MovementPattern.SQUAT, label: 'Squat' },
-    { value: MovementPattern.HINGE, label: 'Hinge' },
-    { value: MovementPattern.HORIZONTAL_PUSH, label: 'Horizontal Push' },
-    { value: MovementPattern.VERTICAL_PUSH, label: 'Vertical Push' },
-    { value: MovementPattern.HORIZONTAL_PULL, label: 'Horizontal Pull' },
-    { value: MovementPattern.VERTICAL_PULL, label: 'Vertical Pull' },
-    { value: MovementPattern.LUNGE, label: 'Lunge' },
-    { value: MovementPattern.CARRY, label: 'Carry' },
-    { value: MovementPattern.CORE, label: 'Core' },
-    { value: MovementPattern.ROTATION, label: 'Rotation' },
-    { value: MovementPattern.PLYOMETRIC, label: 'Plyometric' },
-    { value: MovementPattern.OLYMPIC, label: 'Olympic' },
-    { value: MovementPattern.ISOLATION, label: 'Isolation' },
-    { value: MovementPattern.MOBILITY, label: 'Mobility' },
-    { value: MovementPattern.ISOMETRIC, label: 'Isometric' },
-    { value: MovementPattern.CONDITIONING, label: 'Conditioning' },
-    { value: MovementPattern.CARDIO, label: 'Cardio' },
-  ];
+  const patternOptions: { value: MovementPattern | 'all'; label: string }[] = useMemo(() => {
+    const patterns = filtersData?.patterns ?? [];
+    return [
+      { value: 'all', label: 'All Patterns' },
+      ...patterns.map((p) => ({
+        value: p as MovementPattern,
+        label: p.replace('_', ' '),
+      })),
+    ];
+  }, [filtersData]);
 
   const equipmentOptions = useMemo(() => {
+    const fromFilters = filtersData?.equipment ?? [];
+    if (fromFilters.length > 0) {
+      return ['all', ...fromFilters];
+    }
+
     const set = new Set<string>();
     for (const m of movements) {
       if (m.default_equipment) {
@@ -405,7 +401,7 @@ function MovementsPage() {
       }
     }
     return ['all', ...Array.from(set).sort()];
-  }, [movements]);
+  }, [filtersData, movements]);
 
   const filteredMovements = useMemo(() => {
     let result = movements.filter((movement) => {
