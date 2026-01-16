@@ -360,3 +360,30 @@ Session tracking for continuous development with date/time headers. A new sessio
 - Frontend uses React 19 + TypeScript + Vite with comprehensive design system
 - Program creation flow integrates LLM-powered session generation
 - All documentation now consolidated into 4 core files: NOTES.md, README.md, SESSION_LOG.md, WARP.md
+
+---
+
+## Session 9: 2026-01-15 [Current Session]
+
+**Objective**: Organize root-level project files into dedicated folders
+
+**Key Accomplishments**:
+
+1. **Created docs/ directory for secondary documentation**:
+   - Moved `NOTES.md` → `docs/NOTES.md`
+   - Moved `PERFORMANCE_TESTING.md` → `docs/PERFORMANCE_TESTING.md`
+   - Moved `WARP.md` → `docs/WARP.md`
+2. **Verified references and imports**:
+   - Searched the codebase for references to moved files
+   - Confirmed they are only referenced from documentation, so no Python or TypeScript import paths required updates
+3. **Reduced root directory clutter**:
+   - Root now focuses on application code, configuration, environment, and entrypoint files
+   - Documentation is logically grouped under `docs/` for easier discovery
+
+4. **Cleaned up legacy SQLite artifacts**:
+   - Removed `workout_coach.db`, `workout_coach.db-shm`, and `workout_coach.db-wal` leftover from the previous SQLite setup
+   - Confirmed no code paths or processes reference `workout_coach.db*` now that PostgreSQL is the primary database
+
+**Technical Details**:
+- `docs/` is now the canonical location for detailed backend/frontend notes and performance guidance
+- `README.md` and `SESSION_LOG.md` remain at the project root as primary entrypoint documents

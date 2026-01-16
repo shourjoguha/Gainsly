@@ -108,9 +108,13 @@ def build_optimized_session_prompt(
     # OPTIMIZATION 2: Get guidance (not hard constraints) for LLM decision-making
     used_accessories = []
     if used_accessory_movements:
-        prev_day = day_number - 1
-        if prev_day in used_accessory_movements:
-            used_accessories = used_accessory_movements[prev_day]
+        # Avoid accessories used in ANY previous day of this microcycle
+        for day, movements in used_accessory_movements.items():
+            if day < day_number:
+                used_accessories.extend(movements)
+        
+        # Deduplicate
+        used_accessories = list(set(used_accessories))
     
     guidance_context = LLMOptimizer.build_guidance_context(
         session_type_enum, goals, intent_tags, is_deload, used_accessories

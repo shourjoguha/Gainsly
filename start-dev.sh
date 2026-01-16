@@ -9,9 +9,12 @@ GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Start backend
-echo -e "${BLUE}Starting backend (FastAPI)...${NC}"
+echo -e "${BLUE}Starting PostgreSQL (Docker)...${NC}"
 cd "$(dirname "$0")"
+docker-compose up -d db
+echo -e "${GREEN}✓ PostgreSQL container started${NC}"
+
+echo -e "${BLUE}Starting backend (FastAPI)...${NC}"
 source .venv/bin/activate
 uvicorn app.main:app --reload --port 8000 &
 BACKEND_PID=$!

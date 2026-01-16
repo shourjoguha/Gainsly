@@ -62,13 +62,13 @@ class MetricType(str, Enum):
     DISTANCE = "distance"
 
 
-class SkillLevel(int, Enum):
+class SkillLevel(str, Enum):
     """Movement skill/complexity level."""
-    BEGINNER = 1
-    INTERMEDIATE = 2
-    ADVANCED = 3
-    EXPERT = 4
-    ELITE = 5
+    BEGINNER = "beginner"
+    INTERMEDIATE = "intermediate"
+    ADVANCED = "advanced"
+    EXPERT = "expert"
+    ELITE = "elite"
 
 
 class CNSLoad(str, Enum):
@@ -209,3 +209,10 @@ class ExperienceLevel(str, Enum):
     INTERMEDIATE = "intermediate"
     ADVANCED = "advanced"
     EXPERT = "expert"
+
+
+class Visibility(str, Enum):
+    """Content visibility level."""
+    PRIVATE = "private"  # Only creator
+    FRIENDS = "friends"  # Creator + friends/team
+    PUBLIC = "public"    # Everyone

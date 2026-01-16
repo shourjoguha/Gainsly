@@ -11,6 +11,7 @@ Responsible for:
 
 from datetime import datetime, timedelta, date
 from typing import Optional, Dict, Any
+import logging
 from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -23,6 +24,9 @@ from app.models.enums import (
 )
 from app.services.interference import interference_service
 from app.services.session_generator import session_generator
+
+
+logger = logging.getLogger(__name__)
 
 
 class ProgramService:
@@ -158,25 +162,32 @@ class ProgramService:
             
             current_date += timedelta(days=days_per_cycle)
         
-        # Commit program structure first to RELEASE the database lock
-        # This allows other requests to proceed while we generate session content
         await db.commit()
-        
-        # Store IDs for LLM generation (which happens outside this DB session)
-        program_id = program.id
-        active_microcycle_id = active_microcycle.id if active_microcycle else None
-        
-        # Generate exercise content for active microcycle sessions
-        # This involves LLM calls which can take 15+ minutes
-        # We do this WITHOUT holding the database session to avoid locks
-        if active_microcycle_id:
-            await self._generate_session_content_async(
-                program_id, active_microcycle_id
-            )
-        
-        # Re-fetch program with updated sessions
         await db.refresh(program)
         return program
+    
+    async def generate_active_microcycle_sessions(
+        self,
+        program_id: int,
+    ) -> None:
+        from app.db.database import async_session_maker
+
+        async with async_session_maker() as db:
+            program = await db.get(Program, program_id)
+            if not program:
+                return
+
+            result = await db.execute(
+                select(Microcycle).where(
+                    Microcycle.program_id == program_id,
+                    Microcycle.status == MicrocycleStatus.ACTIVE,
+                )
+            )
+            microcycle = result.scalar_one_or_none()
+            if not microcycle:
+                return
+
+        await self._generate_session_content_async(program_id, microcycle.id)
     
     async def _generate_session_content_async(
         self,
@@ -227,20 +238,61 @@ class ProgramService:
                 previous_day_volume = {}  # Recovery clears fatigue
                 continue
             
-            # Apply inter-session interference rules for main lift patterns
-            session = await self._apply_pattern_interference_rules(
-                db, session, used_main_patterns, microcycle
-            )
+            try:
+                # Apply inter-session interference rules for main lift patterns
+                async with async_session_maker() as db:
+                    session = await self._apply_pattern_interference_rules(
+                        db, session, used_main_patterns, microcycle
+                    )
+            except Exception as e:
+                logger.error(
+                    "Failed to apply pattern interference rules for session %s: %s",
+                    session.id,
+                    e,
+                )
             
-            # Generate and populate session with exercises
-            # Each call creates its own DB session
-            current_volume = await session_generator.populate_session_by_id(
-                session.id, program_id, microcycle_id,
-                used_movements=list(used_movements),
-                used_movement_groups=dict(used_movement_groups),
-                used_accessory_movements=dict(used_accessory_movements),
-                previous_day_volume=previous_day_volume
-            )
+            try:
+                # Generate and populate session with exercises
+                # Each call creates its own DB session
+                current_volume = await session_generator.populate_session_by_id(
+                    session.id,
+                    program_id,
+                    microcycle_id,
+                    used_movements=list(used_movements),
+                    used_movement_groups=dict(used_movement_groups),
+                    used_accessory_movements=dict(used_accessory_movements),
+                    previous_day_volume=previous_day_volume,
+                )
+            except Exception as e:
+                logger.error(
+                    "Failed to generate content for session %s: %s",
+                    session.id,
+                    e,
+                )
+                
+                # Robust Fallback: Mark session as failed but "content present" so spinner stops
+                try:
+                    async with async_session_maker() as db:
+                        failed_session = await db.get(Session, session.id)
+                        if failed_session:
+                            failed_session.coach_notes = f"Generation failed: {str(e)}. Please regenerate."
+                            # Add placeholder content to satisfy frontend hasContent check
+                            failed_session.main_json = [{
+                                "movement": "Generation Error",
+                                "sets": 0,
+                                "reps": "0",
+                                "rpe": "0",
+                                "rest": "0", 
+                                "notes": "An error occurred during generation."
+                            }]
+                            db.add(failed_session)
+                            await db.commit()
+                except Exception as fallback_error:
+                    logger.error(f"Failed to apply fallback for session {session.id}: {fallback_error}")
+
+                # Skip tracking for this session so others can still be generated
+                previous_day_volume = {}
+                continue
             
             # Update previous volume for next iteration
             previous_day_volume = current_volume
@@ -258,19 +310,20 @@ class ProgramService:
                         
                         if updated_session.main_json:
                             for ex in updated_session.main_json:
-                                if ex.get("movement"): 
+                                if ex.get("movement"):
                                     session_movements.append(ex["movement"])
                         if updated_session.accessory_json:
                             for ex in updated_session.accessory_json:
-                                if ex.get("movement"): 
+                                if ex.get("movement"):
                                     session_movements.append(ex["movement"])
                                     accessory_movements_used.append(ex["movement"])
                         if updated_session.finisher_json:
                             if updated_session.finisher_json.get("exercises"):
                                 for ex in updated_session.finisher_json["exercises"]:
-                                    if ex.get("movement"): 
+                                    if ex.get("movement"):
                                         session_movements.append(ex["movement"])
-                                        accessory_movements_used.append(ex["movement"])  # Treat finisher as accessory for interference
+                                        # Treat finisher as accessory for interference
+                                        accessory_movements_used.append(ex["movement"])
                         
                         # Update tracking sets
                         for movement_name in session_movements:
@@ -278,7 +331,7 @@ class ProgramService:
                         
                         # Track main lift patterns for this session
                         if updated_session.intent_tags:
-                            main_patterns_used = updated_session.intent_tags[:2]  # First 2 are main patterns
+                            main_patterns_used = updated_session.intent_tags[:2]
                             used_main_patterns[session.day_number] = main_patterns_used
                         
                         # Track accessory movements for this session
@@ -581,8 +634,12 @@ class ProgramService:
         Returns:
             Split configuration with structure adapted to days_per_week
         """
-        defaults = {
-            SplitTemplate.UPPER_LOWER: {
+        if template == SplitTemplate.FULL_BODY:
+            return self._generate_full_body_structure(days_per_week)
+            
+        elif template == SplitTemplate.UPPER_LOWER:
+            # Default 4-day Upper/Lower
+            return {
                 "days_per_cycle": 7,
                 "structure": [
                     {"day": 1, "type": "upper", "focus": ["horizontal_push", "horizontal_pull"]},
@@ -595,8 +652,11 @@ class ProgramService:
                 ],
                 "training_days": 4,
                 "rest_days": 3,
-            },
-            SplitTemplate.PPL: {
+            }
+            
+        elif template == SplitTemplate.PPL:
+            # Default 6-day PPL
+            return {
                 "days_per_cycle": 7,
                 "structure": [
                     {"day": 1, "type": "push", "focus": ["horizontal_push", "vertical_push"]},
@@ -609,9 +669,10 @@ class ProgramService:
                 ],
                 "training_days": 6,
                 "rest_days": 1,
-            },
-            SplitTemplate.FULL_BODY: self._generate_full_body_structure(days_per_week),
-            SplitTemplate.HYBRID: {
+            }
+            
+        elif template == SplitTemplate.HYBRID:
+            return {
                 "days_per_cycle": 7,
                 "structure": [
                     {"day": 1, "type": "full_body", "focus": ["squat", "horizontal_push"]},
@@ -624,9 +685,10 @@ class ProgramService:
                 ],
                 "training_days": 3,
                 "rest_days": 4,
-            },
-        }
-        return defaults.get(template, defaults[SplitTemplate.FULL_BODY])
+            }
+            
+        # Fallback to Full Body if unknown
+        return self._generate_full_body_structure(days_per_week)
     
     def _generate_full_body_structure(self, days_per_week: int) -> Dict[str, Any]:
         """

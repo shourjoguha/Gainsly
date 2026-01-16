@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     debug: bool = True
     
     # Database
-    database_url: str = "sqlite+aiosqlite:///./workout_coach.db"
+    database_url: str = "postgresql+asyncpg://gainsly:gainslypass@localhost:5432/gainslydb"
     
     # Ollama LLM settings
     ollama_base_url: str = "http://localhost:11434"

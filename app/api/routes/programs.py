@@ -1,7 +1,7 @@
 """API routes for program management."""
 from datetime import date
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -40,6 +40,7 @@ def get_current_user_id() -> int:
 @router.post("", response_model=ProgramResponse, status_code=status.HTTP_201_CREATED)
 async def create_program(
     program_data: ProgramCreate,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     user_id: int = Depends(get_current_user_id),
 ):
@@ -113,7 +114,12 @@ async def create_program(
     
     if program_data.movement_rules or program_data.enjoyable_activities:
         await db.commit()
-    
+
+    background_tasks.add_task(
+        program_service.generate_active_microcycle_sessions,
+        program.id,
+    )
+
     return program
 
 

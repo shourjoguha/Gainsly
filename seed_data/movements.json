@@ -5,15 +5,25 @@
       "pattern": "squat",
       "primary_muscle": "quadriceps",
       "primary_region": "anterior lower",
-      "secondary_muscles": ["glutes", "hamstrings", "core"],
+      "secondary_muscles": [
+        "glutes",
+        "hamstrings",
+        "core"
+      ],
       "cns_load": "very_high",
-      "skill_level": 2,
+      "skill_level": "intermediate",
       "compound": true,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "reps",
-      "discipline_tags": ["powerlifting", "strength"],
-      "equipment_tags": ["barbell", "rack"],
+      "discipline_tags": [
+        "powerlifting",
+        "strength"
+      ],
+      "equipment_tags": [
+        "barbell",
+        "rack"
+      ],
       "substitution_group": "squat_bilateral"
     },
     {
@@ -21,15 +31,25 @@
       "pattern": "squat",
       "primary_muscle": "quadriceps",
       "primary_region": "anterior lower",
-      "secondary_muscles": ["glutes", "core", "upper_back"],
+      "secondary_muscles": [
+        "glutes",
+        "core",
+        "upper_back"
+      ],
       "cns_load": "high",
-      "skill_level": 3,
+      "skill_level": "advanced",
       "compound": true,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "reps",
-      "discipline_tags": ["olympic", "strength"],
-      "equipment_tags": ["barbell", "rack"],
+      "discipline_tags": [
+        "olympic",
+        "strength"
+      ],
+      "equipment_tags": [
+        "barbell",
+        "rack"
+      ],
       "substitution_group": "squat_bilateral"
     },
     {
@@ -37,15 +57,24 @@
       "pattern": "squat",
       "primary_muscle": "quadriceps",
       "primary_region": "anterior lower",
-      "secondary_muscles": ["glutes", "core"],
+      "secondary_muscles": [
+        "glutes",
+        "core"
+      ],
       "cns_load": "moderate",
-      "skill_level": 1,
+      "skill_level": "beginner",
       "compound": true,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "reps",
-      "discipline_tags": ["strength", "hypertrophy"],
-      "equipment_tags": ["dumbbell", "kettlebell"],
+      "discipline_tags": [
+        "strength",
+        "hypertrophy"
+      ],
+      "equipment_tags": [
+        "dumbbell",
+        "kettlebell"
+      ],
       "substitution_group": "squat_bilateral"
     },
     {
@@ -53,15 +82,24 @@
       "pattern": "squat",
       "primary_muscle": "quadriceps",
       "primary_region": "anterior lower",
-      "secondary_muscles": ["glutes", "hip_flexors", "core"],
+      "secondary_muscles": [
+        "glutes",
+        "hip_flexors",
+        "core"
+      ],
       "cns_load": "moderate",
-      "skill_level": 4,
+      "skill_level": "expert",
       "compound": true,
       "is_complex_lift": false,
       "is_unilateral": true,
       "metric_type": "reps",
-      "discipline_tags": ["calisthenics", "athleticism"],
-      "equipment_tags": ["bodyweight"],
+      "discipline_tags": [
+        "calisthenics",
+        "athleticism"
+      ],
+      "equipment_tags": [
+        "bodyweight"
+      ],
       "substitution_group": "squat_unilateral"
     },
     {
@@ -69,15 +107,25 @@
       "pattern": "lunge",
       "primary_muscle": "quadriceps",
       "primary_region": "anterior lower",
-      "secondary_muscles": ["glutes", "hamstrings"],
+      "secondary_muscles": [
+        "glutes",
+        "hamstrings"
+      ],
       "cns_load": "moderate",
-      "skill_level": 2,
+      "skill_level": "intermediate",
       "compound": true,
       "is_complex_lift": false,
       "is_unilateral": true,
       "metric_type": "reps",
-      "discipline_tags": ["strength", "hypertrophy"],
-      "equipment_tags": ["dumbbell", "barbell", "bodyweight"],
+      "discipline_tags": [
+        "strength",
+        "hypertrophy"
+      ],
+      "equipment_tags": [
+        "dumbbell",
+        "barbell",
+        "bodyweight"
+      ],
       "substitution_group": "lunge"
     },
     {
@@ -85,15 +133,24 @@
       "pattern": "lunge",
       "primary_muscle": "quadriceps",
       "primary_region": "anterior lower",
-      "secondary_muscles": ["glutes", "hamstrings"],
+      "secondary_muscles": [
+        "glutes",
+        "hamstrings"
+      ],
       "cns_load": "moderate",
-      "skill_level": 1,
+      "skill_level": "beginner",
       "compound": true,
       "is_complex_lift": false,
       "is_unilateral": true,
       "metric_type": "reps",
-      "discipline_tags": ["athleticism", "hypertrophy"],
-      "equipment_tags": ["dumbbell", "bodyweight"],
+      "discipline_tags": [
+        "athleticism",
+        "hypertrophy"
+      ],
+      "equipment_tags": [
+        "dumbbell",
+        "bodyweight"
+      ],
       "substitution_group": "lunge"
     },
     {
@@ -101,15 +158,25 @@
       "pattern": "hinge",
       "primary_muscle": "hamstrings",
       "primary_region": "posterior lower",
-      "secondary_muscles": ["glutes", "lower_back", "lats", "forearms"],
+      "secondary_muscles": [
+        "glutes",
+        "lower_back",
+        "lats",
+        "forearms"
+      ],
       "cns_load": "very_high",
-      "skill_level": 2,
+      "skill_level": "intermediate",
       "compound": true,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "reps",
-      "discipline_tags": ["powerlifting", "strength"],
-      "equipment_tags": ["barbell"],
+      "discipline_tags": [
+        "powerlifting",
+        "strength"
+      ],
+      "equipment_tags": [
+        "barbell"
+      ],
       "substitution_group": "deadlift"
     },
     {
@@ -117,15 +184,24 @@
       "pattern": "hinge",
       "primary_muscle": "hamstrings",
       "primary_region": "posterior lower",
-      "secondary_muscles": ["glutes", "lower_back"],
+      "secondary_muscles": [
+        "glutes",
+        "lower_back"
+      ],
       "cns_load": "high",
-      "skill_level": 2,
+      "skill_level": "intermediate",
       "compound": true,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "reps",
-      "discipline_tags": ["strength", "hypertrophy"],
-      "equipment_tags": ["barbell", "dumbbell"],
+      "discipline_tags": [
+        "strength",
+        "hypertrophy"
+      ],
+      "equipment_tags": [
+        "barbell",
+        "dumbbell"
+      ],
       "substitution_group": "rdl"
     },
     {
@@ -133,15 +209,25 @@
       "pattern": "hinge",
       "primary_muscle": "hamstrings",
       "primary_region": "posterior lower",
-      "secondary_muscles": ["glutes", "core"],
+      "secondary_muscles": [
+        "glutes",
+        "core"
+      ],
       "cns_load": "moderate",
-      "skill_level": 2,
+      "skill_level": "intermediate",
       "compound": true,
       "is_complex_lift": false,
       "is_unilateral": true,
       "metric_type": "reps",
-      "discipline_tags": ["athleticism", "hypertrophy"],
-      "equipment_tags": ["dumbbell", "kettlebell", "bodyweight"],
+      "discipline_tags": [
+        "athleticism",
+        "hypertrophy"
+      ],
+      "equipment_tags": [
+        "dumbbell",
+        "kettlebell",
+        "bodyweight"
+      ],
       "substitution_group": "rdl_unilateral"
     },
     {
@@ -149,15 +235,23 @@
       "pattern": "hinge",
       "primary_muscle": "glutes",
       "primary_region": "posterior lower",
-      "secondary_muscles": ["hamstrings"],
+      "secondary_muscles": [
+        "hamstrings"
+      ],
       "cns_load": "moderate",
-      "skill_level": 1,
+      "skill_level": "beginner",
       "compound": true,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "reps",
-      "discipline_tags": ["hypertrophy", "athleticism"],
-      "equipment_tags": ["barbell", "dumbbell"],
+      "discipline_tags": [
+        "hypertrophy",
+        "athleticism"
+      ],
+      "equipment_tags": [
+        "barbell",
+        "dumbbell"
+      ],
       "substitution_group": "hip_extension"
     },
     {
@@ -165,15 +259,23 @@
       "pattern": "hinge",
       "primary_muscle": "hamstrings",
       "primary_region": "posterior lower",
-      "secondary_muscles": ["glutes", "lower_back"],
+      "secondary_muscles": [
+        "glutes",
+        "lower_back"
+      ],
       "cns_load": "high",
-      "skill_level": 3,
+      "skill_level": "advanced",
       "compound": true,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "reps",
-      "discipline_tags": ["powerlifting", "strength"],
-      "equipment_tags": ["barbell"],
+      "discipline_tags": [
+        "powerlifting",
+        "strength"
+      ],
+      "equipment_tags": [
+        "barbell"
+      ],
       "substitution_group": "good_morning"
     },
     {
@@ -181,15 +283,24 @@
       "pattern": "hinge",
       "primary_muscle": "glutes",
       "primary_region": "posterior lower",
-      "secondary_muscles": ["hamstrings", "core", "lats"],
+      "secondary_muscles": [
+        "hamstrings",
+        "core",
+        "lats"
+      ],
       "cns_load": "moderate",
-      "skill_level": 2,
+      "skill_level": "intermediate",
       "compound": true,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "reps",
-      "discipline_tags": ["athleticism", "endurance"],
-      "equipment_tags": ["kettlebell"],
+      "discipline_tags": [
+        "athleticism",
+        "endurance"
+      ],
+      "equipment_tags": [
+        "kettlebell"
+      ],
       "substitution_group": "kb_swing"
     },
     {
@@ -197,15 +308,24 @@
       "pattern": "horizontal_push",
       "primary_muscle": "chest",
       "primary_region": "anterior upper",
-      "secondary_muscles": ["front_delts", "triceps"],
+      "secondary_muscles": [
+        "front_delts",
+        "triceps"
+      ],
       "cns_load": "high",
-      "skill_level": 2,
+      "skill_level": "intermediate",
       "compound": true,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "reps",
-      "discipline_tags": ["powerlifting", "strength"],
-      "equipment_tags": ["barbell", "bench"],
+      "discipline_tags": [
+        "powerlifting",
+        "strength"
+      ],
+      "equipment_tags": [
+        "barbell",
+        "bench"
+      ],
       "substitution_group": "bench_press"
     },
     {
@@ -213,15 +333,25 @@
       "pattern": "horizontal_push",
       "primary_muscle": "chest",
       "primary_region": "anterior upper",
-      "secondary_muscles": ["front_delts", "triceps"],
+      "secondary_muscles": [
+        "front_delts",
+        "triceps"
+      ],
       "cns_load": "high",
-      "skill_level": 2,
+      "skill_level": "intermediate",
       "compound": true,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "reps",
-      "discipline_tags": ["hypertrophy", "strength"],
-      "equipment_tags": ["barbell", "dumbbell", "bench"],
+      "discipline_tags": [
+        "hypertrophy",
+        "strength"
+      ],
+      "equipment_tags": [
+        "barbell",
+        "dumbbell",
+        "bench"
+      ],
       "substitution_group": "incline_press"
     },
     {
@@ -229,15 +359,23 @@
       "pattern": "horizontal_push",
       "primary_muscle": "chest",
       "primary_region": "anterior upper",
-      "secondary_muscles": ["front_delts", "triceps"],
+      "secondary_muscles": [
+        "front_delts",
+        "triceps"
+      ],
       "cns_load": "moderate",
-      "skill_level": 1,
+      "skill_level": "beginner",
       "compound": true,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "reps",
-      "discipline_tags": ["hypertrophy"],
-      "equipment_tags": ["dumbbell", "bench"],
+      "discipline_tags": [
+        "hypertrophy"
+      ],
+      "equipment_tags": [
+        "dumbbell",
+        "bench"
+      ],
       "substitution_group": "bench_press"
     },
     {
@@ -245,15 +383,24 @@
       "pattern": "horizontal_push",
       "primary_muscle": "chest",
       "primary_region": "anterior upper",
-      "secondary_muscles": ["front_delts", "triceps", "core"],
+      "secondary_muscles": [
+        "front_delts",
+        "triceps",
+        "core"
+      ],
       "cns_load": "low",
-      "skill_level": 1,
+      "skill_level": "beginner",
       "compound": true,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "reps",
-      "discipline_tags": ["calisthenics", "endurance"],
-      "equipment_tags": ["bodyweight"],
+      "discipline_tags": [
+        "calisthenics",
+        "endurance"
+      ],
+      "equipment_tags": [
+        "bodyweight"
+      ],
       "substitution_group": "push_up"
     },
     {
@@ -261,15 +408,24 @@
       "pattern": "horizontal_push",
       "primary_muscle": "chest",
       "primary_region": "anterior upper",
-      "secondary_muscles": ["triceps", "front_delts"],
+      "secondary_muscles": [
+        "triceps",
+        "front_delts"
+      ],
       "cns_load": "moderate",
-      "skill_level": 2,
+      "skill_level": "intermediate",
       "compound": true,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "reps",
-      "discipline_tags": ["calisthenics", "strength"],
-      "equipment_tags": ["bodyweight", "dip_station"],
+      "discipline_tags": [
+        "calisthenics",
+        "strength"
+      ],
+      "equipment_tags": [
+        "bodyweight",
+        "dip_station"
+      ],
       "substitution_group": "dip"
     },
     {
@@ -277,15 +433,24 @@
       "pattern": "vertical_push",
       "primary_muscle": "front_delts",
       "primary_region": "shoulder",
-      "secondary_muscles": ["triceps", "side_delts", "core"],
+      "secondary_muscles": [
+        "triceps",
+        "side_delts",
+        "core"
+      ],
       "cns_load": "high",
-      "skill_level": 2,
+      "skill_level": "intermediate",
       "compound": true,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "reps",
-      "discipline_tags": ["strength", "powerlifting"],
-      "equipment_tags": ["barbell"],
+      "discipline_tags": [
+        "strength",
+        "powerlifting"
+      ],
+      "equipment_tags": [
+        "barbell"
+      ],
       "substitution_group": "ohp"
     },
     {
@@ -293,15 +458,22 @@
       "pattern": "vertical_push",
       "primary_muscle": "front_delts",
       "primary_region": "shoulder",
-      "secondary_muscles": ["triceps", "side_delts"],
+      "secondary_muscles": [
+        "triceps",
+        "side_delts"
+      ],
       "cns_load": "moderate",
-      "skill_level": 1,
+      "skill_level": "beginner",
       "compound": true,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "reps",
-      "discipline_tags": ["hypertrophy"],
-      "equipment_tags": ["dumbbell"],
+      "discipline_tags": [
+        "hypertrophy"
+      ],
+      "equipment_tags": [
+        "dumbbell"
+      ],
       "substitution_group": "ohp"
     },
     {
@@ -309,15 +481,22 @@
       "pattern": "vertical_push",
       "primary_muscle": "front_delts",
       "primary_region": "shoulder",
-      "secondary_muscles": ["triceps", "core"],
+      "secondary_muscles": [
+        "triceps",
+        "core"
+      ],
       "cns_load": "low",
-      "skill_level": 2,
+      "skill_level": "intermediate",
       "compound": true,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "reps",
-      "discipline_tags": ["calisthenics"],
-      "equipment_tags": ["bodyweight"],
+      "discipline_tags": [
+        "calisthenics"
+      ],
+      "equipment_tags": [
+        "bodyweight"
+      ],
       "substitution_group": "pike_press"
     },
     {
@@ -325,15 +504,24 @@
       "pattern": "vertical_push",
       "primary_muscle": "front_delts",
       "primary_region": "shoulder",
-      "secondary_muscles": ["triceps", "core", "upper_back"],
+      "secondary_muscles": [
+        "triceps",
+        "core",
+        "upper_back"
+      ],
       "cns_load": "moderate",
-      "skill_level": 5,
+      "skill_level": "elite",
       "compound": true,
       "is_complex_lift": true,
       "is_unilateral": false,
       "metric_type": "reps",
-      "discipline_tags": ["calisthenics", "athleticism"],
-      "equipment_tags": ["bodyweight"],
+      "discipline_tags": [
+        "calisthenics",
+        "athleticism"
+      ],
+      "equipment_tags": [
+        "bodyweight"
+      ],
       "substitution_group": "hspu"
     },
     {
@@ -341,15 +529,24 @@
       "pattern": "horizontal_pull",
       "primary_muscle": "lats",
       "primary_region": "posterior upper",
-      "secondary_muscles": ["upper_back", "rear_delts", "biceps"],
+      "secondary_muscles": [
+        "upper_back",
+        "rear_delts",
+        "biceps"
+      ],
       "cns_load": "high",
-      "skill_level": 2,
+      "skill_level": "intermediate",
       "compound": true,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "reps",
-      "discipline_tags": ["strength", "powerlifting"],
-      "equipment_tags": ["barbell"],
+      "discipline_tags": [
+        "strength",
+        "powerlifting"
+      ],
+      "equipment_tags": [
+        "barbell"
+      ],
       "substitution_group": "row_bilateral"
     },
     {
@@ -357,15 +554,25 @@
       "pattern": "horizontal_pull",
       "primary_muscle": "lats",
       "primary_region": "posterior upper",
-      "secondary_muscles": ["upper_back", "rear_delts", "biceps"],
+      "secondary_muscles": [
+        "upper_back",
+        "rear_delts",
+        "biceps"
+      ],
       "cns_load": "moderate",
-      "skill_level": 1,
+      "skill_level": "beginner",
       "compound": true,
       "is_complex_lift": false,
       "is_unilateral": true,
       "metric_type": "reps",
-      "discipline_tags": ["hypertrophy"],
-      "equipment_tags": ["dumbbell", "cable", "kettlebell"],
+      "discipline_tags": [
+        "hypertrophy"
+      ],
+      "equipment_tags": [
+        "dumbbell",
+        "cable",
+        "kettlebell"
+      ],
       "substitution_group": "row_unilateral"
     },
     {
@@ -373,15 +580,22 @@
       "pattern": "horizontal_pull",
       "primary_muscle": "lats",
       "primary_region": "posterior upper",
-      "secondary_muscles": ["upper_back", "biceps"],
+      "secondary_muscles": [
+        "upper_back",
+        "biceps"
+      ],
       "cns_load": "moderate",
-      "skill_level": 1,
+      "skill_level": "beginner",
       "compound": true,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "reps",
-      "discipline_tags": ["hypertrophy"],
-      "equipment_tags": ["cable"],
+      "discipline_tags": [
+        "hypertrophy"
+      ],
+      "equipment_tags": [
+        "cable"
+      ],
       "substitution_group": "row_bilateral"
     },
     {
@@ -389,15 +603,24 @@
       "pattern": "horizontal_pull",
       "primary_muscle": "upper_back",
       "primary_region": "posterior upper",
-      "secondary_muscles": ["lats", "rear_delts", "biceps"],
+      "secondary_muscles": [
+        "lats",
+        "rear_delts",
+        "biceps"
+      ],
       "cns_load": "low",
-      "skill_level": 1,
+      "skill_level": "beginner",
       "compound": true,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "reps",
-      "discipline_tags": ["calisthenics"],
-      "equipment_tags": ["bodyweight", "rings"],
+      "discipline_tags": [
+        "calisthenics"
+      ],
+      "equipment_tags": [
+        "bodyweight",
+        "rings"
+      ],
       "substitution_group": "row_bodyweight"
     },
     {
@@ -405,15 +628,25 @@
       "pattern": "vertical_pull",
       "primary_muscle": "lats",
       "primary_region": "posterior upper",
-      "secondary_muscles": ["biceps", "upper_back", "core"],
+      "secondary_muscles": [
+        "biceps",
+        "upper_back",
+        "core"
+      ],
       "cns_load": "moderate",
-      "skill_level": 2,
+      "skill_level": "intermediate",
       "compound": true,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "reps",
-      "discipline_tags": ["calisthenics", "strength"],
-      "equipment_tags": ["bodyweight", "pull_up_bar"],
+      "discipline_tags": [
+        "calisthenics",
+        "strength"
+      ],
+      "equipment_tags": [
+        "bodyweight",
+        "pull_up_bar"
+      ],
       "substitution_group": "pull_up"
     },
     {
@@ -421,15 +654,24 @@
       "pattern": "vertical_pull",
       "primary_muscle": "lats",
       "primary_region": "posterior upper",
-      "secondary_muscles": ["biceps", "upper_back"],
+      "secondary_muscles": [
+        "biceps",
+        "upper_back"
+      ],
       "cns_load": "moderate",
-      "skill_level": 2,
+      "skill_level": "intermediate",
       "compound": true,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "reps",
-      "discipline_tags": ["calisthenics", "strength"],
-      "equipment_tags": ["bodyweight", "pull_up_bar"],
+      "discipline_tags": [
+        "calisthenics",
+        "strength"
+      ],
+      "equipment_tags": [
+        "bodyweight",
+        "pull_up_bar"
+      ],
       "substitution_group": "pull_up"
     },
     {
@@ -437,15 +679,22 @@
       "pattern": "vertical_pull",
       "primary_muscle": "lats",
       "primary_region": "posterior upper",
-      "secondary_muscles": ["biceps", "upper_back"],
+      "secondary_muscles": [
+        "biceps",
+        "upper_back"
+      ],
       "cns_load": "low",
-      "skill_level": 1,
+      "skill_level": "beginner",
       "compound": true,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "reps",
-      "discipline_tags": ["hypertrophy"],
-      "equipment_tags": ["cable"],
+      "discipline_tags": [
+        "hypertrophy"
+      ],
+      "equipment_tags": [
+        "cable"
+      ],
       "substitution_group": "pulldown"
     },
     {
@@ -453,15 +702,26 @@
       "pattern": "vertical_pull",
       "primary_muscle": "lats",
       "primary_region": "posterior upper",
-      "secondary_muscles": ["chest", "triceps", "core"],
+      "secondary_muscles": [
+        "chest",
+        "triceps",
+        "core"
+      ],
       "cns_load": "high",
-      "skill_level": 5,
+      "skill_level": "elite",
       "compound": true,
       "is_complex_lift": true,
       "is_unilateral": false,
       "metric_type": "reps",
-      "discipline_tags": ["calisthenics", "athleticism"],
-      "equipment_tags": ["bodyweight", "rings", "pull_up_bar"],
+      "discipline_tags": [
+        "calisthenics",
+        "athleticism"
+      ],
+      "equipment_tags": [
+        "bodyweight",
+        "rings",
+        "pull_up_bar"
+      ],
       "substitution_group": "muscle_up"
     },
     {
@@ -469,15 +729,25 @@
       "pattern": "olympic",
       "primary_muscle": "full_body",
       "primary_region": "full body",
-      "secondary_muscles": ["quadriceps", "glutes", "hamstrings", "upper_back"],
+      "secondary_muscles": [
+        "quadriceps",
+        "glutes",
+        "hamstrings",
+        "upper_back"
+      ],
       "cns_load": "very_high",
-      "skill_level": 4,
+      "skill_level": "expert",
       "compound": true,
       "is_complex_lift": true,
       "is_unilateral": false,
       "metric_type": "reps",
-      "discipline_tags": ["olympic", "athleticism"],
-      "equipment_tags": ["barbell"],
+      "discipline_tags": [
+        "olympic",
+        "athleticism"
+      ],
+      "equipment_tags": [
+        "barbell"
+      ],
       "substitution_group": "clean"
     },
     {
@@ -485,15 +755,25 @@
       "pattern": "olympic",
       "primary_muscle": "full_body",
       "primary_region": "full body",
-      "secondary_muscles": ["quadriceps", "glutes", "hamstrings", "upper_back"],
+      "secondary_muscles": [
+        "quadriceps",
+        "glutes",
+        "hamstrings",
+        "upper_back"
+      ],
       "cns_load": "very_high",
-      "skill_level": 3,
+      "skill_level": "advanced",
       "compound": true,
       "is_complex_lift": true,
       "is_unilateral": false,
       "metric_type": "reps",
-      "discipline_tags": ["olympic", "athleticism"],
-      "equipment_tags": ["barbell"],
+      "discipline_tags": [
+        "olympic",
+        "athleticism"
+      ],
+      "equipment_tags": [
+        "barbell"
+      ],
       "substitution_group": "clean"
     },
     {
@@ -501,15 +781,24 @@
       "pattern": "olympic",
       "primary_muscle": "full_body",
       "primary_region": "full body",
-      "secondary_muscles": ["quadriceps", "glutes", "upper_back", "front_delts"],
+      "secondary_muscles": [
+        "quadriceps",
+        "glutes",
+        "upper_back",
+        "front_delts"
+      ],
       "cns_load": "very_high",
-      "skill_level": 5,
+      "skill_level": "elite",
       "compound": true,
       "is_complex_lift": true,
       "is_unilateral": false,
       "metric_type": "reps",
-      "discipline_tags": ["olympic"],
-      "equipment_tags": ["barbell"],
+      "discipline_tags": [
+        "olympic"
+      ],
+      "equipment_tags": [
+        "barbell"
+      ],
       "substitution_group": "snatch"
     },
     {
@@ -517,15 +806,24 @@
       "pattern": "olympic",
       "primary_muscle": "full_body",
       "primary_region": "full body",
-      "secondary_muscles": ["quadriceps", "glutes", "front_delts", "triceps"],
+      "secondary_muscles": [
+        "quadriceps",
+        "glutes",
+        "front_delts",
+        "triceps"
+      ],
       "cns_load": "very_high",
-      "skill_level": 5,
+      "skill_level": "elite",
       "compound": true,
       "is_complex_lift": true,
       "is_unilateral": false,
       "metric_type": "reps",
-      "discipline_tags": ["olympic"],
-      "equipment_tags": ["barbell"],
+      "discipline_tags": [
+        "olympic"
+      ],
+      "equipment_tags": [
+        "barbell"
+      ],
       "substitution_group": "clean_jerk"
     },
     {
@@ -533,15 +831,26 @@
       "pattern": "carry",
       "primary_muscle": "forearms",
       "primary_region": "full body",
-      "secondary_muscles": ["core", "upper_back", "quadriceps"],
+      "secondary_muscles": [
+        "core",
+        "upper_back",
+        "quadriceps"
+      ],
       "cns_load": "moderate",
-      "skill_level": 1,
+      "skill_level": "beginner",
       "compound": true,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "distance",
-      "discipline_tags": ["strongman", "athleticism"],
-      "equipment_tags": ["dumbbell", "kettlebell", "trap_bar"],
+      "discipline_tags": [
+        "strongman",
+        "athleticism"
+      ],
+      "equipment_tags": [
+        "dumbbell",
+        "kettlebell",
+        "trap_bar"
+      ],
       "substitution_group": "carry_bilateral"
     },
     {
@@ -549,15 +858,25 @@
       "pattern": "carry",
       "primary_muscle": "obliques",
       "primary_region": "full body",
-      "secondary_muscles": ["core", "forearms", "upper_back"],
+      "secondary_muscles": [
+        "core",
+        "forearms",
+        "upper_back"
+      ],
       "cns_load": "moderate",
-      "skill_level": 1,
+      "skill_level": "beginner",
       "compound": true,
       "is_complex_lift": false,
       "is_unilateral": true,
       "metric_type": "distance",
-      "discipline_tags": ["strongman", "athleticism"],
-      "equipment_tags": ["dumbbell", "kettlebell"],
+      "discipline_tags": [
+        "strongman",
+        "athleticism"
+      ],
+      "equipment_tags": [
+        "dumbbell",
+        "kettlebell"
+      ],
       "substitution_group": "carry_unilateral"
     },
     {
@@ -565,15 +884,25 @@
       "pattern": "carry",
       "primary_muscle": "front_delts",
       "primary_region": "full body",
-      "secondary_muscles": ["core", "upper_back"],
+      "secondary_muscles": [
+        "core",
+        "upper_back"
+      ],
       "cns_load": "moderate",
-      "skill_level": 2,
+      "skill_level": "intermediate",
       "compound": true,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "distance",
-      "discipline_tags": ["strongman", "mobility"],
-      "equipment_tags": ["dumbbell", "kettlebell", "barbell"],
+      "discipline_tags": [
+        "strongman",
+        "mobility"
+      ],
+      "equipment_tags": [
+        "dumbbell",
+        "kettlebell",
+        "barbell"
+      ],
       "substitution_group": "carry_overhead"
     },
     {
@@ -581,15 +910,23 @@
       "pattern": "isometric",
       "primary_muscle": "core",
       "primary_region": "anterior upper",
-      "secondary_muscles": ["obliques", "front_delts"],
+      "secondary_muscles": [
+        "obliques",
+        "front_delts"
+      ],
       "cns_load": "very_low",
-      "skill_level": 1,
+      "skill_level": "beginner",
       "compound": false,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "time",
-      "discipline_tags": ["calisthenics", "mobility"],
-      "equipment_tags": ["bodyweight"],
+      "discipline_tags": [
+        "calisthenics",
+        "mobility"
+      ],
+      "equipment_tags": [
+        "bodyweight"
+      ],
       "substitution_group": "plank"
     },
     {
@@ -597,15 +934,23 @@
       "pattern": "isometric",
       "primary_muscle": "obliques",
       "primary_region": "anterior upper",
-      "secondary_muscles": ["core", "side_delts"],
+      "secondary_muscles": [
+        "core",
+        "side_delts"
+      ],
       "cns_load": "very_low",
-      "skill_level": 1,
+      "skill_level": "beginner",
       "compound": false,
       "is_complex_lift": false,
       "is_unilateral": true,
       "metric_type": "time",
-      "discipline_tags": ["calisthenics", "mobility"],
-      "equipment_tags": ["bodyweight"],
+      "discipline_tags": [
+        "calisthenics",
+        "mobility"
+      ],
+      "equipment_tags": [
+        "bodyweight"
+      ],
       "substitution_group": "side_plank"
     },
     {
@@ -613,15 +958,22 @@
       "pattern": "core",
       "primary_muscle": "core",
       "primary_region": "anterior upper",
-      "secondary_muscles": ["hip_flexors"],
+      "secondary_muscles": [
+        "hip_flexors"
+      ],
       "cns_load": "very_low",
-      "skill_level": 1,
+      "skill_level": "beginner",
       "compound": false,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "reps",
-      "discipline_tags": ["mobility", "rehabilitation"],
-      "equipment_tags": ["bodyweight"],
+      "discipline_tags": [
+        "mobility",
+        "rehabilitation"
+      ],
+      "equipment_tags": [
+        "bodyweight"
+      ],
       "substitution_group": "dead_bug"
     },
     {
@@ -629,15 +981,23 @@
       "pattern": "rotation",
       "primary_muscle": "core",
       "primary_region": "anterior upper",
-      "secondary_muscles": ["obliques"],
+      "secondary_muscles": [
+        "obliques"
+      ],
       "cns_load": "low",
-      "skill_level": 1,
+      "skill_level": "beginner",
       "compound": false,
       "is_complex_lift": false,
       "is_unilateral": true,
       "metric_type": "reps",
-      "discipline_tags": ["athleticism", "rehabilitation"],
-      "equipment_tags": ["cable", "band"],
+      "discipline_tags": [
+        "athleticism",
+        "rehabilitation"
+      ],
+      "equipment_tags": [
+        "cable",
+        "band"
+      ],
       "substitution_group": "anti_rotation"
     },
     {
@@ -645,15 +1005,21 @@
       "pattern": "core",
       "primary_muscle": "core",
       "primary_region": "anterior upper",
-      "secondary_muscles": ["hip_flexors"],
+      "secondary_muscles": [
+        "hip_flexors"
+      ],
       "cns_load": "low",
-      "skill_level": 2,
+      "skill_level": "intermediate",
       "compound": false,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "reps",
-      "discipline_tags": ["calisthenics"],
-      "equipment_tags": ["pull_up_bar"],
+      "discipline_tags": [
+        "calisthenics"
+      ],
+      "equipment_tags": [
+        "pull_up_bar"
+      ],
       "substitution_group": "hanging_leg_raise"
     },
     {
@@ -661,15 +1027,23 @@
       "pattern": "core",
       "primary_muscle": "core",
       "primary_region": "anterior upper",
-      "secondary_muscles": ["lats", "front_delts"],
+      "secondary_muscles": [
+        "lats",
+        "front_delts"
+      ],
       "cns_load": "low",
-      "skill_level": 2,
+      "skill_level": "intermediate",
       "compound": false,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "reps",
-      "discipline_tags": ["calisthenics", "strength"],
-      "equipment_tags": ["ab_wheel"],
+      "discipline_tags": [
+        "calisthenics",
+        "strength"
+      ],
+      "equipment_tags": [
+        "ab_wheel"
+      ],
       "substitution_group": "rollout"
     },
     {
@@ -677,15 +1051,23 @@
       "pattern": "plyometric",
       "primary_muscle": "quadriceps",
       "primary_region": "anterior lower",
-      "secondary_muscles": ["glutes", "calves"],
+      "secondary_muscles": [
+        "glutes",
+        "calves"
+      ],
       "cns_load": "high",
-      "skill_level": 2,
+      "skill_level": "intermediate",
       "compound": true,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "reps",
-      "discipline_tags": ["athleticism", "explosiveness"],
-      "equipment_tags": ["plyo_box"],
+      "discipline_tags": [
+        "athleticism",
+        "explosiveness"
+      ],
+      "equipment_tags": [
+        "plyo_box"
+      ],
       "substitution_group": "box_jump"
     },
     {
@@ -693,15 +1075,23 @@
       "pattern": "plyometric",
       "primary_muscle": "glutes",
       "primary_region": "posterior lower",
-      "secondary_muscles": ["quadriceps", "hamstrings"],
+      "secondary_muscles": [
+        "quadriceps",
+        "hamstrings"
+      ],
       "cns_load": "high",
-      "skill_level": 2,
+      "skill_level": "intermediate",
       "compound": true,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "distance",
-      "discipline_tags": ["athleticism", "explosiveness"],
-      "equipment_tags": ["bodyweight"],
+      "discipline_tags": [
+        "athleticism",
+        "explosiveness"
+      ],
+      "equipment_tags": [
+        "bodyweight"
+      ],
       "substitution_group": "broad_jump"
     },
     {
@@ -709,15 +1099,23 @@
       "pattern": "plyometric",
       "primary_muscle": "quadriceps",
       "primary_region": "anterior lower",
-      "secondary_muscles": ["glutes", "calves"],
+      "secondary_muscles": [
+        "glutes",
+        "calves"
+      ],
       "cns_load": "very_high",
-      "skill_level": 3,
+      "skill_level": "advanced",
       "compound": true,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "reps",
-      "discipline_tags": ["athleticism", "explosiveness"],
-      "equipment_tags": ["plyo_box"],
+      "discipline_tags": [
+        "athleticism",
+        "explosiveness"
+      ],
+      "equipment_tags": [
+        "plyo_box"
+      ],
       "substitution_group": "depth_jump"
     },
     {
@@ -725,15 +1123,23 @@
       "pattern": "plyometric",
       "primary_muscle": "core",
       "primary_region": "full body",
-      "secondary_muscles": ["lats", "front_delts"],
+      "secondary_muscles": [
+        "lats",
+        "front_delts"
+      ],
       "cns_load": "moderate",
-      "skill_level": 1,
+      "skill_level": "beginner",
       "compound": true,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "reps",
-      "discipline_tags": ["athleticism", "explosiveness"],
-      "equipment_tags": ["medicine_ball"],
+      "discipline_tags": [
+        "athleticism",
+        "explosiveness"
+      ],
+      "equipment_tags": [
+        "medicine_ball"
+      ],
       "substitution_group": "med_ball_slam"
     },
     {
@@ -741,15 +1147,23 @@
       "pattern": "isolation",
       "primary_muscle": "biceps",
       "primary_region": "anterior upper",
-      "secondary_muscles": ["forearms"],
+      "secondary_muscles": [
+        "forearms"
+      ],
       "cns_load": "very_low",
-      "skill_level": 1,
+      "skill_level": "beginner",
       "compound": false,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "reps",
-      "discipline_tags": ["hypertrophy"],
-      "equipment_tags": ["dumbbell", "barbell", "cable"],
+      "discipline_tags": [
+        "hypertrophy"
+      ],
+      "equipment_tags": [
+        "dumbbell",
+        "barbell",
+        "cable"
+      ],
       "substitution_group": "bicep_curl"
     },
     {
@@ -759,13 +1173,18 @@
       "primary_region": "posterior upper",
       "secondary_muscles": [],
       "cns_load": "very_low",
-      "skill_level": 1,
+      "skill_level": "beginner",
       "compound": false,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "reps",
-      "discipline_tags": ["hypertrophy"],
-      "equipment_tags": ["dumbbell", "cable"],
+      "discipline_tags": [
+        "hypertrophy"
+      ],
+      "equipment_tags": [
+        "dumbbell",
+        "cable"
+      ],
       "substitution_group": "tricep_extension"
     },
     {
@@ -775,13 +1194,18 @@
       "primary_region": "shoulder",
       "secondary_muscles": [],
       "cns_load": "very_low",
-      "skill_level": 1,
+      "skill_level": "beginner",
       "compound": false,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "reps",
-      "discipline_tags": ["hypertrophy"],
-      "equipment_tags": ["dumbbell", "cable"],
+      "discipline_tags": [
+        "hypertrophy"
+      ],
+      "equipment_tags": [
+        "dumbbell",
+        "cable"
+      ],
       "substitution_group": "lateral_raise"
     },
     {
@@ -789,15 +1213,23 @@
       "pattern": "isolation",
       "primary_muscle": "rear_delts",
       "primary_region": "posterior upper",
-      "secondary_muscles": ["upper_back"],
+      "secondary_muscles": [
+        "upper_back"
+      ],
       "cns_load": "very_low",
-      "skill_level": 1,
+      "skill_level": "beginner",
       "compound": false,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "reps",
-      "discipline_tags": ["hypertrophy", "rehabilitation"],
-      "equipment_tags": ["cable", "band"],
+      "discipline_tags": [
+        "hypertrophy",
+        "rehabilitation"
+      ],
+      "equipment_tags": [
+        "cable",
+        "band"
+      ],
       "substitution_group": "face_pull"
     },
     {
@@ -807,13 +1239,19 @@
       "primary_region": "anterior lower",
       "secondary_muscles": [],
       "cns_load": "very_low",
-      "skill_level": 1,
+      "skill_level": "beginner",
       "compound": false,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "reps",
-      "discipline_tags": ["hypertrophy"],
-      "equipment_tags": ["machine", "dumbbell", "bodyweight"],
+      "discipline_tags": [
+        "hypertrophy"
+      ],
+      "equipment_tags": [
+        "machine",
+        "dumbbell",
+        "bodyweight"
+      ],
       "substitution_group": "calf_raise"
     },
     {
@@ -823,13 +1261,17 @@
       "primary_region": "posterior lower",
       "secondary_muscles": [],
       "cns_load": "low",
-      "skill_level": 1,
+      "skill_level": "beginner",
       "compound": false,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "reps",
-      "discipline_tags": ["hypertrophy"],
-      "equipment_tags": ["machine"],
+      "discipline_tags": [
+        "hypertrophy"
+      ],
+      "equipment_tags": [
+        "machine"
+      ],
       "substitution_group": "leg_curl"
     },
     {
@@ -839,13 +1281,17 @@
       "primary_region": "anterior lower",
       "secondary_muscles": [],
       "cns_load": "low",
-      "skill_level": 1,
+      "skill_level": "beginner",
       "compound": false,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "reps",
-      "discipline_tags": ["hypertrophy"],
-      "equipment_tags": ["machine"],
+      "discipline_tags": [
+        "hypertrophy"
+      ],
+      "equipment_tags": [
+        "machine"
+      ],
       "substitution_group": "leg_extension"
     },
     {
@@ -853,15 +1299,21 @@
       "pattern": "mobility",
       "primary_muscle": "hip_flexors",
       "primary_region": "anterior lower",
-      "secondary_muscles": ["quadriceps"],
+      "secondary_muscles": [
+        "quadriceps"
+      ],
       "cns_load": "very_low",
-      "skill_level": 1,
+      "skill_level": "beginner",
       "compound": false,
       "is_complex_lift": false,
       "is_unilateral": true,
       "metric_type": "time",
-      "discipline_tags": ["mobility"],
-      "equipment_tags": ["bodyweight"],
+      "discipline_tags": [
+        "mobility"
+      ],
+      "equipment_tags": [
+        "bodyweight"
+      ],
       "substitution_group": "hip_flexor_stretch"
     },
     {
@@ -869,15 +1321,22 @@
       "pattern": "mobility",
       "primary_muscle": "glutes",
       "primary_region": "posterior lower",
-      "secondary_muscles": ["hip_flexors"],
+      "secondary_muscles": [
+        "hip_flexors"
+      ],
       "cns_load": "very_low",
-      "skill_level": 1,
+      "skill_level": "beginner",
       "compound": false,
       "is_complex_lift": false,
       "is_unilateral": true,
       "metric_type": "time",
-      "discipline_tags": ["mobility", "yoga"],
-      "equipment_tags": ["bodyweight"],
+      "discipline_tags": [
+        "mobility",
+        "yoga"
+      ],
+      "equipment_tags": [
+        "bodyweight"
+      ],
       "substitution_group": "hip_opener"
     },
     {
@@ -885,15 +1344,22 @@
       "pattern": "mobility",
       "primary_muscle": "lower_back",
       "primary_region": "posterior upper",
-      "secondary_muscles": ["core"],
+      "secondary_muscles": [
+        "core"
+      ],
       "cns_load": "very_low",
-      "skill_level": 1,
+      "skill_level": "beginner",
       "compound": false,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "reps",
-      "discipline_tags": ["mobility", "yoga"],
-      "equipment_tags": ["bodyweight"],
+      "discipline_tags": [
+        "mobility",
+        "yoga"
+      ],
+      "equipment_tags": [
+        "bodyweight"
+      ],
       "substitution_group": "spinal_mobility"
     },
     {
@@ -901,15 +1367,21 @@
       "pattern": "mobility",
       "primary_muscle": "upper_back",
       "primary_region": "posterior upper",
-      "secondary_muscles": ["obliques"],
+      "secondary_muscles": [
+        "obliques"
+      ],
       "cns_load": "very_low",
-      "skill_level": 1,
+      "skill_level": "beginner",
       "compound": false,
       "is_complex_lift": false,
       "is_unilateral": true,
       "metric_type": "reps",
-      "discipline_tags": ["mobility"],
-      "equipment_tags": ["bodyweight"],
+      "discipline_tags": [
+        "mobility"
+      ],
+      "equipment_tags": [
+        "bodyweight"
+      ],
       "substitution_group": "thoracic_mobility"
     },
     {
@@ -917,15 +1389,23 @@
       "pattern": "mobility",
       "primary_muscle": "upper_back",
       "primary_region": "posterior upper",
-      "secondary_muscles": ["rear_delts"],
+      "secondary_muscles": [
+        "rear_delts"
+      ],
       "cns_load": "very_low",
-      "skill_level": 1,
+      "skill_level": "beginner",
       "compound": false,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "reps",
-      "discipline_tags": ["mobility", "rehabilitation"],
-      "equipment_tags": ["bodyweight", "wall"],
+      "discipline_tags": [
+        "mobility",
+        "rehabilitation"
+      ],
+      "equipment_tags": [
+        "bodyweight",
+        "wall"
+      ],
       "substitution_group": "shoulder_mobility"
     },
     {
@@ -933,15 +1413,23 @@
       "pattern": "isometric",
       "primary_muscle": "core",
       "primary_region": "anterior upper",
-      "secondary_muscles": ["hip_flexors", "triceps"],
+      "secondary_muscles": [
+        "hip_flexors",
+        "triceps"
+      ],
       "cns_load": "moderate",
-      "skill_level": 4,
+      "skill_level": "expert",
       "compound": true,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "time",
-      "discipline_tags": ["calisthenics"],
-      "equipment_tags": ["bodyweight", "parallettes"],
+      "discipline_tags": [
+        "calisthenics"
+      ],
+      "equipment_tags": [
+        "bodyweight",
+        "parallettes"
+      ],
       "substitution_group": "l_sit"
     },
     {
@@ -949,15 +1437,24 @@
       "pattern": "isometric",
       "primary_muscle": "lats",
       "primary_region": "posterior upper",
-      "secondary_muscles": ["core", "front_delts"],
+      "secondary_muscles": [
+        "core",
+        "front_delts"
+      ],
       "cns_load": "high",
-      "skill_level": 5,
+      "skill_level": "elite",
       "compound": true,
       "is_complex_lift": true,
       "is_unilateral": false,
       "metric_type": "time",
-      "discipline_tags": ["calisthenics"],
-      "equipment_tags": ["bodyweight", "pull_up_bar", "rings"],
+      "discipline_tags": [
+        "calisthenics"
+      ],
+      "equipment_tags": [
+        "bodyweight",
+        "pull_up_bar",
+        "rings"
+      ],
       "substitution_group": "front_lever"
     },
     {
@@ -965,15 +1462,23 @@
       "pattern": "isometric",
       "primary_muscle": "quadriceps",
       "primary_region": "anterior lower",
-      "secondary_muscles": ["glutes"],
+      "secondary_muscles": [
+        "glutes"
+      ],
       "cns_load": "low",
-      "skill_level": 1,
+      "skill_level": "beginner",
       "compound": true,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "time",
-      "discipline_tags": ["endurance", "isometric"],
-      "equipment_tags": ["bodyweight", "wall"],
+      "discipline_tags": [
+        "endurance",
+        "isometric"
+      ],
+      "equipment_tags": [
+        "bodyweight",
+        "wall"
+      ],
       "substitution_group": "wall_sit"
     },
     {
@@ -981,15 +1486,24 @@
       "pattern": "plyometric",
       "primary_muscle": "hamstrings",
       "primary_region": "posterior lower",
-      "secondary_muscles": ["quadriceps", "glutes", "calves"],
+      "secondary_muscles": [
+        "quadriceps",
+        "glutes",
+        "calves"
+      ],
       "cns_load": "very_high",
-      "skill_level": 2,
+      "skill_level": "intermediate",
       "compound": true,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "distance",
-      "discipline_tags": ["athleticism", "speed"],
-      "equipment_tags": ["bodyweight"],
+      "discipline_tags": [
+        "athleticism",
+        "speed"
+      ],
+      "equipment_tags": [
+        "bodyweight"
+      ],
       "substitution_group": "sprint"
     },
     {
@@ -997,15 +1511,24 @@
       "pattern": "carry",
       "primary_muscle": "quadriceps",
       "primary_region": "anterior lower",
-      "secondary_muscles": ["glutes", "calves", "core"],
+      "secondary_muscles": [
+        "glutes",
+        "calves",
+        "core"
+      ],
       "cns_load": "high",
-      "skill_level": 1,
+      "skill_level": "beginner",
       "compound": true,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "distance",
-      "discipline_tags": ["strongman", "athleticism"],
-      "equipment_tags": ["sled"],
+      "discipline_tags": [
+        "strongman",
+        "athleticism"
+      ],
+      "equipment_tags": [
+        "sled"
+      ],
       "substitution_group": "sled_push"
     },
     {
@@ -1013,15 +1536,23 @@
       "pattern": "core",
       "primary_muscle": "core",
       "primary_region": "full body",
-      "secondary_muscles": ["front_delts", "biceps"],
+      "secondary_muscles": [
+        "front_delts",
+        "biceps"
+      ],
       "cns_load": "moderate",
-      "skill_level": 1,
+      "skill_level": "beginner",
       "compound": true,
       "is_complex_lift": false,
       "is_unilateral": false,
       "metric_type": "time",
-      "discipline_tags": ["endurance", "athleticism"],
-      "equipment_tags": ["battle_rope"],
+      "discipline_tags": [
+        "endurance",
+        "athleticism"
+      ],
+      "equipment_tags": [
+        "battle_rope"
+      ],
       "substitution_group": "battle_rope"
     },
     {
@@ -1029,15 +1560,25 @@
       "pattern": "core",
       "primary_muscle": "full_body",
       "primary_region": "full body",
-      "secondary_muscles": ["core", "front_delts", "glutes"],
+      "secondary_muscles": [
+        "core",
+        "front_delts",
+        "glutes"
+      ],
       "cns_load": "moderate",
-      "skill_level": 3,
+      "skill_level": "advanced",
       "compound": true,
       "is_complex_lift": false,
       "is_unilateral": true,
       "metric_type": "reps",
-      "discipline_tags": ["athleticism", "mobility"],
-      "equipment_tags": ["kettlebell", "dumbbell"],
+      "discipline_tags": [
+        "athleticism",
+        "mobility"
+      ],
+      "equipment_tags": [
+        "kettlebell",
+        "dumbbell"
+      ],
       "substitution_group": "turkish_getup"
     }
   ]

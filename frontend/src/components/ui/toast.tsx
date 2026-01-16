@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { X, CheckCircle, AlertCircle, AlertTriangle, Info } from 'lucide-react';
 import { useUIStore } from '@/stores/ui-store';
 import { cn } from '@/lib/utils';
@@ -53,17 +52,4 @@ export function ToastContainer() {
       </div>
     </div>
   );
-}
-
-// Hook for easy toast usage
-export function useToast() {
-  const { addToast } = useUIStore();
-
-  return {
-    success: (message: string) => addToast({ type: 'success', message }),
-    error: (message: string) => addToast({ type: 'error', message }),
-    warning: (message: string) => addToast({ type: 'warning', message }),
-    info: (message: string) => addToast({ type: 'info', message }),
-    toast: addToast,
-  };
 }

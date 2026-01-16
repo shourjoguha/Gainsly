@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import type { AxiosError } from 'axios';
 import { useProgramWizardStore } from '@/stores/program-wizard-store';
 import { useCreateProgram } from '@/api/programs';
 import { WizardContainer } from '@/components/wizard/WizardContainer';
@@ -19,6 +20,7 @@ import {
   PersonaAggression,
   type ProgramCreate 
 } from '@/types';
+import { useUIStore } from '@/stores/ui-store';
 
 export const Route = createFileRoute('/program/wizard')({
   component: ProgramWizardPage,
@@ -46,6 +48,7 @@ function ProgramWizardPage() {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
   const createProgram = useCreateProgram();
+  const { addToast } = useUIStore();
   
   const {
     goals,
@@ -128,7 +131,36 @@ function ProgramWizardPage() {
       });
     } catch (error) {
       console.error('Failed to create program:', error);
-      // Toast or error handling would go here
+      const err = error as AxiosError<unknown>;
+      const data = err.response?.data as { detail?: unknown } | string | undefined;
+      const detail = typeof data === 'object' && data !== null ? data.detail : undefined;
+
+      if (Array.isArray(detail)) {
+        const messages = detail.map((d: { loc?: string[]; msg?: string }) => {
+          const field = d.loc?.slice(1)?.join('.') || 'unknown field';
+          return `${field}: ${d.msg}`;
+        });
+        addToast({
+          type: 'error',
+          message: `Validation failed: ${messages.join(' | ')}`,
+        });
+      } else if (typeof detail === 'string') {
+        addToast({ type: 'error', message: detail });
+      } else if (typeof data === 'string') {
+        addToast({ type: 'error', message: data });
+      } else if (data && typeof data === 'object') {
+        addToast({ type: 'error', message: JSON.stringify(data) });
+      } else if (!err.response) {
+        addToast({
+          type: 'error',
+          message: 'Network error while creating program. Please check that the server is running.',
+        });
+      } else {
+        addToast({
+          type: 'error',
+          message: 'Failed to create program. Please check your selections and try again.',
+        });
+      }
     }
   };
 

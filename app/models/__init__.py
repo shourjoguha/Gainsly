@@ -20,6 +20,7 @@ from app.models.enums import (
     PersonaTone,
     PersonaAggression,
     ExperienceLevel,
+    Visibility,
 )
 from app.models.movement import Movement
 from app.models.user import User, UserMovementRule, UserEnjoyableActivity, UserSettings
@@ -49,6 +50,7 @@ __all__ = [
     "PersonaTone",
     "PersonaAggression",
     "ExperienceLevel",
+    "Visibility",
     # Models
     "Movement",
     "User",

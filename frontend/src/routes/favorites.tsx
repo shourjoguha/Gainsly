@@ -89,7 +89,7 @@ function FavoritesPage() {
           message: 'Preference saved',
         });
       }
-    } catch (error) {
+    } catch {
       addToast({
         type: 'error',
         message: 'Failed to update preference',

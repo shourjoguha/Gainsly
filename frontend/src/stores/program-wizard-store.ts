@@ -4,7 +4,6 @@ import {
   GoalWeight,
   SplitTemplate,
   ProgressionStyle,
-  PersonaTone,
   MovementRuleCreate,
   EnjoyableActivityCreate,
 } from '@/types';

@@ -3,7 +3,6 @@ import { MovementRuleType } from '@/types';
 import { useProgramWizardStore } from '@/stores/program-wizard-store';
 import { useMovements } from '@/api/settings';
 import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Search, ThumbsUp, ThumbsDown, X } from 'lucide-react';
 

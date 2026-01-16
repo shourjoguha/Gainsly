@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { Bot, Wrench, ArrowLeft } from 'lucide-react';
 import { Card } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
 
 export const Route = createFileRoute('/program/new')({
   component: NewProgramPage,

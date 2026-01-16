@@ -11,6 +11,7 @@ from app.models.enums import (
     E1RMFormula,
     MovementPattern,
     RecoverySource,
+    Visibility,
 )
 
 
@@ -34,6 +35,10 @@ class WorkoutLog(Base):
     
     # Timing
     actual_duration_minutes = Column(Integer, nullable=True)
+    
+    # Access Control
+    visibility = Column(SQLEnum(Visibility), default=Visibility.PRIVATE, nullable=False)
+    
     created_at = Column(DateTime, default=datetime.utcnow)
     
     # Relationships

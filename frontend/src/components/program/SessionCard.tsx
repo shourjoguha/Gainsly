@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { ChevronDown, ChevronUp, Clock, Flame, Coffee } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { Session, ExerciseBlock, SessionType } from '@/types';
+import type { Session, ExerciseBlock } from '@/types';
 
 interface SessionCardProps {
   session: Session;

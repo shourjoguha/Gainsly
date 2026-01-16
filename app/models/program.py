@@ -17,6 +17,7 @@ from app.models.enums import (
     MicrocycleStatus,
     SessionType,
     ExerciseRole,
+    Visibility,
 )
 
 
@@ -61,6 +62,8 @@ class Program(Base):
     
     # Status
     is_active = Column(Boolean, default=True)
+    is_template = Column(Boolean, default=False)  # Reusable template
+    visibility = Column(SQLEnum(Visibility), default=Visibility.PRIVATE, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     
     # Constraints

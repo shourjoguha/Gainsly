@@ -78,7 +78,7 @@ export function CoachStep() {
       <div className="space-y-3">
         <label className="text-sm font-medium">Program Duration</label>
         <div className="grid grid-cols-4 gap-2">
-          {[8, 12, 16, 20].map((weeks) => (
+          {[8, 10, 12].map((weeks) => (
             <button
               key={weeks}
               onClick={() => setDurationWeeks(weeks)}
@@ -94,10 +94,9 @@ export function CoachStep() {
           ))}
         </div>
         <p className="text-xs text-foreground-muted text-center">
-          {durationWeeks <= 8 && "Short-term focus block"}
-          {durationWeeks === 12 && "Standard training cycle (recommended)"}
-          {durationWeeks === 16 && "Extended building phase"}
-          {durationWeeks >= 20 && "Long-term development program"}
+          {durationWeeks === 8 && "Short-term focus block"}
+          {durationWeeks === 10 && "Extended training cycle"}
+          {durationWeeks === 12 && "Standard 3-month program (recommended)"}
         </p>
       </div>
 

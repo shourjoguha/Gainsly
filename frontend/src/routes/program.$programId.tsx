@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useProgram } from '@/api/programs';
 import { ArrowLeft, Play, MessageSquare, Calendar, Target, Dumbbell } from 'lucide-react';
@@ -22,9 +23,61 @@ const GOAL_CONFIG: Record<Goal, { label: string; color: string }> = {
   [Goal.SPEED]: { label: 'Speed', color: 'bg-cyan-500' },
 };
 
+function useProgramWithGeneration(programId: number) {
+  const query = useProgram(programId);
+
+  const { data, isLoading, error, refetch } = query;
+
+  const trainingSessions =
+    data?.upcoming_sessions.filter(
+      (s) => s.session_type !== SessionType.RECOVERY
+    ) ?? [];
+
+  const hasContent = (session: (typeof trainingSessions)[number]) =>
+    (session.main && session.main.length > 0) ||
+    (session.warmup && session.warmup.length > 0) ||
+    (session.accessory && session.accessory.length > 0) ||
+    (session.cooldown && session.cooldown.length > 0) ||
+    (session.finisher &&
+      ((session.finisher.exercises && session.finisher.exercises.length > 0) ||
+        !!session.finisher.duration_minutes));
+
+  const totalTraining = trainingSessions.length;
+  const generatedCount = trainingSessions.filter(hasContent).length;
+
+  const isGenerating =
+    totalTraining > 0 && generatedCount < totalTraining;
+
+  const shouldPoll =
+    !!data &&
+    !isLoading &&
+    !error &&
+    totalTraining > 0 &&
+    generatedCount < totalTraining;
+
+  useEffect(() => {
+    if (!shouldPoll) {
+      return;
+    }
+
+    const id = window.setInterval(() => {
+      refetch();
+    }, 4000);
+
+    return () => window.clearInterval(id);
+  }, [shouldPoll, refetch]);
+
+  return {
+    ...query,
+    isGenerating,
+  };
+}
+
 function ProgramDetailPage() {
   const { programId } = Route.useParams();
-  const { data, isLoading, error } = useProgram(Number(programId));
+  const { data, isLoading, error, isGenerating } = useProgramWithGeneration(
+    Number(programId)
+  );
 
   if (isLoading) {
     return (
@@ -144,6 +197,13 @@ function ProgramDetailPage() {
             <Dumbbell className="h-4 w-4" />
             Upcoming Sessions ({trainingSessions.length})
           </h2>
+
+          {isGenerating && (
+            <div className="mb-3 flex items-center gap-2 text-xs text-foreground-muted">
+              <Spinner size="sm" />
+              <span>Jerome is building your sessions. This can take up to a minute.</span>
+            </div>
+          )}
           
           {upcoming_sessions.length === 0 ? (
             <Card className="p-6 text-center">

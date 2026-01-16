@@ -268,6 +268,7 @@ class SessionGeneratorService:
                 session.session_type,
                 session.intent_tags or [],
                 movements_by_pattern,
+                used_movements=used_movements,
             )
     
     async def populate_session_by_id(
@@ -356,6 +357,17 @@ class SessionGeneratorService:
         content = await self.generate_session_exercises(
             db, session, program, microcycle, used_movements, used_movement_groups, used_accessory_movements, fatigued_muscles
         )
+        
+        if used_accessory_movements:
+            current_day = session.day_number
+            previous_days = [d for d in used_accessory_movements.keys() if d < current_day]
+            if previous_days:
+                last_day = max(previous_days)
+                previous_accessories = used_accessory_movements.get(last_day) or []
+                if previous_accessories:
+                    content = self._remove_cross_session_accessory_duplicates(
+                        content, set(previous_accessories), session.session_type
+                    )
         
         # Update session fields
         session.warmup_json = content.get("warmup")
@@ -762,6 +774,74 @@ class SessionGeneratorService:
         
         return None
     
+    def _remove_cross_session_accessory_duplicates(
+        self,
+        content: dict[str, Any],
+        previous_accessories: set[str],
+        session_type: SessionType,
+    ) -> dict[str, Any]:
+        used_movements_session: set[str] = set()
+        
+        for section_name in ["main", "accessory", "warmup", "cooldown"]:
+            for ex in content.get(section_name) or []:
+                name = (ex.get("movement") or "").strip()
+                if name:
+                    used_movements_session.add(name)
+        
+        finisher_struct = content.get("finisher")
+        finisher_exercises = []
+        if finisher_struct and isinstance(finisher_struct, dict):
+            for ex in finisher_struct.get("exercises") or []:
+                name = (ex.get("movement") or "").strip()
+                if name:
+                    used_movements_session.add(name)
+                    finisher_exercises.append(ex)
+        
+        used_movements_session.update(previous_accessories)
+        
+        removed_exercises: list[dict] = []
+        new_accessories: list[dict] = []
+        
+        for ex in content.get("accessory") or []:
+            movement_name = (ex.get("movement") or "").strip()
+            if movement_name and movement_name in previous_accessories:
+                removed_exercises.append(
+                    {
+                        "section": "accessory",
+                        "exercise": ex,
+                        "original_movement": movement_name,
+                    }
+                )
+            else:
+                new_accessories.append(ex)
+        
+        content["accessory"] = new_accessories
+        
+        new_finisher_exercises: list[dict] = []
+        for ex in finisher_exercises:
+            movement_name = (ex.get("movement") or "").strip()
+            if movement_name and movement_name in previous_accessories:
+                removed_exercises.append(
+                    {
+                        "section": "finisher",
+                        "exercise": ex,
+                        "original_movement": movement_name,
+                    }
+                )
+            else:
+                new_finisher_exercises.append(ex)
+        
+        if finisher_struct and isinstance(finisher_struct, dict):
+            finisher_struct["exercises"] = new_finisher_exercises
+            content["finisher"] = finisher_struct
+        
+        if removed_exercises:
+            content = self._replace_removed_exercises(
+                content, removed_exercises, used_movements_session, session_type
+            )
+        
+        return content
+    
     def _create_replacement_exercise(
         self,
         original_exercise: dict,
@@ -911,6 +991,7 @@ class SessionGeneratorService:
         session_type: SessionType,
         intent_tags: list[str],
         movements_by_pattern: dict[str, list[str]],
+        used_movements: list[str] | None = None,
     ) -> dict[str, Any]:
         """
         Return intelligent fallback content when LLM fails.
@@ -922,30 +1003,32 @@ class SessionGeneratorService:
             session_type: Type of session (FULL_BODY, UPPER, LOWER, etc.)
             intent_tags: Movement patterns for this session (e.g., ["squat", "horizontal_push"])
             movements_by_pattern: Dict mapping pattern names to available movements
+            used_movements: List of movements to avoid (already used in microcycle)
         
         Returns:
             Session content dict with real movement names
         """
         # Preferred accessory movements by pattern
         preferred_accessories = {
-            "squat": ["Leg Extension", "Leg Curl"],
-            "hinge": ["Leg Curl", "Leg Extension"],
-            "lunge": ["Leg Extension", "Calf Raise"],
-            "horizontal_push": ["Lateral Raise", "Face Pull"],
-            "horizontal_pull": ["Bicep Curl", "Face Pull"],
-            "vertical_push": ["Lateral Raise", "Face Pull"],
-            "vertical_pull": ["Bicep Curl", "Hammer Curl"],
+            "squat": ["Leg Extension", "Leg Curl", "Calf Raise", "Walking Lunge"],
+            "hinge": ["Leg Curl", "Leg Extension", "Hip Thrust", "Back Extension"],
+            "lunge": ["Leg Extension", "Calf Raise", "Split Squat", "Step Up"],
+            "horizontal_push": ["Lateral Raise", "Face Pull", "Tricep Pushdown", "Fly"],
+            "horizontal_pull": ["Bicep Curl", "Face Pull", "Rear Delt Fly", "Hammer Curl"],
+            "vertical_push": ["Lateral Raise", "Face Pull", "Tricep Extension", "Upright Row"],
+            "vertical_pull": ["Bicep Curl", "Hammer Curl", "Preacher Curl", "Shrug"],
         }
         
         # Build main exercises from intent tags
         main_exercises = []
-        used_movements = set()
+        # Initialize set with passed movements
+        used_movements_set = set(used_movements) if used_movements else set()
         
         for tag in intent_tags[:3]:  # Max 3 main lifts
             if tag in movements_by_pattern and movements_by_pattern[tag]:
                 # Find an unused movement for this pattern
                 for movement_name in movements_by_pattern[tag]:
-                    if movement_name not in used_movements:
+                    if movement_name not in used_movements_set:
                         main_exercises.append({
                             "movement": movement_name,
                             "sets": 4,
@@ -954,17 +1037,16 @@ class SessionGeneratorService:
                             "target_rpe": 7,
                             "rest_seconds": 120,
                         })
-                        used_movements.add(movement_name)
+                        used_movements_set.add(movement_name)
                         break
         
         # Build accessory exercises based on primary patterns
         accessory_exercises = []
-        added_accessories = set()
         
         for tag in intent_tags[:2]:  # Accessories for first 2 patterns
             if tag in preferred_accessories:
                 for acc_name in preferred_accessories[tag]:
-                    if acc_name not in added_accessories:
+                    if acc_name not in used_movements_set:
                         accessory_exercises.append({
                             "movement": acc_name,
                             "sets": 3,
@@ -973,7 +1055,7 @@ class SessionGeneratorService:
                             "target_rpe": 7,
                             "rest_seconds": 60,
                         })
-                        added_accessories.add(acc_name)
+                        used_movements_set.add(acc_name)
                         break
         
         # If we couldn't build main exercises, fall back to hardcoded

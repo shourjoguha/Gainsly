@@ -25,13 +25,6 @@ const SPLIT_TEMPLATES = [
     bestFor: '2-3 days/week',
     icon: '🏋️'
   },
-  { 
-    id: SplitTemplate.HYBRID, 
-    name: 'Hybrid', 
-    description: 'Custom mix based on your goals',
-    bestFor: 'Any frequency',
-    icon: '⚡'
-  },
 ] as const;
 
 export function SplitStep() {
