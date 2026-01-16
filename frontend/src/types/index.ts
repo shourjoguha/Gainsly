@@ -416,7 +416,23 @@ export interface Movement {
   default_equipment?: string;
   complexity?: string;
   is_compound?: boolean;
+  cns_load?: string;
   cns_demand?: number;
+  skill_level?: string;
+  metric_type?: string;
+  equipment_tags?: string[];
+  discipline_tags?: string[];
+  user_id?: number;
+}
+
+export interface MovementCreate {
+  name: string;
+  pattern: MovementPattern;
+  primary_muscle?: string;
+  primary_region?: string;
+  default_equipment?: string;
+  compound?: boolean;
+  description?: string;
 }
 
 export interface MovementRuleCreate {

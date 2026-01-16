@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from './client';
-import type { Movement, MovementPattern, MovementRule, MovementRuleCreate } from '@/types';
+import type { Movement, MovementPattern, MovementRule, MovementRuleCreate, MovementCreate } from '@/types';
 
 // Query keys
 export const settingsKeys = {
@@ -58,6 +58,22 @@ export function useMovement(id: number) {
     queryKey: settingsKeys.movement(id),
     queryFn: () => fetchMovement(id),
     enabled: !!id,
+  });
+}
+
+async function createMovement(movement: MovementCreate): Promise<Movement> {
+  const { data } = await apiClient.post('/settings/movements', movement);
+  return data;
+}
+
+export function useCreateMovement() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: createMovement,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: settingsKeys.movements() });
+    },
   });
 }
 

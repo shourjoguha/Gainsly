@@ -99,9 +99,21 @@ class MovementResponse(BaseModel):
     equipment_tags: list[str] | None = None
     substitution_group: str | None = None
     description: str | None = None
+    user_id: int | None = None  # Add user_id
     
     class Config:
         from_attributes = True
+
+
+class MovementCreate(BaseModel):
+    """Schema for creating a custom movement."""
+    name: str
+    pattern: MovementPattern
+    primary_muscle: str | None = None
+    primary_region: PrimaryRegion | None = None
+    default_equipment: str | None = None
+    compound: bool = True
+    description: str | None = None
 
 
 class MovementListResponse(BaseModel):

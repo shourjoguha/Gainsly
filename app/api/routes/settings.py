@@ -26,6 +26,7 @@ from app.schemas.settings import (
     HeuristicConfigResponse,
     MovementResponse,
     MovementListResponse,
+    MovementCreate,
 )
 
 router = APIRouter()
@@ -324,9 +325,13 @@ async def list_movements(
     limit: int = Query(default=50, le=200),
     offset: int = 0,
     db: AsyncSession = Depends(get_db),
+    user_id: int = Depends(get_current_user_id),
 ):
     """List available movements from the repository."""
     query = select(Movement)
+    
+    # Filter by user (system movements + user's movements)
+    query = query.where((Movement.user_id.is_(None)) | (Movement.user_id == user_id))
     
     if pattern:
         query = query.where(Movement.pattern == pattern)
@@ -335,7 +340,9 @@ async def list_movements(
     
     # Get total
     from sqlalchemy import func
-    count_query = select(func.count(Movement.id))
+    count_query = select(func.count(Movement.id)).where(
+        (Movement.user_id.is_(None)) | (Movement.user_id == user_id)
+    )
     if pattern:
         count_query = count_query.where(Movement.pattern == pattern)
     if search:
@@ -363,12 +370,58 @@ async def list_movements(
                 complexity=m.skill_level,
                 is_compound=m.compound,
                 cns_load=m.cns_load,
+                user_id=m.user_id,
             )
             for m in movements
         ],
         total=total,
         limit=limit,
         offset=offset,
+    )
+
+
+@router.post("/movements", response_model=MovementResponse)
+async def create_movement(
+    movement: MovementCreate,
+    db: AsyncSession = Depends(get_db),
+    user_id: int = Depends(get_current_user_id),
+):
+    """Create a custom movement."""
+    # Check if movement with same name exists
+    existing = await db.execute(select(Movement).where(Movement.name.ilike(movement.name)))
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Movement with this name already exists")
+    
+    new_movement = Movement(
+        name=movement.name,
+        pattern=movement.pattern,
+        primary_muscle=movement.primary_muscle or "other",
+        primary_region=movement.primary_region or "full_body",
+        compound=movement.compound,
+        description=movement.description,
+        user_id=user_id,
+        # Defaults
+        cns_load="moderate",
+        skill_level="intermediate",
+        metric_type="reps",
+        equipment_tags=[movement.default_equipment] if movement.default_equipment else [],
+    )
+    
+    db.add(new_movement)
+    await db.commit()
+    await db.refresh(new_movement)
+    
+    return MovementResponse(
+        id=new_movement.id,
+        name=new_movement.name,
+        primary_pattern=new_movement.pattern,
+        primary_muscles=[new_movement.primary_muscle],
+        primary_region=new_movement.primary_region,
+        default_equipment=new_movement.equipment_tags[0] if new_movement.equipment_tags else None,
+        complexity=new_movement.skill_level,
+        is_compound=new_movement.compound,
+        cns_load=new_movement.cns_load,
+        user_id=new_movement.user_id,
     )
 
 

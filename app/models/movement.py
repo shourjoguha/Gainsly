@@ -1,5 +1,5 @@
 """Movement repository models."""
-from sqlalchemy import Boolean, Column, Integer, String, Text, JSON
+from sqlalchemy import Boolean, Column, Integer, String, Text, JSON, ForeignKey
 from sqlalchemy.orm import relationship
 
 from app.db.database import Base
@@ -18,6 +18,7 @@ class Movement(Base):
     __tablename__ = "movements"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)  # Null for system movements
     name = Column(String(200), nullable=False, unique=True, index=True)
     
     # Movement classification
