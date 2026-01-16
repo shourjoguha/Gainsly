@@ -11,6 +11,10 @@ from app.models.enums import (
     PersonaAggression,
     MovementPattern,
     PrimaryRegion,
+    PrimaryMuscle,
+    SkillLevel,
+    CNSLoad,
+    MetricType,
 )
 
 
@@ -109,9 +113,13 @@ class MovementCreate(BaseModel):
     """Schema for creating a custom movement."""
     name: str
     pattern: MovementPattern
-    primary_muscle: str | None = None
+    primary_muscle: PrimaryMuscle | None = None
     primary_region: PrimaryRegion | None = None
+    secondary_muscles: list[PrimaryMuscle] | None = None
     default_equipment: str | None = None
+    skill_level: SkillLevel | None = SkillLevel.INTERMEDIATE
+    cns_load: CNSLoad | None = CNSLoad.MODERATE
+    metric_type: MetricType | None = MetricType.REPS
     compound: bool = True
     description: str | None = None
 

@@ -1,8 +1,17 @@
 import { useMemo, useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
-import { Filter, Search, Settings2, Plus, ArrowUp, ArrowDown, User, X } from 'lucide-react';
+import { Filter, Search, Settings2, Plus, ArrowUp, ArrowDown, User, X, Check } from 'lucide-react';
 import { useMovements, useCreateMovement } from '@/api/settings';
-import { MovementPattern, type Movement, type MovementCreate } from '@/types';
+import { 
+  MovementPattern, 
+  PrimaryRegion, 
+  PrimaryMuscle, 
+  SkillLevel, 
+  CNSLoad, 
+  MetricType,
+  type Movement, 
+  type MovementCreate 
+} from '@/types';
 import { cn } from '@/lib/utils';
 
 export const Route = createFileRoute('/movements')({
@@ -13,6 +22,8 @@ type ColumnId =
   | 'name'
   | 'primary_pattern'
   | 'primary_region'
+  | 'primary_muscle'
+  | 'secondary_muscles'
   | 'default_equipment'
   | 'equipment_tags'
   | 'complexity'
@@ -34,7 +45,7 @@ const ALL_COLUMNS: ColumnConfig[] = [
     label: 'Name',
     render: (m) => (
       <div className="flex items-center gap-2">
-        <span>{m.name}</span>
+        <span className="font-medium">{m.name}</span>
         {m.user_id && (
           <span title="Custom Movement" className="text-accent">
             <User className="h-3 w-3" />
@@ -46,16 +57,39 @@ const ALL_COLUMNS: ColumnConfig[] = [
   {
     id: 'primary_pattern',
     label: 'Pattern',
-    render: (m) => m.primary_pattern ?? '',
+    render: (m) => <span className="capitalize">{m.primary_pattern?.replace('_', ' ')}</span>,
   },
   {
     id: 'primary_region',
-    label: 'Primary Region',
-    render: (m) => m.primary_region ?? '',
+    label: 'Region',
+    render: (m) => <span className="capitalize">{m.primary_region?.replace('_', ' ')}</span>,
+  },
+  {
+    id: 'primary_muscle',
+    label: 'Primary Muscle',
+    render: (m) => <span className="capitalize">{m.primary_muscles?.[0]?.replace('_', ' ')}</span>,
+  },
+  {
+    id: 'secondary_muscles',
+    label: 'Secondary Muscles',
+    render: (m) => (
+      <div className="flex flex-wrap gap-1">
+        {m.secondary_muscles?.slice(0, 3).map(muscle => (
+          <span key={muscle} className="text-[10px] px-1.5 py-0.5 bg-background border border-border rounded-full capitalize">
+            {muscle.replace('_', ' ')}
+          </span>
+        ))}
+        {(m.secondary_muscles?.length ?? 0) > 3 && (
+          <span className="text-[10px] px-1.5 py-0.5 text-foreground-muted">
+            +{m.secondary_muscles!.length - 3} more
+          </span>
+        )}
+      </div>
+    ),
   },
   {
     id: 'default_equipment',
-    label: 'Default Equipment',
+    label: 'Equipment',
     render: (m) => m.default_equipment ?? '',
   },
   {
@@ -104,14 +138,19 @@ type SortConfig = {
   direction: 'asc' | 'desc';
 } | null;
 
-function AddMovementModal({ onClose }: { onClose: () => void }) {
+function AddMovementModal({ onClose, equipmentOptions }: { onClose: () => void; equipmentOptions: string[] }) {
   const createMutation = useCreateMovement();
   const [formData, setFormData] = useState<MovementCreate>({
     name: '',
     pattern: MovementPattern.SQUAT,
     compound: true,
     default_equipment: 'Barbell',
-    primary_region: 'Lower Body',
+    primary_region: PrimaryRegion.ANTERIOR_LOWER,
+    primary_muscle: PrimaryMuscle.QUADRICEPS,
+    secondary_muscles: [],
+    skill_level: SkillLevel.INTERMEDIATE,
+    cns_load: CNSLoad.MODERATE,
+    metric_type: MetricType.REPS,
   });
   const [error, setError] = useState('');
 
@@ -129,89 +168,189 @@ function AddMovementModal({ onClose }: { onClose: () => void }) {
     }
   };
 
+  const toggleSecondaryMuscle = (muscle: PrimaryMuscle) => {
+    setFormData(prev => {
+      const current = prev.secondary_muscles || [];
+      if (current.includes(muscle)) {
+        return { ...prev, secondary_muscles: current.filter(m => m !== muscle) };
+      } else {
+        return { ...prev, secondary_muscles: [...current, muscle] };
+      }
+    });
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-lg bg-background-elevated border border-border p-6 shadow-xl">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-foreground">Add Custom Movement</h2>
+      <div className="w-full max-w-3xl flex flex-col max-h-[85vh] rounded-lg bg-background-elevated border border-border shadow-xl">
+        <div className="flex items-center justify-between p-6 border-b border-border">
+          <h2 className="text-xl font-bold text-foreground">Add Custom Movement</h2>
           <button onClick={onClose} className="text-foreground-muted hover:text-foreground">
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        {error && (
-          <div className="mb-4 rounded bg-destructive/10 p-3 text-sm text-destructive">
-            {error}
-          </div>
-        )}
+        <div className="flex-1 overflow-y-auto p-6">
+          {error && (
+            <div className="mb-4 rounded bg-destructive/10 p-3 text-sm text-destructive">
+              {error}
+            </div>
+          )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="mb-1 block text-sm font-medium text-foreground">Name</label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none"
-              placeholder="e.g. My Custom Squat"
-            />
-          </div>
+          <form id="create-movement-form" onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="col-span-1 md:col-span-2">
+                <label className="mb-1.5 block text-sm font-medium text-foreground">Name</label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none"
+                  placeholder="e.g. My Custom Squat"
+                />
+              </div>
 
-          <div>
-            <label className="mb-1 block text-sm font-medium text-foreground">Pattern</label>
-            <select
-              value={formData.pattern}
-              onChange={(e) => setFormData({ ...formData, pattern: e.target.value as MovementPattern })}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none"
-            >
-              {Object.values(MovementPattern).map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </select>
-          </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-foreground">Pattern</label>
+                <select
+                  value={formData.pattern}
+                  onChange={(e) => setFormData({ ...formData, pattern: e.target.value as MovementPattern })}
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none capitalize"
+                >
+                  {Object.values(MovementPattern).map((p) => (
+                    <option key={p} value={p}>{p.replace('_', ' ')}</option>
+                  ))}
+                </select>
+              </div>
 
-          <div>
-            <label className="mb-1 block text-sm font-medium text-foreground">Equipment</label>
-            <input
-              type="text"
-              value={formData.default_equipment}
-              onChange={(e) => setFormData({ ...formData, default_equipment: e.target.value })}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none"
-            />
-          </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-foreground">Region</label>
+                <select
+                  value={formData.primary_region}
+                  onChange={(e) => setFormData({ ...formData, primary_region: e.target.value as PrimaryRegion })}
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none capitalize"
+                >
+                  {Object.values(PrimaryRegion).map((r) => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
+              </div>
 
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="compound"
-              checked={formData.compound}
-              onChange={(e) => setFormData({ ...formData, compound: e.target.checked })}
-              className="h-4 w-4 rounded border-border bg-background text-accent"
-            />
-            <label htmlFor="compound" className="text-sm font-medium text-foreground">
-              Compound Movement
-            </label>
-          </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-foreground">Primary Muscle</label>
+                <select
+                  value={formData.primary_muscle}
+                  onChange={(e) => setFormData({ ...formData, primary_muscle: e.target.value as PrimaryMuscle })}
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none capitalize"
+                >
+                  {Object.values(PrimaryMuscle).map((m) => (
+                    <option key={m} value={m}>{m.replace('_', ' ')}</option>
+                  ))}
+                </select>
+              </div>
 
-          <div className="mt-6 flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-lg px-4 py-2 text-sm font-medium text-foreground-muted hover:bg-background"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={createMutation.isPending}
-              className="rounded-lg bg-cta px-4 py-2 text-sm font-medium text-background hover:bg-cta/90 disabled:opacity-50"
-            >
-              {createMutation.isPending ? 'Creating...' : 'Create Movement'}
-            </button>
-          </div>
-        </form>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-foreground">Equipment</label>
+                <select
+                  value={formData.default_equipment}
+                  onChange={(e) => setFormData({ ...formData, default_equipment: e.target.value })}
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none"
+                >
+                  <option value="">Select Equipment</option>
+                  {equipmentOptions.filter(e => e !== 'all').map((e) => (
+                    <option key={e} value={e}>{e}</option>
+                  ))}
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-foreground">Skill Level</label>
+                <select
+                  value={formData.skill_level}
+                  onChange={(e) => setFormData({ ...formData, skill_level: e.target.value as SkillLevel })}
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none capitalize"
+                >
+                  {Object.values(SkillLevel).map((l) => (
+                    <option key={l} value={l}>{l}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-foreground">CNS Load</label>
+                <select
+                  value={formData.cns_load}
+                  onChange={(e) => setFormData({ ...formData, cns_load: e.target.value as CNSLoad })}
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none capitalize"
+                >
+                  {Object.values(CNSLoad).map((l) => (
+                    <option key={l} value={l}>{l.replace('_', ' ')}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-foreground">Metric Type</label>
+                <select
+                  value={formData.metric_type}
+                  onChange={(e) => setFormData({ ...formData, metric_type: e.target.value as MetricType })}
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none capitalize"
+                >
+                  {Object.values(MetricType).map((m) => (
+                    <option key={m} value={m}>{m.replace('_', ' ')}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center pt-6">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.compound}
+                    onChange={(e) => setFormData({ ...formData, compound: e.target.checked })}
+                    className="h-4 w-4 rounded border-border bg-background text-accent"
+                  />
+                  <span className="text-sm font-medium text-foreground">Compound Movement</span>
+                </label>
+              </div>
+
+              <div className="col-span-1 md:col-span-2">
+                <label className="mb-2 block text-sm font-medium text-foreground">Secondary Muscles</label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-40 overflow-y-auto p-2 border border-border rounded-lg bg-background">
+                  {Object.values(PrimaryMuscle).map((muscle) => (
+                    <label key={muscle} className="flex items-center gap-2 text-xs cursor-pointer hover:bg-background-elevated p-1 rounded">
+                      <input
+                        type="checkbox"
+                        checked={formData.secondary_muscles?.includes(muscle)}
+                        onChange={() => toggleSecondaryMuscle(muscle)}
+                        className="h-3 w-3 rounded border-border text-accent"
+                      />
+                      <span className="capitalize">{muscle.replace('_', ' ')}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <div className="flex items-center justify-end gap-3 p-6 border-t border-border bg-background-elevated">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg px-4 py-2 text-sm font-medium text-foreground-muted hover:bg-background hover:text-foreground transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            form="create-movement-form"
+            disabled={createMutation.isPending}
+            className="rounded-lg bg-cta px-6 py-2 text-sm font-medium text-background hover:bg-cta/90 disabled:opacity-50 transition-colors shadow-sm"
+          >
+            {createMutation.isPending ? 'Creating...' : 'Create Movement'}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -337,7 +476,7 @@ function MovementsPage() {
           onClick={() => setIsModalOpen(true)}
           className="inline-flex items-center gap-2 rounded-lg bg-cta px-4 py-2 text-sm font-medium text-background hover:bg-cta/90 transition-colors"
         >
-          <Plus className="h-4 w-4" />
+          <Plus className="h-6 w-6" />
           Add Custom Movement
         </button>
       </div>
@@ -489,7 +628,12 @@ function MovementsPage() {
         )}
       </div>
 
-      {isModalOpen && <AddMovementModal onClose={() => setIsModalOpen(false)} />}
+      {isModalOpen && (
+        <AddMovementModal
+          onClose={() => setIsModalOpen(false)}
+          equipmentOptions={equipmentOptions}
+        />
+      )}
     </div>
   );
 }

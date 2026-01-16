@@ -397,13 +397,14 @@ async def create_movement(
         pattern=movement.pattern,
         primary_muscle=movement.primary_muscle or "other",
         primary_region=movement.primary_region or "full_body",
+        secondary_muscles=movement.secondary_muscles or [],
         compound=movement.compound,
         description=movement.description,
         user_id=user_id,
         # Defaults
-        cns_load="moderate",
-        skill_level="intermediate",
-        metric_type="reps",
+        cns_load=movement.cns_load or "moderate",
+        skill_level=movement.skill_level or "intermediate",
+        metric_type=movement.metric_type or "reps",
         equipment_tags=[movement.default_equipment] if movement.default_equipment else [],
     )
     
@@ -416,11 +417,13 @@ async def create_movement(
         name=new_movement.name,
         primary_pattern=new_movement.pattern,
         primary_muscles=[new_movement.primary_muscle],
+        secondary_muscles=new_movement.secondary_muscles,
         primary_region=new_movement.primary_region,
         default_equipment=new_movement.equipment_tags[0] if new_movement.equipment_tags else None,
         complexity=new_movement.skill_level,
         is_compound=new_movement.compound,
         cns_load=new_movement.cns_load,
+        metric_type=new_movement.metric_type,
         user_id=new_movement.user_id,
     )
 

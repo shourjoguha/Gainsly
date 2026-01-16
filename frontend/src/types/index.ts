@@ -67,6 +67,61 @@ export enum MovementPattern {
   CARDIO = 'cardio',
 }
 
+export enum PrimaryRegion {
+  ANTERIOR_LOWER = "anterior lower",
+  POSTERIOR_LOWER = "posterior lower",
+  SHOULDER = "shoulder",
+  ANTERIOR_UPPER = "anterior upper",
+  POSTERIOR_UPPER = "posterior upper",
+  FULL_BODY = "full body",
+}
+
+export enum PrimaryMuscle {
+  QUADRICEPS = "quadriceps",
+  HAMSTRINGS = "hamstrings",
+  GLUTES = "glutes",
+  CALVES = "calves",
+  CHEST = "chest",
+  LATS = "lats",
+  UPPER_BACK = "upper_back",
+  REAR_DELTS = "rear_delts",
+  FRONT_DELTS = "front_delts",
+  SIDE_DELTS = "side_delts",
+  BICEPS = "biceps",
+  TRICEPS = "triceps",
+  FOREARMS = "forearms",
+  CORE = "core",
+  OBLIQUES = "obliques",
+  LOWER_BACK = "lower_back",
+  HIP_FLEXORS = "hip_flexors",
+  ADDUCTORS = "adductors",
+  ABDUCTORS = "abductors",
+  FULL_BODY = "full_body",
+}
+
+export enum SkillLevel {
+  BEGINNER = "beginner",
+  INTERMEDIATE = "intermediate",
+  ADVANCED = "advanced",
+  EXPERT = "expert",
+  ELITE = "elite",
+}
+
+export enum CNSLoad {
+  VERY_LOW = "very_low",
+  LOW = "low",
+  MODERATE = "moderate",
+  HIGH = "high",
+  VERY_HIGH = "very_high",
+}
+
+export enum MetricType {
+  REPS = "reps",
+  TIME = "time",
+  TIME_UNDER_TENSION = "time_under_tension",
+  DISTANCE = "distance",
+}
+
 export enum MovementRuleType {
   HARD_NO = 'hard_no',
   HARD_YES = 'hard_yes',
@@ -428,9 +483,13 @@ export interface Movement {
 export interface MovementCreate {
   name: string;
   pattern: MovementPattern;
-  primary_muscle?: string;
-  primary_region?: string;
+  primary_muscle?: PrimaryMuscle;
+  primary_region?: PrimaryRegion;
+  secondary_muscles?: PrimaryMuscle[];
   default_equipment?: string;
+  skill_level?: SkillLevel;
+  cns_load?: CNSLoad;
+  metric_type?: MetricType;
   compound?: boolean;
   description?: string;
 }
