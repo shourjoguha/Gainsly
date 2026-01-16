@@ -10,7 +10,23 @@ from app.models.enums import (
     MetricType,
     SkillLevel,
     CNSLoad,
+    RelationshipType,
 )
+
+
+class MovementRelationship(Base):
+    """Defines relationships between movements (progressions, variations, etc)."""
+    __tablename__ = "movement_relationships"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    source_movement_id = Column(Integer, ForeignKey("movements.id"), nullable=False, index=True)
+    target_movement_id = Column(Integer, ForeignKey("movements.id"), nullable=False, index=True)
+    relationship_type = Column(String(50), nullable=False, index=True)  # Stores RelationshipType enum
+    notes = Column(Text, nullable=True)
+
+    # Relationships
+    source_movement = relationship("Movement", foreign_keys=[source_movement_id], back_populates="outgoing_relationships")
+    target_movement = relationship("Movement", foreign_keys=[target_movement_id], back_populates="incoming_relationships")
 
 
 class Movement(Base):
@@ -40,6 +56,7 @@ class Movement(Base):
     metric_type = Column(String(50), nullable=False, default="reps")  # Stores enum value
     
     # Categorization
+    primary_discipline = Column(String(50), nullable=False, default="All", server_default="All")
     discipline_tags = Column(JSON, default=list)  # e.g., ["powerlifting", "olympic", "calisthenics"]
     equipment_tags = Column(JSON, default=list)  # e.g., ["barbell", "dumbbell", "bodyweight"]
     
@@ -54,6 +71,20 @@ class Movement(Base):
     user_rules = relationship("UserMovementRule", back_populates="movement")
     session_exercises = relationship("SessionExercise", back_populates="movement")
     top_set_logs = relationship("TopSetLog", back_populates="movement")
+
+    # Movement Relationships
+    outgoing_relationships = relationship(
+        "MovementRelationship",
+        foreign_keys=[MovementRelationship.source_movement_id],
+        back_populates="source_movement",
+        cascade="all, delete-orphan"
+    )
+    incoming_relationships = relationship(
+        "MovementRelationship",
+        foreign_keys=[MovementRelationship.target_movement_id],
+        back_populates="target_movement",
+        cascade="all, delete-orphan"
+    )
 
     def __repr__(self):
         return f"<Movement(id={self.id}, name='{self.name}', pattern={self.pattern})>"

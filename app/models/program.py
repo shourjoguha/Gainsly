@@ -144,6 +144,11 @@ class Session(Base):
     finisher_json = Column(JSON, nullable=True)  # Optional: brief high-effort completion
     cooldown_json = Column(JSON, nullable=True)  # Optional: active recovery
     
+    # Circuit Integration
+    # If this session IS a circuit (Hyrox/Crossfit day), these fields are used
+    main_circuit_id = Column(Integer, ForeignKey("circuit_templates.id"), nullable=True)
+    finisher_circuit_id = Column(Integer, ForeignKey("circuit_templates.id"), nullable=True)
+    
     # Time estimation
     estimated_duration_minutes = Column(Integer, nullable=True)
     warmup_duration_minutes = Column(Integer, nullable=True)
@@ -159,6 +164,10 @@ class Session(Base):
     microcycle = relationship("Microcycle", back_populates="sessions")
     exercises = relationship("SessionExercise", back_populates="session", cascade="all, delete-orphan")
     workout_logs = relationship("WorkoutLog", back_populates="session")
+    
+    # Circuit Relationships
+    main_circuit = relationship("CircuitTemplate", foreign_keys=[main_circuit_id])
+    finisher_circuit = relationship("CircuitTemplate", foreign_keys=[finisher_circuit_id])
 
     def __repr__(self):
         return f"<Session(id={self.id}, date={self.date}, type={self.session_type})>"

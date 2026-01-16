@@ -29,6 +29,8 @@ class PrimaryRegion(str, Enum):
     ANTERIOR_UPPER = "anterior upper"
     POSTERIOR_UPPER = "posterior upper"
     FULL_BODY = "full body"
+    LOWER_BODY = "lower body" 
+    UPPER_BODY = "upper body"
 
 class PrimaryMuscle(str, Enum):
     """Primary muscle groups."""
@@ -50,7 +52,6 @@ class PrimaryMuscle(str, Enum):
     LOWER_BACK = "lower_back"
     HIP_FLEXORS = "hip_flexors"
     ADDUCTORS = "adductors"
-    ABDUCTORS = "abductors"
     FULL_BODY = "full_body"
 
 
@@ -193,6 +194,35 @@ class PersonaTone(str, Enum):
     ANALYTICAL = "analytical"
     MOTIVATIONAL = "motivational"
     MINIMALIST = "minimalist"
+
+
+class RelationshipType(str, Enum):
+    """Types of relationships between movements."""
+    PROGRESSION = "progression"   # Target is harder/more complex
+    REGRESSION = "regression"     # Target is easier/less complex
+    VARIATION = "variation"       # Similar pattern, different emphasis
+    ANTAGONIST = "antagonist"     # Opposing muscle group
+    PREP = "prep"                # Warmup/activation for target
+
+
+class CircuitType(str, Enum):
+    """Types of circuit structures."""
+    ROUNDS_FOR_TIME = "rounds_for_time"  # e.g., 3 rounds of X, Y, Z
+    AMRAP = "amrap"                      # As many rounds as possible in time T
+    EMOM = "emom"                        # Every minute on the minute
+    LADDER = "ladder"                    # 21-15-9 or 1-2-3-4...
+    TABATA = "tabata"                    # 20s work / 10s rest intervals
+    CHIPPER = "chipper"                  # One big list to complete once
+    STATION = "station"                  # Hyrox/race station (Run 1km + 100 Wall balls)
+
+
+class StressBucket(str, Enum):
+    """Buckets for normalizing training stress."""
+    STRENGTH = "strength"         # Neuromuscular/mechanical load
+    CONDITIONING = "conditioning" # Metabolic/cardiovascular load
+    IMPACT_UPPER = "impact_upper" # Joint/tissue stress upper body
+    IMPACT_LOWER = "impact_lower" # Joint/tissue stress lower body
+    CNS = "cns"                   # Central nervous system fatigue
 
 
 class PersonaAggression(int, Enum):

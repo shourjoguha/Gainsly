@@ -363,7 +363,7 @@ Session tracking for continuous development with date/time headers. A new sessio
 
 ---
 
-## Session 9: 2026-01-15 [Current Session]
+## Session 9: 2026-01-15
 
 **Objective**: Organize root-level project files into dedicated folders
 
@@ -387,3 +387,41 @@ Session tracking for continuous development with date/time headers. A new sessio
 **Technical Details**:
 - `docs/` is now the canonical location for detailed backend/frontend notes and performance guidance
 - `README.md` and `SESSION_LOG.md` remain at the project root as primary entrypoint documents
+
+---
+
+## Session 10: 2026-01-16
+
+**Objective**: Enrich movement metadata with primary disciplines and integrate CrossFit circuits
+
+**Key Accomplishments**:
+
+1. **Movement Schema Enrichment**:
+   - Added `primary_discipline` column to the `Movement` model in `app/models/movement.py` with a default of `"All"`.
+   - Created and applied Alembic migration `f7b2ea3f26c9_add_primary_discipline_to_movements.py` to update the PostgreSQL schema.
+
+2. **CrossFit Scraping and Ingestion Scripts** (in `scripts/`):
+   - `scrape_crossfit_workouts.py`: Scrapes `crossfit.com/workout`, extracts daily workouts, identifies circuit type, parses movements, and writes:
+     - `seed_data/scraped_circuits.json` for circuit templates
+     - `seed_data/net_new_movements.json` for potential new movements.
+   - `ingest_crossfit_circuits.py`: 
+     - Ingests net-new CrossFit movements into the `movements` table, tagging them with `primary_discipline="CrossFit"`.
+     - Ingests circuit templates into `circuit_templates`, handling empty/duplicate circuits safely.
+   - `enrich_movements.py`:
+     - Backfills `primary_discipline` for all existing movements:
+       - `"CrossFit"` for movements present in `clean_crossfit_movements.json`.
+       - `"Bodybuilding"` for movements with pattern `isolation`.
+       - `"Olympic Lifting"` for movements with pattern `olympic`.
+       - `"Mobility"` for movements with pattern `mobility`.
+       - `"All"` for everything else.
+   - `verify_disciplines.py`:
+     - Verifies distribution of `primary_discipline` across movements and prints sample checks by name for quick sanity validation.
+
+3. **Data Quality Verification**:
+   - Confirmed that CrossFit circuits are ingested without duplicate templates and that empty circuits are skipped or replaced.
+   - Verified movement discipline counts (e.g., `CrossFit`, `Bodybuilding`, `Mobility`, `Olympic Lifting`, `All`) and spot-checked representative movements to ensure correct classification.
+
+**Status**:
+- Movements now carry a first-class `primary_discipline` field, enabling higher-level filtering and UI surfacing.
+- CrossFit-specific movements and circuits are integrated into the core database with safe re-runs of ingestion scripts.
+- Scripts in `scripts/` folder are documented and can be reused for future data refreshes.
