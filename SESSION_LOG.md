@@ -425,3 +425,28 @@ Session tracking for continuous development with date/time headers. A new sessio
 - Movements now carry a first-class `primary_discipline` field, enabling higher-level filtering and UI surfacing.
 - CrossFit-specific movements and circuits are integrated into the core database with safe re-runs of ingestion scripts.
 - Scripts in `scripts/` folder are documented and can be reused for future data refreshes.
+
+---
+
+## Session 11: 2026-01-18
+
+**Objective**: Stabilize backend test suite and design movement relationship architecture
+
+**Key Accomplishments**:
+
+1. **Stabilized Backend Test Suite**:
+   - Resolved 60+ failing unit and integration tests by aligning test fixtures with the latest schema (e.g., `primary_region`, `days_per_week`, and `name` fields).
+   - Fixed DeloadService logic to correctly aggregate `sleep_hours` and handle new program start dates, preventing incorrect deload triggers.
+   - Corrected AdaptationService queries to load movement patterns via `SessionExercise`, eliminating `NameError` and missing pattern issues.
+   - Implemented missing methods in TimeEstimationService for session and microcycle duration estimation.
+   - Updated pytest configuration to use async mode for all async tests.
+
+2. **Movement Relationship Architecture Design**:
+   - Defined a Postgres-based graph model using a `movement_relationships` table to represent `PROGRESSION`, `REGRESSION`, `ANTAGONIST`, and `EQUIVALENT` edges between movements.
+   - Standardized edge direction semantics so `PROGRESSION` edges always point from easier → harder movements, enabling regressions by traversing edges in reverse.
+   - Outlined a hybrid reasoning approach combining explicit edges, movement tags (pattern, region, skill level, discipline), and optional embeddings for future “similar movement” recommendations.
+   - Documented how session adaptation can use this graph to propose regressions, progressions, antagonistic pairings, and equivalent substitutions while preserving program intent.
+
+**Status**:
+- All existing tests pass after schema and logic fixes, providing a reliable foundation for future features.
+- Movement relationship architecture is defined and ready for implementation in the backend and future UI tooling.
