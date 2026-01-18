@@ -16,6 +16,7 @@ from app.models import (
     PatternExposure,
     Session,
     Movement,
+    MovementPattern,
     RecoverySource,
 )
 from app.schemas.logging import (
@@ -52,26 +53,23 @@ async def create_workout_log(
     
     Calculates e1RM for each top set and records pattern exposure.
     """
-    # Verify session exists and belongs to user's program
-    session = await db.get(Session, log.session_id)
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
+    session: Session | None = None
+    if log.session_id is not None:
+        session = await db.get(Session, log.session_id)
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
     
     # Create workout log
     workout_log = WorkoutLog(
         user_id=user_id,
         session_id=log.session_id,
-        date=log.log_date,
-        started_at=log.started_at,
-        ended_at=log.ended_at,
-        perceived_exertion=log.perceived_exertion,
-        energy_level=log.energy_level,
-        adherence_percentage=log.adherence_percentage,
-        coach_feedback_request=log.coach_feedback_request,
-        exercises_completed_json=log.exercises_completed,
         notes=log.notes,
+        date=log.log_date or date.today(),
+        completed=log.completed,
+        perceived_difficulty=log.perceived_difficulty,
         enjoyment_rating=log.enjoyment_rating,
-        feedback_tags=log.feedback_tags,
+        feedback_tags=log.feedback_tags or [],
+        actual_duration_minutes=log.actual_duration_minutes,
     )
     db.add(workout_log)
     await db.flush()
@@ -82,13 +80,19 @@ async def create_workout_log(
         # Get movement for e1RM calculation
         movement = await db.get(Movement, top_set.movement_id)
         if not movement:
-            continue
+            raise HTTPException(status_code=404, detail=f"Movement not found: {top_set.movement_id}")
+        
+        try:
+            pattern_enum = MovementPattern(movement.pattern)
+        except Exception:
+            raise HTTPException(status_code=400, detail=f"Movement has invalid pattern: {movement.pattern}")
         
         # Calculate e1RM using preferred formula
+        formula_enum = E1RM_FORMULAS.get(settings.default_e1rm_formula, E1RM_FORMULAS["epley"])
         e1rm = calculate_e1rm(
             weight=top_set.weight,
             reps=top_set.reps,
-            formula=E1RM_FORMULAS.get(settings.default_e1rm_formula, "brzycki"),
+            formula=formula_enum,
         )
         
         top_set_log = TopSetLog(
@@ -97,28 +101,26 @@ async def create_workout_log(
             weight=top_set.weight,
             reps=top_set.reps,
             rpe=top_set.rpe,
-            e1rm=e1rm,
-            is_pr=False,  # Will be calculated separately
+            rir=top_set.rir,
+            avg_rest_seconds=top_set.avg_rest_seconds,
+            e1rm_value=e1rm,
+            e1rm_formula=formula_enum,
+            pattern=pattern_enum,
         )
         db.add(top_set_log)
         await db.flush()
-        
-        # Check if PR
-        previous_best = await db.execute(
-            select(func.max(TopSetLog.e1rm))
-            .join(WorkoutLog)
-            .where(
-                and_(
-                    WorkoutLog.user_id == user_id,
-                    TopSetLog.movement_id == top_set.movement_id,
-                    TopSetLog.id != top_set_log.id,
-                )
+
+        if session is not None:
+            exposure = PatternExposure(
+                user_id=user_id,
+                microcycle_id=session.microcycle_id,
+                date=workout_log.date,
+                pattern=pattern_enum,
+                e1rm_value=e1rm,
+                source_top_set_log_id=top_set_log.id,
             )
-        )
-        prev_max = previous_best.scalar()
-        if prev_max is None or e1rm > prev_max:
-            top_set_log.is_pr = True
-        
+            db.add(exposure)
+
         top_sets_response.append(TopSetResponse(
             id=top_set_log.id,
             movement_id=top_set.movement_id,
@@ -126,52 +128,29 @@ async def create_workout_log(
             weight=top_set.weight,
             reps=top_set.reps,
             rpe=top_set.rpe,
+            rir=top_set.rir,
+            avg_rest_seconds=top_set.avg_rest_seconds,
             e1rm=e1rm,
-            is_pr=top_set_log.is_pr,
+            e1rm_value=e1rm,
+            e1rm_formula=formula_enum,
+            pattern=pattern_enum,
+            created_at=top_set_log.created_at,
         ))
-    
-    # Record pattern exposure
-    if log.exercises_completed:
-        pattern_counts = {}
-        for exercise in log.exercises_completed:
-            movement_id = exercise.get("movement_id")
-            if movement_id:
-                movement = await db.get(Movement, movement_id)
-                if movement:
-                    pattern = movement.primary_pattern.value
-                    if pattern not in pattern_counts:
-                        pattern_counts[pattern] = {"sets": 0, "reps": 0}
-                    pattern_counts[pattern]["sets"] += exercise.get("sets_completed", 0)
-                    pattern_counts[pattern]["reps"] += exercise.get("reps_completed", 0)
-        
-        for pattern, counts in pattern_counts.items():
-            exposure = PatternExposure(
-                user_id=user_id,
-                date=log.date,
-                pattern=pattern,
-                sets=counts["sets"],
-                reps=counts["reps"],
-                workout_log_id=workout_log.id,
-            )
-            db.add(exposure)
     
     await db.commit()
     
     return WorkoutLogResponse(
         id=workout_log.id,
+        user_id=workout_log.user_id,
         session_id=workout_log.session_id,
         log_date=workout_log.date,
-        started_at=workout_log.started_at,
-        ended_at=workout_log.ended_at,
-        perceived_exertion=workout_log.perceived_exertion,
-        energy_level=workout_log.energy_level,
-        adherence_percentage=workout_log.adherence_percentage,
-        coach_feedback_request=workout_log.coach_feedback_request,
-        exercises_completed=workout_log.exercises_completed_json,
         notes=workout_log.notes,
+        perceived_difficulty=workout_log.perceived_difficulty,
         enjoyment_rating=workout_log.enjoyment_rating,
         feedback_tags=workout_log.feedback_tags,
+        actual_duration_minutes=workout_log.actual_duration_minutes,
         top_sets=top_sets_response,
+        created_at=workout_log.created_at,
     )
 
 
@@ -227,25 +206,26 @@ async def list_workout_logs(
                 weight=ts.weight,
                 reps=ts.reps,
                 rpe=ts.rpe,
-                e1rm=ts.e1rm,
-                is_pr=ts.is_pr,
+                rir=ts.rir,
+                avg_rest_seconds=ts.avg_rest_seconds,
+                e1rm=ts.e1rm_value,
+                e1rm_value=ts.e1rm_value,
+                e1rm_formula=ts.e1rm_formula,
+                pattern=ts.pattern,
+                created_at=ts.created_at,
             ))
         
         log_responses.append(WorkoutLogResponse(
             id=log.id,
             session_id=log.session_id,
             log_date=log.date,
-            started_at=log.started_at,
-            ended_at=log.ended_at,
-            perceived_exertion=log.perceived_exertion,
-            energy_level=log.energy_level,
-            adherence_percentage=log.adherence_percentage,
-            coach_feedback_request=log.coach_feedback_request,
-            exercises_completed=log.exercises_completed_json,
             notes=log.notes,
+            perceived_difficulty=log.perceived_difficulty,
             enjoyment_rating=log.enjoyment_rating,
             feedback_tags=log.feedback_tags,
+            actual_duration_minutes=log.actual_duration_minutes,
             top_sets=top_set_responses,
+            created_at=log.created_at,
         ))
     
     return WorkoutLogListResponse(
@@ -284,25 +264,27 @@ async def get_workout_log(
             weight=ts.weight,
             reps=ts.reps,
             rpe=ts.rpe,
-            e1rm=ts.e1rm,
-            is_pr=ts.is_pr,
+            rir=ts.rir,
+            avg_rest_seconds=ts.avg_rest_seconds,
+            e1rm=ts.e1rm_value,
+            e1rm_value=ts.e1rm_value,
+            e1rm_formula=ts.e1rm_formula,
+            pattern=ts.pattern,
+            created_at=ts.created_at,
         ))
     
     return WorkoutLogResponse(
         id=log.id,
+        user_id=log.user_id,
         session_id=log.session_id,
         log_date=log.date,
-        started_at=log.started_at,
-        ended_at=log.ended_at,
-        perceived_exertion=log.perceived_exertion,
-        energy_level=log.energy_level,
-        adherence_percentage=log.adherence_percentage,
-        coach_feedback_request=log.coach_feedback_request,
-        exercises_completed=log.exercises_completed_json,
         notes=log.notes,
+        perceived_difficulty=log.perceived_difficulty,
         enjoyment_rating=log.enjoyment_rating,
         feedback_tags=log.feedback_tags,
+        actual_duration_minutes=log.actual_duration_minutes,
         top_sets=top_set_responses,
+        created_at=log.created_at,
     )
 
 
@@ -316,7 +298,7 @@ async def create_soreness_log(
     """Log muscle soreness for a body part."""
     soreness = SorenessLog(
         user_id=user_id,
-        date=log.log_date,
+        date=log.log_date or date.today(),
         body_part=log.body_part,
         soreness_1_5=log.soreness_1_5,
         notes=log.notes,
@@ -379,25 +361,34 @@ async def create_recovery_signal(
     """Log recovery signal from wearable or manual input."""
     recovery = RecoverySignal(
         user_id=user_id,
-        date=signal.log_date,
+        date=signal.log_date or date.today(),
+        session_id=signal.session_id,
         source=signal.source,
         sleep_score=signal.sleep_score,
+        sleep_hours=signal.sleep_hours,
         readiness=signal.readiness,
         hrv=signal.hrv,
         resting_hr=signal.resting_hr,
         raw_payload_json=signal.raw_payload,
+        notes=signal.notes,
     )
     db.add(recovery)
     await db.commit()
     
     return RecoverySignalResponse(
         id=recovery.id,
+        user_id=recovery.user_id,
         log_date=recovery.date,
+        session_id=recovery.session_id,
         source=recovery.source,
         sleep_score=recovery.sleep_score,
+        sleep_hours=recovery.sleep_hours,
         readiness=recovery.readiness,
         hrv=recovery.hrv,
         resting_hr=recovery.resting_hr,
+        raw_payload=recovery.raw_payload_json,
+        notes=recovery.notes,
+        created_at=recovery.created_at,
     )
 
 
@@ -428,12 +419,18 @@ async def list_recovery_signals(
     return [
         RecoverySignalResponse(
             id=sig.id,
+            user_id=sig.user_id,
             log_date=sig.date,
+            session_id=sig.session_id,
             source=sig.source,
             sleep_score=sig.sleep_score,
+            sleep_hours=sig.sleep_hours,
             readiness=sig.readiness,
             hrv=sig.hrv,
             resting_hr=sig.resting_hr,
+            raw_payload=sig.raw_payload_json,
+            notes=sig.notes,
+            created_at=sig.created_at,
         )
         for sig in signals
     ]
@@ -461,12 +458,18 @@ async def get_latest_recovery(
     
     return RecoverySignalResponse(
         id=signal.id,
+        user_id=signal.user_id,
         log_date=signal.date,
+        session_id=signal.session_id,
         source=signal.source,
         sleep_score=signal.sleep_score,
+        sleep_hours=signal.sleep_hours,
         readiness=signal.readiness,
         hrv=signal.hrv,
         resting_hr=signal.resting_hr,
+        raw_payload=signal.raw_payload_json,
+        notes=signal.notes,
+        created_at=signal.created_at,
     )
 
 
@@ -603,7 +606,7 @@ async def get_dashboard_stats(
 async def list_pattern_exposure(
     start_date: Optional[date] = None,
     end_date: Optional[date] = None,
-    pattern: Optional[str] = None,
+    pattern: Optional[MovementPattern] = None,
     db: AsyncSession = Depends(get_db),
     user_id: int = Depends(get_current_user_id),
 ):
@@ -625,10 +628,13 @@ async def list_pattern_exposure(
     return [
         PatternExposureResponse(
             id=exp.id,
+            user_id=exp.user_id,
+            microcycle_id=exp.microcycle_id,
             log_date=exp.date,
             pattern=exp.pattern,
-            sets=exp.sets,
-            reps=exp.reps,
+            e1rm_value=exp.e1rm_value,
+            source_top_set_log_id=exp.source_top_set_log_id,
+            created_at=exp.created_at,
         )
         for exp in exposures
     ]

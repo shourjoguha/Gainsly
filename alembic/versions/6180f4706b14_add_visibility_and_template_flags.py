@@ -25,8 +25,9 @@ def upgrade() -> None:
     # Define enum type for column definition
     visibility_enum = sa.Enum('PRIVATE', 'FRIENDS', 'PUBLIC', name='visibility')
     
-    # SQLite doesn't support CREATE TYPE, so we skip explicit enum creation
-    # The Enum type in add_column will be handled as VARCHAR by SQLAlchemy on SQLite
+    bind = op.get_bind()
+    if bind.dialect.name == "postgresql":
+        visibility_enum.create(bind, checkfirst=True)
 
     op.add_column('programs', sa.Column('is_template', sa.Boolean(), nullable=True, server_default='0'))
     op.add_column('programs', sa.Column('visibility', visibility_enum, nullable=False, server_default='PRIVATE'))
@@ -40,4 +41,8 @@ def downgrade() -> None:
     op.drop_column('workout_logs', 'visibility')
     op.drop_column('programs', 'visibility')
     op.drop_column('programs', 'is_template')
+    bind = op.get_bind()
+    if bind.dialect.name == "postgresql":
+        visibility_enum = sa.Enum('PRIVATE', 'FRIENDS', 'PUBLIC', name='visibility')
+        visibility_enum.drop(bind, checkfirst=True)
     # ### end Alembic commands ###

@@ -13,6 +13,7 @@ from datetime import datetime
 from typing import Optional, List, Dict, Any
 from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from app.models.user import (
     UserMovementRule, UserEnjoyableActivity
@@ -20,7 +21,7 @@ from app.models.user import (
 from app.models.logging import (
     SorenessLog, RecoverySignal
 )
-from app.models.program import Session
+from app.models.program import Session, Microcycle, Program, SessionExercise
 from app.schemas.daily import AdaptationRequest
 
 
@@ -66,10 +67,13 @@ class AdaptationService:
         """
         # Fetch session and movements
         session_result = await db.execute(
-            select(Session).where(
+            select(Session)
+            .join(Microcycle)
+            .join(Program)
+            .where(
                 and_(
                     Session.id == session_id,
-                    Session.user_id == user_id
+                    Program.user_id == user_id
                 )
             )
         )
@@ -78,11 +82,8 @@ class AdaptationService:
             raise ValueError(f"Session {session_id} not found")
         
         patterns_result = await db.execute(
-            select(MovementPattern).where(
-                and_(
-                    MovementPattern.session_id == session_id,
-                    MovementPattern.user_id == user_id
-                )
+            select(SessionExercise).options(joinedload(SessionExercise.movement)).where(
+                SessionExercise.session_id == session_id
             )
         )
         patterns = list(patterns_result.scalars().all())
@@ -204,7 +205,7 @@ class AdaptationService:
         await db.commit()
         return rule
     
-    def _is_movement_forbidden(self, movement: str, rules: List[Dict]) -> Optional[str]:
+    def _is_movement_forbidden(self, movement: Any, rules: List[Dict]) -> Optional[str]:
         """
         Check if movement violates any rules.
         
@@ -215,14 +216,23 @@ class AdaptationService:
         Returns:
             Reason if forbidden, None otherwise
         """
+        movement_id = getattr(movement, "id", None)
+        movement_name = getattr(movement, "name", None) or str(movement)
+
         for rule in rules:
-            if rule["rule_type"] == "forbidden" and rule["movement"].lower() in movement.lower():
+            if rule.get("rule_type") != "hard_no":
+                continue
+
+            if movement_id is not None and rule.get("movement_id") == movement_id:
+                return rule.get("reason", "Rule violation")
+
+            if "movement" in rule and isinstance(rule["movement"], str) and rule["movement"].lower() in movement_name.lower():
                 return rule.get("reason", "Rule violation")
         return None
     
     def _check_soreness_conflict(
         self,
-        pattern: "MovementPattern",
+        pattern: "SessionExercise",
         soreness_data: Dict[str, int],
     ) -> Optional[str]:
         """
@@ -238,7 +248,8 @@ class AdaptationService:
         if not soreness_data:
             return None
         
-        movement_lower = pattern.movement.lower()
+        movement_name = getattr(getattr(pattern, "movement", None), "name", None) or ""
+        movement_lower = movement_name.lower()
         for body_part, level in soreness_data.items():
             # Simple heuristic: if body part mentioned in movement name and soreness > 6
             if level > 6 and body_part.lower() in movement_lower:
@@ -248,7 +259,7 @@ class AdaptationService:
     
     def _adjust_volume(
         self,
-        pattern: "MovementPattern",
+        pattern: "SessionExercise",
         recovery: Dict[str, Any],
     ) -> Dict[str, Any]:
         """
@@ -264,21 +275,26 @@ class AdaptationService:
         recovery_score = recovery.get("recovery_score", 50)
         
         adjusted = {
-            "movement": pattern.movement,
-            "sets": pattern.sets,
-            "reps": pattern.reps,
-            "rpe": pattern.rpe,
+            "movement": getattr(getattr(pattern, "movement", None), "name", None),
+            "sets": pattern.target_sets,
+            "rep_range_min": pattern.target_rep_range_min,
+            "rep_range_max": pattern.target_rep_range_max,
+            "rpe": pattern.target_rpe,
         }
         
         if recovery_score < 40:
             # Low recovery: reduce sets, increase reps
-            adjusted["sets"] = max(2, pattern.sets - 1)
-            adjusted["reps"] = min(12, pattern.reps + 2)
-            adjusted["rpe"] = max(5, pattern.rpe - 1)
+            adjusted["sets"] = max(2, pattern.target_sets - 1)
+            if adjusted["rep_range_min"] is not None:
+                adjusted["rep_range_min"] = min(20, adjusted["rep_range_min"] + 1)
+            if adjusted["rep_range_max"] is not None:
+                adjusted["rep_range_max"] = min(20, adjusted["rep_range_max"] + 2)
+            if adjusted["rpe"] is not None:
+                adjusted["rpe"] = max(5, adjusted["rpe"] - 1)
             adjusted["note"] = "Volume reduced due to low recovery"
         elif recovery_score > 75:
             # High recovery: increase sets or reps
-            adjusted["sets"] = pattern.sets + 1
+            adjusted["sets"] = pattern.target_sets + 1
             adjusted["note"] = "Volume increased due to strong recovery"
         
         return adjusted

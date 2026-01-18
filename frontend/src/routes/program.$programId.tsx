@@ -1,12 +1,12 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useProgram } from '@/api/programs';
-import { ArrowLeft, Play, MessageSquare, Calendar, Target, Dumbbell, LineChart } from 'lucide-react';
+import { ArrowLeft, Play, MessageSquare, Calendar, Target, Dumbbell, LineChart, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Spinner } from '@/components/common/Spinner';
 import { SessionCard } from '@/components/program/SessionCard';
-import { Goal, SessionType } from '@/types';
+import { Goal, SessionType, Session } from '@/types';
 
 export const Route = createFileRoute('/program/$programId')({
   component: ProgramDetailPage,
@@ -24,12 +24,46 @@ const GOAL_CONFIG: Record<Goal, { label: string; color: string }> = {
 };
 
 const PROGRESSION_DESCRIPTIONS: Record<string, string> = {
-  single_progression: "Focus on increasing weight once you hit the top of your rep range.",
-  double_progression: "Increase reps first. Once you hit the top of the range for all sets, increase the weight.",
-  wave_loading: "Vary intensity in waves (e.g., 7-5-3 reps) to manage fatigue and break plateaus.",
-  paused_variations: "Use pauses to increase difficulty without adding weight.",
-  build_to_drop: "Build to a top heavy set, then drop weight for volume work."
+  single_progression:
+    'Focus on increasing weight once you hit the top of your rep range.',
+  double_progression:
+    'Increase reps first. Once you hit the top of the range for all sets, increase the weight.',
+  wave_loading:
+    'Vary intensity in waves (e.g., 7-5-3 reps) to manage fatigue and break plateaus.',
+  paused_variations: 'Use pauses to increase difficulty without adding weight.',
+  build_to_drop:
+    'Build to a top heavy set, then drop weight for volume work.',
 };
+
+function sessionHasContent(session: Session): boolean {
+  const hasMain =
+    !!session.main && session.main.length > 0;
+
+  const hasWarmup =
+    !!session.warmup && session.warmup.length > 0;
+
+  const hasAccessory =
+    !!session.accessory && session.accessory.length > 0;
+
+  const hasCooldown =
+    !!session.cooldown && session.cooldown.length > 0;
+
+  const hasFinisherExercises =
+    !!session.finisher?.exercises &&
+    session.finisher.exercises.length > 0;
+
+  const hasFinisherDuration =
+    !!session.finisher?.duration_minutes;
+
+  return (
+    hasMain ||
+    hasWarmup ||
+    hasAccessory ||
+    hasCooldown ||
+    hasFinisherExercises ||
+    hasFinisherDuration
+  );
+}
 
 function useProgramWithGeneration(programId: number) {
   const query = useProgram(programId);
@@ -41,17 +75,8 @@ function useProgramWithGeneration(programId: number) {
       (s) => s.session_type !== SessionType.RECOVERY
     ) ?? [];
 
-  const hasContent = (session: (typeof trainingSessions)[number]) =>
-    (session.main && session.main.length > 0) ||
-    (session.warmup && session.warmup.length > 0) ||
-    (session.accessory && session.accessory.length > 0) ||
-    (session.cooldown && session.cooldown.length > 0) ||
-    (session.finisher &&
-      ((session.finisher.exercises && session.finisher.exercises.length > 0) ||
-        !!session.finisher.duration_minutes));
-
   const totalTraining = trainingSessions.length;
-  const generatedCount = trainingSessions.filter(hasContent).length;
+  const generatedCount = trainingSessions.filter(sessionHasContent).length;
 
   const isGenerating =
     totalTraining > 0 && generatedCount < totalTraining;
@@ -86,6 +111,7 @@ function ProgramDetailPage() {
   const { data, isLoading, error, isGenerating } = useProgramWithGeneration(
     Number(programId)
   );
+  const [weekOffset, setWeekOffset] = useState(0);
 
   if (isLoading) {
     return (
@@ -110,8 +136,8 @@ function ProgramDetailPage() {
     );
   }
 
-  const { program, active_microcycle, upcoming_sessions } = data;
-
+  const { program, active_microcycle, upcoming_sessions, microcycles } = data;
+ 
   // Build goals array for display
   const goals = [
     { goal: program.goal_1, weight: program.goal_weight_1 },
@@ -119,10 +145,89 @@ function ProgramDetailPage() {
     { goal: program.goal_3, weight: program.goal_weight_3 },
   ].sort((a, b) => b.weight - a.weight);
 
+  const totalWeeks = program.duration_weeks;
+  const baseWeek = active_microcycle?.sequence_number ?? 1;
+  const weekInView = Math.min(
+    totalWeeks,
+    Math.max(1, baseWeek + weekOffset),
+  );
+
+  const baseWeekMicroSessions =
+    microcycles?.find((mc) => mc.sequence_number === baseWeek)?.sessions ?? [];
+
+  const baseTemplateSessions =
+    baseWeekMicroSessions.some(sessionHasContent) && baseWeekMicroSessions.length > 0
+      ? baseWeekMicroSessions
+      : upcoming_sessions;
+
+  const currentWeekMicroSessions =
+    microcycles?.find((mc) => mc.sequence_number === weekInView)?.sessions ?? [];
+
+  const sessionsForWeek: Session[] = [];
+
+  const maxLength = Math.max(
+    baseTemplateSessions.length,
+    currentWeekMicroSessions.length,
+  );
+
+  for (let i = 0; i < maxLength; i += 1) {
+    const templateSession = baseTemplateSessions[i];
+    const weekSession =
+      weekInView === baseWeek
+        ? currentWeekMicroSessions[i] ?? templateSession
+        : currentWeekMicroSessions[i];
+
+    if (!weekSession && templateSession) {
+      sessionsForWeek.push(templateSession);
+      continue;
+    }
+
+    if (!weekSession) {
+      continue;
+    }
+
+    if (weekInView === baseWeek) {
+      if (sessionHasContent(weekSession) || !templateSession) {
+        sessionsForWeek.push(weekSession);
+      } else {
+        sessionsForWeek.push(templateSession);
+      }
+      continue;
+    }
+
+    if (sessionHasContent(weekSession) || !templateSession) {
+      sessionsForWeek.push(weekSession);
+    } else {
+      sessionsForWeek.push({
+        ...templateSession,
+        id: weekSession.id,
+        microcycle_id: weekSession.microcycle_id,
+        day_number: weekSession.day_number,
+        session_date: weekSession.session_date,
+      });
+    }
+  }
+
   // Group sessions by training vs rest
-  const trainingSessions = upcoming_sessions.filter(
+  const trainingSessions = sessionsForWeek.filter(
     (s) => s.session_type !== SessionType.RECOVERY
   );
+
+  const handlePrevWeek = () => {
+    setWeekOffset((prev) => {
+      const current = baseWeek + prev;
+      if (current <= 1) return prev;
+      return prev - 1;
+    });
+  };
+
+  const handleNextWeek = () => {
+    setWeekOffset((prev) => {
+      const current = baseWeek + prev;
+      if (current >= totalWeeks) return prev;
+      return prev + 1;
+    });
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -145,6 +250,33 @@ function ProgramDetailPage() {
 
       {/* Main Content */}
       <main className="flex-1 container-app py-6 space-y-6">
+        {/* Week Navigation */}
+        <section className="flex justify-center">
+          <div className="inline-flex items-center gap-4 rounded-full border border-border bg-background-elevated px-4 py-1.5 text-xs">
+            <button
+              type="button"
+              onClick={handlePrevWeek}
+              disabled={weekInView <= 1}
+              className="text-foreground-muted disabled:opacity-40 disabled:cursor-default"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <div className="flex items-baseline gap-1">
+              <span className="text-foreground-muted">Week</span>
+              <span className="text-sm font-medium">{weekInView}</span>
+              <span className="text-xs text-foreground-muted">/ {totalWeeks}</span>
+            </div>
+            <button
+              type="button"
+              onClick={handleNextWeek}
+              disabled={weekInView >= totalWeeks}
+              className="text-foreground-muted disabled:opacity-40 disabled:cursor-default"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </section>
+
         {/* Goals Section */}
         <section>
           <h2 className="text-sm font-medium text-foreground-muted mb-3 flex items-center gap-2">
@@ -192,7 +324,7 @@ function ProgramDetailPage() {
           <section>
             <h2 className="text-sm font-medium text-foreground-muted mb-3 flex items-center gap-2">
               <Calendar className="h-4 w-4" />
-              Week {active_microcycle.sequence_number}
+              Current Microcycle
               {active_microcycle.is_deload && (
                 <span className="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded">
                   Deload
@@ -222,23 +354,23 @@ function ProgramDetailPage() {
         <section>
           <h2 className="text-sm font-medium text-foreground-muted mb-3 flex items-center gap-2">
             <Dumbbell className="h-4 w-4" />
-            Upcoming Sessions ({trainingSessions.length})
+            Week {weekInView} Sessions ({trainingSessions.length})
           </h2>
 
-          {isGenerating && (
+          {isGenerating && weekInView === baseWeek && (
             <div className="mb-3 flex items-center gap-2 text-xs text-foreground-muted">
               <Spinner size="sm" />
               <span>Jerome is building your sessions. This can take up to a minute.</span>
             </div>
           )}
           
-          {upcoming_sessions.length === 0 ? (
+          {sessionsForWeek.length === 0 ? (
             <Card className="p-6 text-center">
               <p className="text-foreground-muted">No sessions scheduled</p>
             </Card>
           ) : (
             <div className="space-y-3">
-              {upcoming_sessions.map((session) => (
+              {sessionsForWeek.map((session) => (
                 <SessionCard key={session.id} session={session} />
               ))}
             </div>

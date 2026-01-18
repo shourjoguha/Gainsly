@@ -24,12 +24,52 @@ from app.models.enums import (
     RelationshipType,
     CircuitType,
     StressBucket,
+    Sex,
+    DataSource,
+    BiometricMetricType,
+    GoalType,
+    GoalStatus,
+    ExternalProvider,
+    IngestionRunStatus,
+    DisciplineCategory,
+    ActivityCategory,
+    ActivitySource,
+    MuscleRole,
 )
-from app.models.movement import Movement, MovementRelationship
-from app.models.user import User, UserMovementRule, UserEnjoyableActivity, UserSettings
-from app.models.program import Program, Microcycle, Session, SessionExercise
+from app.models.movement import Movement, MovementRelationship, Muscle, MovementMuscleMap
+from app.models.user import (
+    User,
+    UserMovementRule,
+    UserEnjoyableActivity,
+    UserSettings,
+    UserProfile,
+    UserBiometricHistory,
+)
+from app.models.program import (
+    Program,
+    Microcycle,
+    Session,
+    SessionExercise,
+    MacroCycle,
+    UserGoal,
+    GoalCheckin,
+    Discipline,
+    ActivityDefinition,
+    ActivityInstance,
+    ActivityMuscleMap,
+    UserFatigueState,
+    ActivityInstanceLink,
+)
 from app.models.logging import WorkoutLog, TopSetLog, PatternExposure, SorenessLog, RecoverySignal
-from app.models.config import HeuristicConfig, ConversationThread, ConversationTurn
+from app.models.config import (
+    HeuristicConfig,
+    ConversationThread,
+    ConversationTurn,
+    ExternalProviderAccount,
+    ExternalIngestionRun,
+    ExternalActivityRecord,
+    ExternalMetricStream,
+)
 from app.models.circuit import CircuitTemplate
 
 __all__ = [
@@ -58,17 +98,41 @@ __all__ = [
     "RelationshipType",
     "CircuitType",
     "StressBucket",
+    "Sex",
+    "DataSource",
+    "BiometricMetricType",
+    "GoalType",
+    "GoalStatus",
+    "ExternalProvider",
+    "IngestionRunStatus",
+    "DisciplineCategory",
+    "ActivityCategory",
+    "ActivitySource",
+    "MuscleRole",
     # Models
     "Movement",
     "MovementRelationship",
+    "Muscle",
+    "MovementMuscleMap",
     "User",
     "UserMovementRule",
     "UserEnjoyableActivity",
     "UserSettings",
+    "UserProfile",
+    "UserBiometricHistory",
     "Program",
     "Microcycle",
     "Session",
     "SessionExercise",
+    "MacroCycle",
+    "UserGoal",
+    "GoalCheckin",
+    "Discipline",
+    "ActivityDefinition",
+    "ActivityInstance",
+    "ActivityMuscleMap",
+    "UserFatigueState",
+    "ActivityInstanceLink",
     "WorkoutLog",
     "TopSetLog",
     "PatternExposure",
@@ -77,5 +141,9 @@ __all__ = [
     "HeuristicConfig",
     "ConversationThread",
     "ConversationTurn",
+    "ExternalProviderAccount",
+    "ExternalIngestionRun",
+    "ExternalActivityRecord",
+    "ExternalMetricStream",
     "CircuitTemplate",
 ]

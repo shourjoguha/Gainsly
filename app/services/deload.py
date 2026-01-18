@@ -15,7 +15,7 @@ from sqlalchemy import select, and_, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import (
-    Microcycle, RecoverySignal
+    Microcycle, RecoverySignal, Program
 )
 from app.models.logging import (
     WorkoutLog
@@ -105,7 +105,7 @@ class DeloadService:
         if not signals:
             return {"sleep_avg": 8, "readiness_avg": 50, "hrv_avg": 50}
         
-        sleep_scores = [s.sleep_score for s in signals if s.sleep_score]
+        sleep_scores = [s.sleep_hours for s in signals if s.sleep_hours]
         readiness_scores = [s.readiness for s in signals if s.readiness]
         hrv_scores = [s.hrv for s in signals if s.hrv]
         
@@ -138,15 +138,20 @@ class DeloadService:
                     Microcycle.is_deload == True
                 )
             )
-            .order_by(desc(Microcycle.micro_start_date))
+            .order_by(desc(Microcycle.start_date))
             .limit(1)
         )
         last_deload = result.scalar_one_or_none()
         
         if not last_deload:
+            # Check program start date if no deload found
+            program_result = await db.execute(select(Program).where(Program.id == program_id))
+            program = program_result.scalar_one_or_none()
+            if program:
+                return (datetime.utcnow().date() - program.start_date).days
             return 999
         
-        days_diff = (datetime.utcnow().date() - last_deload.micro_start_date).days
+        days_diff = (datetime.utcnow().date() - last_deload.start_date).days
         return max(0, days_diff)
 
 

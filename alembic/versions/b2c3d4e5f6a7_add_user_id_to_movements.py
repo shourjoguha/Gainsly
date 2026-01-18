@@ -19,14 +19,19 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Add user_id column to movements table
-    op.add_column('movements', sa.Column('user_id', sa.Integer(), nullable=True))
-    op.create_index(op.f('ix_movements_user_id'), 'movements', ['user_id'], unique=False)
-    op.create_foreign_key(None, 'movements', 'users', ['user_id'], ['id'])
+    with op.batch_alter_table("movements") as batch_op:
+        batch_op.add_column(sa.Column("user_id", sa.Integer(), nullable=True))
+        batch_op.create_index(op.f("ix_movements_user_id"), ["user_id"], unique=False)
+        batch_op.create_foreign_key(
+            "fk_movements_user_id_users",
+            "users",
+            ["user_id"],
+            ["id"],
+        )
 
 
 def downgrade() -> None:
-    # Remove user_id column from movements table
-    op.drop_constraint(None, 'movements', type_='foreignkey')
-    op.drop_index(op.f('ix_movements_user_id'), table_name='movements')
-    op.drop_column('movements', 'user_id')
+    with op.batch_alter_table("movements") as batch_op:
+        batch_op.drop_constraint("fk_movements_user_id_users", type_="foreignkey")
+        batch_op.drop_index(op.f("ix_movements_user_id"))
+        batch_op.drop_column("user_id")

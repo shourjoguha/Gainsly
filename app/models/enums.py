@@ -247,3 +247,95 @@ class Visibility(str, Enum):
     PRIVATE = "private"  # Only creator
     FRIENDS = "friends"  # Creator + friends/team
     PUBLIC = "public"    # Everyone
+
+
+class Sex(str, Enum):
+    """User sex for biometric and health calculations."""
+    FEMALE = "female"
+    MALE = "male"
+    INTERSEX = "intersex"
+    UNSPECIFIED = "unspecified"
+
+
+class DataSource(str, Enum):
+    """Source of time-series or ingested records."""
+    MANUAL = "manual"
+    PROVIDER = "provider"
+    ESTIMATED = "estimated"
+
+
+class BiometricMetricType(str, Enum):
+    """Types of biometric measurements tracked over time."""
+    WEIGHT_KG = "weight_kg"
+    BODY_FAT_PERCENT = "body_fat_percent"
+    RESTING_HR = "resting_hr"
+    HRV = "hrv"
+    SLEEP_HOURS = "sleep_hours"
+    VO2_MAX = "vo2_max"
+
+
+class GoalType(str, Enum):
+    """High-level goal category; detailed targets live in target_json."""
+    PERFORMANCE = "performance"
+    BODY_COMPOSITION = "body_composition"
+    SKILL = "skill"
+    HEALTH = "health"
+    HABIT = "habit"
+    OTHER = "other"
+
+
+class GoalStatus(str, Enum):
+    """Lifecycle status of a goal."""
+    ACTIVE = "active"
+    PAUSED = "paused"
+    COMPLETED = "completed"
+    CANCELLED = "cancelled"
+
+
+class ExternalProvider(str, Enum):
+    """External health/fitness provider."""
+    STRAVA = "strava"
+    GARMIN = "garmin"
+    APPLE_HEALTH = "apple_health"
+    WHOOP = "whoop"
+    OURA = "oura"
+    OTHER = "other"
+
+
+class IngestionRunStatus(str, Enum):
+    """Status for an ingestion run."""
+    RUNNING = "running"
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
+
+
+class DisciplineCategory(str, Enum):
+    """High-level grouping for disciplines."""
+    TRAINING = "training"
+    SPORT = "sport"
+    RECOVERY = "recovery"
+    OTHER = "other"
+
+
+class ActivityCategory(str, Enum):
+    """High-level grouping for activity definitions."""
+    STRENGTH = "strength"
+    CARDIO = "cardio"
+    MOBILITY = "mobility"
+    SPORT = "sport"
+    RECOVERY = "recovery"
+    OTHER = "other"
+
+
+class ActivitySource(str, Enum):
+    """How an activity instance was created."""
+    PLANNED = "planned"
+    MANUAL = "manual"
+    PROVIDER = "provider"
+
+
+class MuscleRole(str, Enum):
+    """Role of a muscle in an activity or movement."""
+    PRIMARY = "primary"
+    SECONDARY = "secondary"
+    STABILIZER = "stabilizer"

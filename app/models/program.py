@@ -18,6 +18,12 @@ from app.models.enums import (
     SessionType,
     ExerciseRole,
     Visibility,
+    GoalType,
+    GoalStatus,
+    DisciplineCategory,
+    ActivityCategory,
+    ActivitySource,
+    MetricType,
 )
 
 
@@ -27,6 +33,7 @@ class Program(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    macro_cycle_id = Column(Integer, ForeignKey("macro_cycles.id"), nullable=True, index=True)
     name = Column(String(100), nullable=True)  # Added for historic programs
     
     # Program duration
@@ -76,7 +83,9 @@ class Program(Base):
     
     # Relationships
     user = relationship("User", back_populates="programs")
+    macro_cycle = relationship("MacroCycle", back_populates="programs")
     microcycles = relationship("Microcycle", back_populates="program", cascade="all, delete-orphan")
+    goals = relationship("UserGoal", back_populates="program", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Program(id={self.id}, user_id={self.user_id}, split={self.split_template})>"
@@ -211,3 +220,138 @@ class SessionExercise(Base):
 
     def __repr__(self):
         return f"<SessionExercise(id={self.id}, session_id={self.session_id}, movement_id={self.movement_id})>"
+
+
+class MacroCycle(Base):
+    __tablename__ = "macro_cycles"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+
+    name = Column(String(200), nullable=True)
+    start_date = Column(Date, nullable=False)
+    end_date = Column(Date, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", back_populates="macro_cycles")
+    programs = relationship("Program", back_populates="macro_cycle", cascade="all, delete-orphan")
+    goals = relationship("UserGoal", back_populates="macro_cycle", cascade="all, delete-orphan")
+
+
+class UserGoal(Base):
+    __tablename__ = "goals"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    macro_cycle_id = Column(Integer, ForeignKey("macro_cycles.id"), nullable=True, index=True)
+    program_id = Column(Integer, ForeignKey("programs.id"), nullable=True, index=True)
+
+    goal_type = Column(SQLEnum(GoalType), nullable=False)
+    target_json = Column(JSON, nullable=True)
+    priority = Column(Integer, nullable=False, default=3)
+    status = Column(SQLEnum(GoalStatus), nullable=False, default=GoalStatus.ACTIVE)
+
+    effective_from = Column(DateTime, nullable=False, default=datetime.utcnow)
+    effective_to = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", back_populates="goals")
+    macro_cycle = relationship("MacroCycle", back_populates="goals")
+    program = relationship("Program", back_populates="goals")
+    checkins = relationship("GoalCheckin", back_populates="goal", cascade="all, delete-orphan")
+
+
+class GoalCheckin(Base):
+    __tablename__ = "goal_checkins"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    goal_id = Column(Integer, ForeignKey("goals.id"), nullable=False, index=True)
+
+    date = Column(Date, nullable=False, index=True)
+    value_json = Column(JSON, nullable=True)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    goal = relationship("UserGoal", back_populates="checkins")
+
+
+class Discipline(Base):
+    __tablename__ = "disciplines"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    slug = Column(String(100), nullable=False, unique=True, index=True)
+    name = Column(String(200), nullable=False)
+    category = Column(SQLEnum(DisciplineCategory), nullable=False, default=DisciplineCategory.TRAINING)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class ActivityDefinition(Base):
+    __tablename__ = "activity_definitions"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(200), nullable=False, index=True)
+    category = Column(SQLEnum(ActivityCategory), nullable=False, index=True)
+    discipline_id = Column(Integer, ForeignKey("disciplines.id"), nullable=True, index=True)
+    default_metric_type = Column(SQLEnum(MetricType), nullable=True)
+    default_equipment_tags = Column(JSON, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    discipline = relationship("Discipline")
+    activity_instances = relationship("ActivityInstance", back_populates="activity_definition")
+
+
+class ActivityInstance(Base):
+    __tablename__ = "activity_instances"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    planned_session_id = Column(Integer, ForeignKey("sessions.id"), nullable=True, index=True)
+    source = Column(SQLEnum(ActivitySource), nullable=False, index=True)
+
+    activity_definition_id = Column(Integer, ForeignKey("activity_definitions.id"), nullable=True, index=True)
+    performed_start = Column(DateTime, nullable=True, index=True)
+    performed_end = Column(DateTime, nullable=True)
+    duration_seconds = Column(Integer, nullable=True)
+
+    notes = Column(Text, nullable=True)
+    perceived_difficulty = Column(Integer, nullable=True)
+    enjoyment_rating = Column(Integer, nullable=True)
+    visibility = Column(SQLEnum(Visibility), default=Visibility.PRIVATE, nullable=False)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    activity_definition = relationship("ActivityDefinition", back_populates="activity_instances")
+    user = relationship("User", back_populates="activity_instances")
+
+
+class ActivityMuscleMap(Base):
+    __tablename__ = "activity_muscle_map"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    activity_definition_id = Column(Integer, ForeignKey("activity_definitions.id"), nullable=False, index=True)
+    muscle_id = Column(Integer, ForeignKey("muscles.id"), nullable=False, index=True)
+    magnitude = Column(Float, nullable=False, default=1.0)
+    cns_impact = Column(Float, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class UserFatigueState(Base):
+    __tablename__ = "user_fatigue_state"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    date = Column(Date, nullable=False, index=True)
+    muscle_id = Column(Integer, ForeignKey("muscles.id"), nullable=False, index=True)
+    fatigue_score = Column(Float, nullable=False)
+    computed_from = Column(String(100), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class ActivityInstanceLink(Base):
+    __tablename__ = "activity_instance_links"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    activity_instance_id = Column(Integer, ForeignKey("activity_instances.id"), nullable=False, index=True)
+    external_activity_record_id = Column(Integer, ForeignKey("external_activity_records.id"), nullable=True, index=True)
+    workout_log_id = Column(Integer, ForeignKey("workout_logs.id"), nullable=True, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow)

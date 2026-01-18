@@ -33,32 +33,24 @@ class TopSetResponse(BaseModel):
     e1rm_value: float | None = None
     e1rm_formula: E1RMFormula | None = None
     pattern: MovementPattern | None = None
-    is_pr: bool = False
     created_at: DatetimeType | None = None
     
     class Config:
         from_attributes = True
 
 
-# ============== Workout Log Schemas ==============
+# ============== Workout Log Schemas (DB-backed) ==============
 
 class WorkoutLogCreate(BaseModel):
     """Workout log creation schema."""
-    session_id: int | None = None  # Nullable for ad-hoc workouts
-    log_date: DateType | None = None  # Defaults to today (renamed to avoid shadowing)
-    started_at: DatetimeType | None = None
-    ended_at: DatetimeType | None = None
+    session_id: int | None = None
+    log_date: DateType | None = None
     completed: bool = True
     top_sets: list[TopSetCreate] | None = None
-    exercises_completed: list[dict[str, Any]] | None = None
     notes: str | None = None
-    perceived_exertion: int | None = Field(default=None, ge=1, le=10)
     perceived_difficulty: int | None = Field(default=None, ge=1, le=10)
     enjoyment_rating: int | None = Field(default=None, ge=1, le=5)
     feedback_tags: list[str] | None = None
-    energy_level: int | None = Field(default=None, ge=1, le=10)
-    adherence_percentage: float | None = Field(default=None, ge=0, le=100)
-    coach_feedback_request: str | None = None
     actual_duration_minutes: int | None = Field(default=None, ge=0)
 
 
@@ -68,18 +60,11 @@ class WorkoutLogResponse(BaseModel):
     user_id: int | None = None
     session_id: int | None = None
     log_date: DateType | None = None  # Renamed to avoid shadowing
-    started_at: DatetimeType | None = None
-    ended_at: DatetimeType | None = None
     completed: bool = True
     notes: str | None = None
-    perceived_exertion: int | None = None
     perceived_difficulty: int | None = None
     enjoyment_rating: int | None = None
     feedback_tags: list[str] | None = None
-    energy_level: int | None = None
-    adherence_percentage: float | None = None
-    coach_feedback_request: str | None = None
-    exercises_completed: list[dict[str, Any]] | None = None
     actual_duration_minutes: int | None = None
     top_sets: list[TopSetResponse] = []
     created_at: DatetimeType | None = None
@@ -157,6 +142,7 @@ class RecoverySignalResponse(BaseModel):
     sleep_score: float | None = None
     sleep_hours: float | None = None
     readiness: float | None = None
+    raw_payload: dict | None = None
     notes: str | None = None
     created_at: DatetimeType | None = None
     
@@ -188,7 +174,13 @@ class ProgressSummaryResponse(BaseModel):
 class PatternExposureResponse(BaseModel):
     """Pattern exposure response."""
     id: int
+    user_id: int | None = None
+    microcycle_id: int | None = None
     log_date: DateType | None = None
-    pattern: str
-    sets: int
-    reps: int
+    pattern: MovementPattern
+    e1rm_value: float
+    source_top_set_log_id: int | None = None
+    created_at: DatetimeType | None = None
+    
+    class Config:
+        from_attributes = True

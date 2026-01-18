@@ -121,7 +121,7 @@ async def test_should_trigger_deload_time_based(
     test_user,
 ):
     """Test time-based deload trigger (4+ weeks without deload)."""
-    from app.models.enums import Goal, SplitTemplate as SplitTemplateEnum, ProgressionStyle
+    from app.models.enums import Goal, SplitTemplate as SplitTemplateEnum, ProgressionStyle, PersonaTone, PersonaAggression
     
     # Create a program with old start date (>4 weeks ago)
     old_date = date.today() - timedelta(weeks=6)
@@ -136,8 +136,11 @@ async def test_should_trigger_deload_time_based(
         goal_weight_1=5,
         goal_weight_2=3,
         goal_weight_3=2,
+        days_per_week=4,
         progression_style=ProgressionStyle.DOUBLE_PROGRESSION,
         deload_every_n_microcycles=4,
+        persona_tone=PersonaTone.SUPPORTIVE,
+        persona_aggression=PersonaAggression.BALANCED,
         is_active=True,
     )
     async_db_session.add(program)
@@ -148,7 +151,7 @@ async def test_should_trigger_deload_time_based(
         program_id=program.id,
         sequence_number=1,
         start_date=old_date,
-        length_days=14,
+        length_days=7,
         status=MicrocycleStatus.ACTIVE,
         is_deload=False,
     )

@@ -60,14 +60,9 @@ async def get_user_settings(
     
     return UserSettingsResponse(
         id=user_settings.id,
-        persona_coaching_style=user_settings.persona_coaching_style,
-        persona_strictness=user_settings.persona_strictness,
-        persona_humor=user_settings.persona_humor,
-        persona_explanation_level=user_settings.persona_explanation_level,
-        notification_preference=user_settings.notification_preference,
-        preferred_units=user_settings.preferred_units,
-        default_session_duration_minutes=user_settings.default_session_duration_minutes,
-        e1rm_formula=user_settings.e1rm_formula,
+        user_id=user_settings.user_id,
+        active_e1rm_formula=user_settings.active_e1rm_formula,
+        use_metric=user_settings.use_metric,
     )
 
 
@@ -97,14 +92,9 @@ async def update_user_settings(
     
     return UserSettingsResponse(
         id=user_settings.id,
-        persona_coaching_style=user_settings.persona_coaching_style,
-        persona_strictness=user_settings.persona_strictness,
-        persona_humor=user_settings.persona_humor,
-        persona_explanation_level=user_settings.persona_explanation_level,
-        notification_preference=user_settings.notification_preference,
-        preferred_units=user_settings.preferred_units,
-        default_session_duration_minutes=user_settings.default_session_duration_minutes,
-        e1rm_formula=user_settings.e1rm_formula,
+        user_id=user_settings.user_id,
+        active_e1rm_formula=user_settings.active_e1rm_formula,
+        use_metric=user_settings.use_metric,
     )
 
 
@@ -152,16 +142,16 @@ async def create_movement_rule(
     
     # Parse rule_type enum
     try:
-        rule_type_enum = MovementRuleType(rule.rule_type.upper())
-    except ValueError:
+        rule_type_enum = MovementRuleType[rule.rule_type.upper()]
+    except KeyError:
         raise HTTPException(status_code=400, detail=f"Invalid rule_type: {rule.rule_type}")
     
     # Parse cadence enum if provided
     cadence_enum = RuleCadence.PER_MICROCYCLE
     if rule.cadence:
         try:
-            cadence_enum = RuleCadence(rule.cadence.upper())
-        except ValueError:
+            cadence_enum = RuleCadence[rule.cadence.upper()]
+        except KeyError:
             pass  # Use default
     
     movement_rule = UserMovementRule(
@@ -217,9 +207,12 @@ async def list_enjoyable_activities(
     return [
         EnjoyableActivityResponse(
             id=act.id,
-            activity_name=act.activity_name,
-            category=act.category,
-            typical_duration_minutes=act.typical_duration_minutes,
+            user_id=act.user_id,
+            activity_type=act.activity_type.value if act.activity_type else None,
+            custom_name=act.custom_name,
+            recommend_every_days=act.recommend_every_days,
+            enabled=act.enabled,
+            notes=act.notes,
         )
         for act in activities
     ]
@@ -232,20 +225,35 @@ async def create_enjoyable_activity(
     user_id: int = Depends(get_current_user_id),
 ):
     """Add an enjoyable activity."""
+    from app.models.enums import EnjoyableActivity as EnjoyableActivityEnum
+
+    try:
+        activity_type = EnjoyableActivityEnum(activity.activity_type)
+    except ValueError:
+        try:
+            activity_type = EnjoyableActivityEnum[activity.activity_type.upper()]
+        except KeyError:
+            raise HTTPException(status_code=400, detail=f"Invalid activity_type: {activity.activity_type}")
+
     new_activity = UserEnjoyableActivity(
         user_id=user_id,
-        activity_name=activity.activity_name,
-        category=activity.category,
-        typical_duration_minutes=activity.typical_duration_minutes,
+        activity_type=activity_type,
+        custom_name=activity.custom_name,
+        recommend_every_days=activity.recommend_every_days,
+        enabled=True,
+        notes=activity.notes,
     )
     db.add(new_activity)
     await db.commit()
     
     return EnjoyableActivityResponse(
         id=new_activity.id,
-        activity_name=new_activity.activity_name,
-        category=new_activity.category,
-        typical_duration_minutes=new_activity.typical_duration_minutes,
+        user_id=new_activity.user_id,
+        activity_type=new_activity.activity_type.value if new_activity.activity_type else None,
+        custom_name=new_activity.custom_name,
+        recommend_every_days=new_activity.recommend_every_days,
+        enabled=new_activity.enabled,
+        notes=new_activity.notes,
     )
 
 

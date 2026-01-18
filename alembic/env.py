@@ -32,7 +32,9 @@ target_metadata = Base.metadata
 
 # Override sqlalchemy.url with settings value
 settings = get_settings()
-config.set_main_option("sqlalchemy.url", settings.database_url)
+existing_url = config.get_main_option("sqlalchemy.url") or ""
+if existing_url.startswith("driver://") or existing_url == "":
+    config.set_main_option("sqlalchemy.url", settings.database_url)
 
 
 def run_migrations_offline() -> None:

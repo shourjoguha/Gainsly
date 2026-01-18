@@ -13,7 +13,7 @@ from app.services.adaptation import adaptation_service
 from app.services.time_estimation import time_estimation_service
 from app.models.program import Session
 from app.schemas.daily import AdaptationRequest, SorenessInput, RecoveryInput
-from app.models.enums import SessionType
+from app.models.enums import SessionType, MovementPattern
 
 
 # ============== AdaptationService Tests ==============
@@ -54,7 +54,7 @@ async def test_adapt_session_with_soreness(
     request = AdaptationRequest(
         program_id=test_session.microcycle.program_id,
         soreness=[
-            SorenessInput(body_part="quadriceps", level=8),
+            SorenessInput(body_part="legs", level=5),
         ],
         recovery=RecoveryInput(sleep_hours=7.0, energy_level=6),
     )

@@ -1,5 +1,7 @@
 """User and user configuration models."""
+from datetime import datetime
 from sqlalchemy import Boolean, Column, Integer, String, ForeignKey, Enum as SQLEnum, Text
+from sqlalchemy import Date, DateTime, Float, JSON
 from sqlalchemy.orm import relationship
 
 from app.db.database import Base
@@ -11,6 +13,9 @@ from app.models.enums import (
     RuleCadence,
     EnjoyableActivity,
     E1RMFormula,
+    Sex,
+    DataSource,
+    BiometricMetricType,
 )
 
 
@@ -50,6 +55,11 @@ class User(Base):
     recovery_signals = relationship("RecoverySignal", back_populates="user", cascade="all, delete-orphan")
     settings = relationship("UserSettings", back_populates="user", uselist=False, cascade="all, delete-orphan")
     conversation_threads = relationship("ConversationThread", back_populates="user", cascade="all, delete-orphan")
+    profile = relationship("UserProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    biometrics_history = relationship("UserBiometricHistory", back_populates="user", cascade="all, delete-orphan")
+    macro_cycles = relationship("MacroCycle", back_populates="user", cascade="all, delete-orphan")
+    goals = relationship("UserGoal", back_populates="user", cascade="all, delete-orphan")
+    activity_instances = relationship("ActivityInstance", back_populates="user", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<User(id={self.id}, name='{self.name}')>"
@@ -117,3 +127,34 @@ class UserSettings(Base):
 
     def __repr__(self):
         return f"<UserSettings(user_id={self.user_id}, formula={self.active_e1rm_formula})>"
+
+
+class UserProfile(Base):
+    __tablename__ = "user_profiles"
+
+    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    date_of_birth = Column(Date, nullable=True)
+    sex = Column(SQLEnum(Sex), nullable=True)
+    height_cm = Column(Integer, nullable=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user = relationship("User", back_populates="profile")
+
+
+class UserBiometricHistory(Base):
+    __tablename__ = "user_biometrics_history"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+
+    date = Column(Date, nullable=False, index=True)
+    metric_type = Column(SQLEnum(BiometricMetricType), nullable=False, index=True)
+    value = Column(Float, nullable=False)
+    source = Column(SQLEnum(DataSource), nullable=False, default=DataSource.MANUAL)
+    external_reference = Column(String(255), nullable=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", back_populates="biometrics_history")

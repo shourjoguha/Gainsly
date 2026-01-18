@@ -16,13 +16,13 @@ from sqlalchemy.pool import StaticPool
 
 from app.db.database import Base
 from app.models.user import User, UserMovementRule, UserEnjoyableActivity, UserSettings
-from app.models.program import Program, Microcycle, Session, SplitTemplate
+from app.models.program import Program, Microcycle, Session
 from app.models.movement import Movement
 from app.models.logging import WorkoutLog, TopSetLog, SorenessLog, RecoverySignal, PatternExposure
 from app.models.enums import (
     ExperienceLevel, PersonaTone, PersonaAggression, Goal, SplitTemplate as SplitTemplateEnum,
     ProgressionStyle, SessionType, MovementRuleType, RuleCadence, EnjoyableActivity,
-    MovementPattern, PrimaryMuscle, E1RMFormula, RecoverySource, MicrocycleStatus
+    MovementPattern, PrimaryMuscle, E1RMFormula, RecoverySource, MicrocycleStatus, PrimaryRegion, SkillLevel, CNSLoad
 )
 
 
@@ -106,38 +106,48 @@ async def test_movements(async_db_session: AsyncSession) -> list:
     movements = [
         Movement(
             name="Barbell Squat",
-            pattern=MovementPattern.SQUAT,
-            primary_muscle=PrimaryMuscle.QUADRICEPS,
-            skill_level=2,
-            is_compound=True,
+            pattern=MovementPattern.SQUAT.value,
+            primary_muscle=PrimaryMuscle.QUADRICEPS.value,
+            primary_region=PrimaryRegion.ANTERIOR_LOWER.value,
+            skill_level=SkillLevel.INTERMEDIATE.value,
+            cns_load=CNSLoad.MODERATE.value,
+            compound=True,
         ),
         Movement(
             name="Barbell Bench Press",
-            pattern=MovementPattern.HORIZONTAL_PUSH,
-            primary_muscle=PrimaryMuscle.CHEST,
-            skill_level=2,
-            is_compound=True,
+            pattern=MovementPattern.HORIZONTAL_PUSH.value,
+            primary_muscle=PrimaryMuscle.CHEST.value,
+            primary_region=PrimaryRegion.ANTERIOR_UPPER.value,
+            skill_level=SkillLevel.INTERMEDIATE.value,
+            cns_load=CNSLoad.MODERATE.value,
+            compound=True,
         ),
         Movement(
             name="Barbell Deadlift",
-            pattern=MovementPattern.HINGE,
-            primary_muscle=PrimaryMuscle.HAMSTRINGS,
-            skill_level=3,
-            is_compound=True,
+            pattern=MovementPattern.HINGE.value,
+            primary_muscle=PrimaryMuscle.HAMSTRINGS.value,
+            primary_region=PrimaryRegion.POSTERIOR_LOWER.value,
+            skill_level=SkillLevel.ADVANCED.value,
+            cns_load=CNSLoad.HIGH.value,
+            compound=True,
         ),
         Movement(
             name="Barbell Rows",
-            pattern=MovementPattern.HORIZONTAL_PULL,
-            primary_muscle=PrimaryMuscle.LATS,
-            skill_level=2,
-            is_compound=True,
+            pattern=MovementPattern.HORIZONTAL_PULL.value,
+            primary_muscle=PrimaryMuscle.LATS.value,
+            primary_region=PrimaryRegion.POSTERIOR_UPPER.value,
+            skill_level=SkillLevel.INTERMEDIATE.value,
+            cns_load=CNSLoad.MODERATE.value,
+            compound=True,
         ),
         Movement(
             name="Dumbbell Curl",
-            pattern=MovementPattern.ISOLATION,
-            primary_muscle=PrimaryMuscle.BICEPS,
-            skill_level=1,
-            is_compound=False,
+            pattern=MovementPattern.ISOLATION.value,
+            primary_muscle=PrimaryMuscle.BICEPS.value,
+            primary_region=PrimaryRegion.ANTERIOR_UPPER.value,
+            skill_level=SkillLevel.BEGINNER.value,
+            cns_load=CNSLoad.LOW.value,
+            compound=False,
         ),
     ]
     async_db_session.add_all(movements)
@@ -162,6 +172,7 @@ async def test_program(
         goal_weight_1=5,
         goal_weight_2=3,
         goal_weight_3=2,
+        days_per_week=4,
         progression_style=ProgressionStyle.DOUBLE_PROGRESSION,
         deload_every_n_microcycles=4,
         persona_tone=PersonaTone.SUPPORTIVE,
@@ -205,6 +216,9 @@ async def test_session(
         day_number=1,
         session_type=SessionType.UPPER,
         intent_tags=[],
+        warmup_json=[{"name": "Arm Circles", "sets": 2, "reps": 15}],
+        main_json=[{"name": "Bench Press", "sets": 3, "reps": 8}],
+        cooldown_json=[{"name": "Chest Stretch", "duration_seconds": 60}],
     )
     async_db_session.add(session)
     await async_db_session.commit()

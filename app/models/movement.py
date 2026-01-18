@@ -1,5 +1,7 @@
 """Movement repository models."""
+from datetime import datetime
 from sqlalchemy import Boolean, Column, Integer, String, Text, JSON, ForeignKey
+from sqlalchemy import DateTime, Float, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 
 from app.db.database import Base
@@ -11,6 +13,7 @@ from app.models.enums import (
     SkillLevel,
     CNSLoad,
     RelationshipType,
+    MuscleRole,
 )
 
 
@@ -59,6 +62,7 @@ class Movement(Base):
     primary_discipline = Column(String(50), nullable=False, default="All", server_default="All")
     discipline_tags = Column(JSON, default=list)  # e.g., ["powerlifting", "olympic", "calisthenics"]
     equipment_tags = Column(JSON, default=list)  # e.g., ["barbell", "dumbbell", "bodyweight"]
+    tags = Column(JSON, default=list)  # General tags e.g. ["crossfit", "athletic", "mobility"]
     
     # Description and notes
     description = Column(Text, nullable=True)
@@ -88,3 +92,23 @@ class Movement(Base):
 
     def __repr__(self):
         return f"<Movement(id={self.id}, name='{self.name}', pattern={self.pattern})>"
+
+
+class Muscle(Base):
+    __tablename__ = "muscles"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    slug = Column(String(100), nullable=False, unique=True, index=True)
+    name = Column(String(200), nullable=False)
+    region = Column(String(100), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class MovementMuscleMap(Base):
+    __tablename__ = "movement_muscle_map"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    movement_id = Column(Integer, ForeignKey("movements.id"), nullable=False, index=True)
+    muscle_id = Column(Integer, ForeignKey("muscles.id"), nullable=False, index=True)
+    role = Column(SQLEnum(MuscleRole), nullable=False, index=True)
+    magnitude = Column(Float, nullable=False, default=1.0)

@@ -13,6 +13,7 @@ from app.services.program import program_service
 from app.models.program import Program, Microcycle
 from app.models.enums import Goal, SplitTemplate as SplitTemplateEnum, ProgressionStyle, MicrocycleStatus
 from app.schemas.program import ProgramCreate, GoalWeight
+from pydantic import ValidationError
 
 
 @pytest.mark.asyncio
@@ -27,6 +28,7 @@ async def test_create_program_valid(async_db_session: AsyncSession, test_user):
         duration_weeks=8,
         program_start_date=date.today(),  # Mapped to start_date by schema
         split_template=SplitTemplateEnum.UPPER_LOWER,
+        days_per_week=4,
         progression_style=ProgressionStyle.DOUBLE_PROGRESSION,
     )
     
@@ -53,18 +55,19 @@ async def test_create_program_generates_microcycles(
         duration_weeks=8,
         program_start_date=date.today(),
         split_template=SplitTemplateEnum.UPPER_LOWER,
+        days_per_week=4,
         progression_style=ProgressionStyle.DOUBLE_PROGRESSION,
     )
     
     program = await program_service.create_program(async_db_session, test_user.id, request)
     
-    # 8 weeks = 4 microcycles (2 weeks each)
+    # 8 weeks = 8 microcycles (1 week each)
     result = await async_db_session.execute(
         select(Microcycle).where(Microcycle.program_id == program.id)
     )
     microcycles = list(result.scalars().all())
     
-    assert len(microcycles) == 4
+    assert len(microcycles) == 8
     assert all(mc.program_id == program.id for mc in microcycles)
 
 
@@ -83,6 +86,7 @@ async def test_create_program_deload_placement(
         duration_weeks=12,  # 6 microcycles
         program_start_date=date.today(),
         split_template=SplitTemplateEnum.UPPER_LOWER,
+        days_per_week=4,
         progression_style=ProgressionStyle.DOUBLE_PROGRESSION,
     )
     
@@ -107,20 +111,19 @@ async def test_create_program_invalid_week_count_too_short(
     test_user,
 ):
     """Test that program with < 8 weeks is rejected."""
-    request = ProgramCreate(
-        goals=[
-            GoalWeight(goal=Goal.STRENGTH, weight=5),
-            GoalWeight(goal=Goal.HYPERTROPHY, weight=3),
-            GoalWeight(goal=Goal.ENDURANCE, weight=2),
-        ],
-        duration_weeks=6,  # Too short
-        program_start_date=date.today(),
-        split_template=SplitTemplateEnum.UPPER_LOWER,
-        progression_style=ProgressionStyle.DOUBLE_PROGRESSION,
-    )
-    
-    with pytest.raises(ValueError):
-        await program_service.create_program(async_db_session, test_user.id, request)
+    with pytest.raises(ValidationError):
+        ProgramCreate(
+            goals=[
+                GoalWeight(goal=Goal.STRENGTH, weight=5),
+                GoalWeight(goal=Goal.HYPERTROPHY, weight=3),
+                GoalWeight(goal=Goal.ENDURANCE, weight=2),
+            ],
+            duration_weeks=6,  # Too short
+            program_start_date=date.today(),
+            split_template=SplitTemplateEnum.UPPER_LOWER,
+            days_per_week=4,
+            progression_style=ProgressionStyle.DOUBLE_PROGRESSION,
+        )
 
 
 @pytest.mark.asyncio
@@ -129,20 +132,19 @@ async def test_create_program_invalid_week_count_too_long(
     test_user,
 ):
     """Test that program with > 12 weeks is rejected."""
-    request = ProgramCreate(
-        goals=[
-            GoalWeight(goal=Goal.STRENGTH, weight=5),
-            GoalWeight(goal=Goal.HYPERTROPHY, weight=3),
-            GoalWeight(goal=Goal.ENDURANCE, weight=2),
-        ],
-        duration_weeks=16,  # Too long
-        program_start_date=date.today(),
-        split_template=SplitTemplateEnum.UPPER_LOWER,
-        progression_style=ProgressionStyle.DOUBLE_PROGRESSION,
-    )
-    
-    with pytest.raises(ValueError):
-        await program_service.create_program(async_db_session, test_user.id, request)
+    with pytest.raises(ValidationError):
+        ProgramCreate(
+            goals=[
+                GoalWeight(goal=Goal.STRENGTH, weight=5),
+                GoalWeight(goal=Goal.HYPERTROPHY, weight=3),
+                GoalWeight(goal=Goal.ENDURANCE, weight=2),
+            ],
+            duration_weeks=16,  # Too long
+            program_start_date=date.today(),
+            split_template=SplitTemplateEnum.UPPER_LOWER,
+            days_per_week=4,
+            progression_style=ProgressionStyle.DOUBLE_PROGRESSION,
+        )
 
 
 @pytest.mark.asyncio
@@ -200,6 +202,7 @@ async def test_list_programs_multiple(
             duration_weeks=8,
             program_start_date=date.today(),
             split_template=SplitTemplateEnum.UPPER_LOWER,
+            days_per_week=4,
             progression_style=ProgressionStyle.DOUBLE_PROGRESSION,
         )
         await program_service.create_program(async_db_session, test_user.id, request)
@@ -224,6 +227,7 @@ async def test_microcycle_sequences_ordered(
         duration_weeks=8,
         program_start_date=date.today(),
         split_template=SplitTemplateEnum.UPPER_LOWER,
+        days_per_week=4,
         progression_style=ProgressionStyle.DOUBLE_PROGRESSION,
     )
     
@@ -257,6 +261,7 @@ async def test_microcycle_dates_sequential(
         duration_weeks=8,
         program_start_date=start_date,
         split_template=SplitTemplateEnum.UPPER_LOWER,
+        days_per_week=4,
         progression_style=ProgressionStyle.DOUBLE_PROGRESSION,
     )
     
@@ -268,8 +273,8 @@ async def test_microcycle_dates_sequential(
     microcycles = sorted(list(result.scalars().all()), key=lambda m: m.sequence_number)
     
     for i, mc in enumerate(microcycles):
-        expected_date = start_date + timedelta(weeks=i*2)
-        assert mc.micro_start_date == expected_date
+        expected_date = start_date + timedelta(weeks=i)
+        assert mc.start_date == expected_date
 
 
 @pytest.mark.asyncio
@@ -287,9 +292,10 @@ async def test_program_goals_stored_correctly(
         duration_weeks=8,
         program_start_date=date.today(),
         split_template=SplitTemplateEnum.UPPER_LOWER,
+        days_per_week=4,
         progression_style=ProgressionStyle.DOUBLE_PROGRESSION,
     )
-    
+
     program = await program_service.create_program(async_db_session, test_user.id, request)
     
     assert program.goal_1 == Goal.STRENGTH

@@ -428,7 +428,7 @@ Session tracking for continuous development with date/time headers. A new sessio
 
 ---
 
-## Session 11: 2026-01-18
+## Session 11: 2026-01-18 (Day)
 
 **Objective**: Stabilize backend test suite and design movement relationship architecture
 
@@ -450,3 +450,63 @@ Session tracking for continuous development with date/time headers. A new sessio
 **Status**:
 - All existing tests pass after schema and logic fixes, providing a reliable foundation for future features.
 - Movement relationship architecture is defined and ready for implementation in the backend and future UI tooling.
+
+---
+
+## Session 12: 2026-01-18 (Evening)
+
+**Objective**: Extend schema for long-term goals, integrations, and canonical activities; stabilize migrations on PostgreSQL; and ensure program flows remain intact.
+
+**Key Accomplishments**:
+
+1. **Database Schema Expansion for Roadmap**:
+   - Added new models and migrations for long-horizon planning:
+     - `macro_cycles`, `goals`, and `goal_checkins` to support 12-month macro cycles and time-bounded goals with check-ins.
+     - `user_profiles` and `user_biometrics_history` to track DOB, sex, height, and longitudinal biometrics with data source attribution.
+   - Introduced an integrations “data lake”:
+     - `external_provider_accounts`, `external_ingestion_runs`, `external_activity_records`, and `external_metric_streams` for ingesting Strava/Garmin/Apple Health/WHOOP/Oura activities and metric streams.
+   - Defined a canonical activity model:
+     - `disciplines`, `activity_definitions`, and `activity_instances` for normalized activity types and user activity history (planned, manual, and provider-sourced).
+   - Added fatigue/anatomy scaffolding:
+     - `muscles`, `movement_muscle_map`, `activity_muscle_map`, and `user_fatigue_state` to support future load inference and fatigue tracking.
+   - Created `activity_instance_links` to bridge canonical activities with legacy `workout_logs` and external activity records for gradual migration.
+
+2. **Alembic Migration Hardening (PostgreSQL + SQLite)**:
+   - Updated all new migrations to be idempotent against existing Postgres databases:
+     - Guarded enum creation using `pg_type` checks (`sex`, `datasource`, `biometricmetrictype`, `goaltype`, `goalstatus`, `externalprovider`, `ingestionrunstatus`, `disciplinecategory`, `activitycategory`, `activitysource`, `metrictype`, `musclerole`).
+     - Guarded table and column creation via `sa.inspect(conn).has_table(...)` and column introspection so rerunning migrations on drifted databases does not fail.
+   - Fixed visibility enum handling:
+     - Ensured `visibility` enum is created once (in `6180f4706b14_add_visibility_and_template_flags.py`) and reused in later migrations (e.g., `cd3456ef7890_add_activity_definitions_and_instances.py`) without duplicate type creation.
+   - Made SQLite-compatible changes:
+     - Wrapped column/index/FK changes in `op.batch_alter_table(...)` for SQLite (e.g., `movements.user_id`, `sessions.main_circuit_id`/`finisher_circuit_id`, `programs.macro_cycle_id`) so the migrations run cleanly in the in-memory test DB.
+   - Added an Alembic migrations smoke test:
+     - `tests/test_migrations_smoke.py` runs upgrade/downgrade on a disposable SQLite DB by default.
+     - Added optional Postgres smoke test gated by `MIGRATIONS_SMOKE_DATABASE_URL` to validate migrations on a real PostgreSQL instance in CI.
+
+3. **Program Flow Verification and Bug Fixes**:
+   - Diagnosed “Network error while creating a program” and “no programs visible” regressions:
+     - Root cause: local Postgres schema was behind the ORM/migrations (missing new enums/tables/columns), causing 500s when listing or creating programs.
+   - Brought local Postgres schema to head:
+     - Fixed failing migrations (duplicate enum/table errors) and successfully ran `alembic upgrade head` to align the DB with the latest schema.
+   - Verified program flows against production-like Postgres:
+     - Wrote a small reproduction script (later removed) that:
+       - Listed programs for an existing user.
+       - Created a new program using `ProgramService.create_program`, ensuring microcycles and sessions are generated correctly.
+     - Confirmed program listing and creation now succeed without backend errors, and the frontend no longer shows empty-program or network-error states.
+
+4. **Documentation and Data Dictionary Update**:
+   - Updated `# Gainsly Database System Overview.md` to reflect:
+     - Enum storage semantics (Python Enum vs. Postgres native enum vs. SQLite fallback).
+     - New tables for goals, biometrics, integrations, canonical activities, and fatigue state.
+     - Clarified ambiguities around session JSON vs. normalized `session_exercises` and the current source-of-truth.
+
+5. **Test Suite Health**:
+   - Ran `pytest -q` to validate that:
+     - All existing unit and integration tests still pass after schema changes.
+     - The new migrations smoke test passes on SQLite, and the optional Postgres smoke test passes when pointed at a disposable Postgres instance.
+
+**Status**:
+- PostgreSQL schema is now fully aligned with the ORM models and resilient to reruns on drifted databases.
+- Roadmap-critical tables (goals, biometrics, integrations, canonical activities, fatigue) are scaffolded with migrations and models.
+- Program list and creation flows are stable again on the real Postgres backend.
+- Migrations are exercised both on SQLite (fast CI guardrail) and optionally on PostgreSQL (production-like validation).

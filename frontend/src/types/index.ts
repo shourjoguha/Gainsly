@@ -239,10 +239,15 @@ export interface ProgramUpdate {
   is_active?: boolean;
 }
 
+export interface MicrocycleWithSessions extends Microcycle {
+  sessions: Session[];
+}
+
 export interface ProgramWithMicrocycle {
   program: Program;
   active_microcycle?: Microcycle;
   upcoming_sessions: Session[];
+  microcycles?: MicrocycleWithSessions[];
 }
 
 // ========================================
@@ -316,6 +321,10 @@ export interface CircuitTemplate {
   default_duration_seconds?: number;
   tags: string[];
   difficulty_tier: number;
+}
+
+export interface CircuitTemplateAdminDetail extends CircuitTemplate {
+  raw_workout?: string | null;
 }
 
 // ========================================

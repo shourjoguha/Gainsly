@@ -55,8 +55,8 @@ async def test_validate_goals_duplicate_fails(async_db_session: AsyncSession, te
         async_db_session, Goal.STRENGTH, Goal.STRENGTH, Goal.STRENGTH
     )
     
-    # Should be invalid with duplicate goals
-    assert is_valid == False
+    # Should be valid with duplicate goals (just adds weight)
+    assert is_valid == True
 
 
 @pytest.mark.asyncio

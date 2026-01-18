@@ -23,15 +23,7 @@ from app.models.enums import (
 class UserSettingsUpdate(BaseModel):
     """Schema for updating user settings."""
     active_e1rm_formula: E1RMFormula | None = None
-    e1rm_formula: str | None = None
     use_metric: bool | None = None  # True = kg, False = lbs
-    preferred_units: str | None = None
-    persona_coaching_style: str | None = None
-    persona_strictness: int | None = Field(default=None, ge=1, le=10)
-    persona_humor: int | None = Field(default=None, ge=1, le=10)
-    persona_explanation_level: int | None = Field(default=None, ge=1, le=5)
-    notification_preference: str | None = None
-    default_session_duration_minutes: int | None = Field(default=None, ge=15, le=180)
 
 
 class UserSettingsResponse(BaseModel):
@@ -39,15 +31,7 @@ class UserSettingsResponse(BaseModel):
     id: int
     user_id: int | None = None
     active_e1rm_formula: E1RMFormula | None = None
-    e1rm_formula: str | None = None
     use_metric: bool | None = None
-    preferred_units: str | None = None
-    persona_coaching_style: str | None = None
-    persona_strictness: int | None = None
-    persona_humor: int | None = None
-    persona_explanation_level: int | None = None
-    notification_preference: str | None = None
-    default_session_duration_minutes: int | None = None
     
     class Config:
         from_attributes = True
@@ -225,11 +209,8 @@ class EnjoyableActivityResponse(BaseModel):
     """Enjoyable activity response."""
     id: int
     user_id: int | None = None
-    activity_name: str | None = None
     activity_type: str | None = None
-    category: str | None = None
     custom_name: str | None = None
-    typical_duration_minutes: int | None = None
     recommend_every_days: int | None = None
     enabled: bool | None = None
     notes: str | None = None
@@ -240,20 +221,14 @@ class EnjoyableActivityResponse(BaseModel):
 
 class EnjoyableActivityCreate(BaseModel):
     """Create enjoyable activity."""
-    activity_name: str | None = None
-    activity_type: str | None = None
-    category: str | None = None
+    activity_type: str
     custom_name: str | None = None
-    typical_duration_minutes: int | None = None
     recommend_every_days: int | None = Field(default=28, ge=7, le=90)
     notes: str | None = None
 
 
 class EnjoyableActivityUpdate(BaseModel):
     """Update enjoyable activity."""
-    activity_name: str | None = None
-    category: str | None = None
-    typical_duration_minutes: int | None = None
     recommend_every_days: int | None = Field(default=None, ge=7, le=90)
     enabled: bool | None = None
     notes: str | None = None

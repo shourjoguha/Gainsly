@@ -21,6 +21,7 @@ from app.schemas.program import (
     ProgramCreate,
     ProgramResponse,
     MicrocycleResponse,
+    MicrocycleWithSessionsResponse,
     SessionResponse,
     ProgramWithMicrocycleResponse,
     ProgramUpdate,
@@ -131,7 +132,7 @@ async def get_program(
     db: AsyncSession = Depends(get_db),
     user_id: int = Depends(get_current_user_id),
 ):
-    """Get program with active microcycle and upcoming sessions."""
+    """Get program with active microcycle, upcoming sessions, and per-week sessions."""
     program = await db.get(Program, program_id)
     
     if not program:
@@ -152,7 +153,16 @@ async def get_program(
         .options(selectinload(Microcycle.sessions))
     )
     active_microcycle = active_microcycle_result.scalar_one_or_none()
-    
+
+    # Get all microcycles with their sessions
+    microcycles_result = await db.execute(
+        select(Microcycle)
+        .where(Microcycle.program_id == program_id)
+        .options(selectinload(Microcycle.sessions))
+        .order_by(Microcycle.sequence_number)
+    )
+    microcycles = list(microcycles_result.scalars().unique().all())
+
     # Get upcoming sessions (next 7 days)
     upcoming_sessions = []
     if active_microcycle:
@@ -170,7 +180,7 @@ async def get_program(
         )
         upcoming_sessions = list(sessions_result.scalars().all())
     
-    # Convert sessions to response format with duration estimates
+    # Convert upcoming sessions to response format with duration estimates
     session_responses = []
     for session in upcoming_sessions:
         # Estimate duration if not already calculated
@@ -187,31 +197,92 @@ async def get_program(
                 # If estimation fails, use existing values or defaults
                 pass
         
-        session_responses.append(SessionResponse(
-            id=session.id,
-            microcycle_id=session.microcycle_id,
-            session_date=session.date,
-            day_number=session.day_number,
-            session_type=session.session_type,
-            intent_tags=session.intent_tags or [],
-            warmup=session.warmup_json,
-            main=session.main_json,
-            accessory=session.accessory_json,
-            finisher=session.finisher_json,
-            cooldown=session.cooldown_json,
-            estimated_duration_minutes=session.estimated_duration_minutes,
-            warmup_duration_minutes=session.warmup_duration_minutes,
-            main_duration_minutes=session.main_duration_minutes,
-            accessory_duration_minutes=session.accessory_duration_minutes,
-            finisher_duration_minutes=session.finisher_duration_minutes,
-            cooldown_duration_minutes=session.cooldown_duration_minutes,
-            coach_notes=session.coach_notes,
-        ))
-    
+        session_responses.append(
+            SessionResponse(
+                id=session.id,
+                microcycle_id=session.microcycle_id,
+                session_date=session.date,
+                day_number=session.day_number,
+                session_type=session.session_type,
+                intent_tags=session.intent_tags or [],
+                warmup=session.warmup_json,
+                main=session.main_json,
+                accessory=session.accessory_json,
+                finisher=session.finisher_json,
+                cooldown=session.cooldown_json,
+                estimated_duration_minutes=session.estimated_duration_minutes,
+                warmup_duration_minutes=session.warmup_duration_minutes,
+                main_duration_minutes=session.main_duration_minutes,
+                accessory_duration_minutes=session.accessory_duration_minutes,
+                finisher_duration_minutes=session.finisher_duration_minutes,
+                cooldown_duration_minutes=session.cooldown_duration_minutes,
+                coach_notes=session.coach_notes,
+            )
+        )
+
+    # Build per-microcycle session views
+    microcycle_responses: list[MicrocycleWithSessionsResponse] = []
+    for microcycle in microcycles:
+        microcycle_sessions: list[SessionResponse] = []
+        # Ensure sessions are ordered by day_number
+        ordered_sessions = sorted(
+            microcycle.sessions or [],
+            key=lambda s: (s.day_number, s.date or date.min),
+        )
+        for session in ordered_sessions:
+            if not session.estimated_duration_minutes:
+                try:
+                    duration_estimate = await time_estimation_service.estimate_session_duration(
+                        db, user_id, session.id
+                    )
+                    session.estimated_duration_minutes = duration_estimate["total_minutes"]
+                    session.warmup_duration_minutes = duration_estimate["breakdown"]["warmup_minutes"]
+                    session.main_duration_minutes = duration_estimate["breakdown"]["main_minutes"]
+                    session.cooldown_duration_minutes = duration_estimate["breakdown"]["cooldown_minutes"]
+                except Exception:
+                    pass
+
+            microcycle_sessions.append(
+                SessionResponse(
+                    id=session.id,
+                    microcycle_id=session.microcycle_id,
+                    session_date=session.date,
+                    day_number=session.day_number,
+                    session_type=session.session_type,
+                    intent_tags=session.intent_tags or [],
+                    warmup=session.warmup_json,
+                    main=session.main_json,
+                    accessory=session.accessory_json,
+                    finisher=session.finisher_json,
+                    cooldown=session.cooldown_json,
+                    estimated_duration_minutes=session.estimated_duration_minutes,
+                    warmup_duration_minutes=session.warmup_duration_minutes,
+                    main_duration_minutes=session.main_duration_minutes,
+                    accessory_duration_minutes=session.accessory_duration_minutes,
+                    finisher_duration_minutes=session.finisher_duration_minutes,
+                    cooldown_duration_minutes=session.cooldown_duration_minutes,
+                    coach_notes=session.coach_notes,
+                )
+            )
+
+        microcycle_responses.append(
+            MicrocycleWithSessionsResponse(
+                id=microcycle.id,
+                program_id=microcycle.program_id,
+                micro_start_date=microcycle.start_date,
+                length_days=microcycle.length_days,
+                sequence_number=microcycle.sequence_number,
+                status=microcycle.status,
+                is_deload=microcycle.is_deload,
+                sessions=microcycle_sessions,
+            )
+        )
+
     return ProgramWithMicrocycleResponse(
         program=program,
         active_microcycle=active_microcycle,
         upcoming_sessions=session_responses,
+        microcycles=microcycle_responses,
     )
 
 

@@ -42,16 +42,17 @@ async def test_program_creation():
         # Create test program
         print("Creating test program...")
         program_data = ProgramCreate(
-            goals=[
-                GoalWeight(goal=Goal.STRENGTH, weight=5),
-                GoalWeight(goal=Goal.HYPERTROPHY, weight=3),
-                GoalWeight(goal=Goal.ENDURANCE, weight=2),
-            ],
-            duration_weeks=8,
-            split_template=SplitTemplate.UPPER_LOWER,
-            progression_style=ProgressionStyle.DOUBLE_PROGRESSION,
-            program_start_date=date.today(),
-        )
+                goals=[
+                    GoalWeight(goal=Goal.STRENGTH, weight=5),
+                    GoalWeight(goal=Goal.HYPERTROPHY, weight=3),
+                    GoalWeight(goal=Goal.ENDURANCE, weight=2),
+                ],
+                duration_weeks=8,
+                split_template=SplitTemplate.UPPER_LOWER,
+                days_per_week=4,
+                progression_style=ProgressionStyle.DOUBLE_PROGRESSION,
+                program_start_date=date.today(),
+            )
         
         try:
             program = await program_service.create_program(db, user_id=1, request=program_data)

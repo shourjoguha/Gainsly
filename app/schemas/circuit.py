@@ -20,3 +20,11 @@ class CircuitTemplateResponse(CircuitTemplateBase):
 
     class Config:
         from_attributes = True
+
+
+class CircuitTemplateUpdate(BaseModel):
+    exercises_json: list[dict[str, Any]]
+
+
+class CircuitTemplateAdminDetail(CircuitTemplateResponse):
+    raw_workout: str | None = None

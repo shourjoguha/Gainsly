@@ -21,6 +21,7 @@ import { Route as ProgramWizardRouteImport } from './routes/program.wizard'
 import { Route as ProgramNewRouteImport } from './routes/program.new'
 import { Route as ProgramManualRouteImport } from './routes/program.manual'
 import { Route as ProgramProgramIdRouteImport } from './routes/program.$programId'
+import { Route as AdminCircuitsCircuitIdRouteImport } from './routes/admin.circuits.$circuitId'
 
 const TeamsRoute = TeamsRouteImport.update({
   id: '/teams',
@@ -82,6 +83,11 @@ const ProgramProgramIdRoute = ProgramProgramIdRouteImport.update({
   path: '/program/$programId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminCircuitsCircuitIdRoute = AdminCircuitsCircuitIdRouteImport.update({
+  id: '/admin/circuits/$circuitId',
+  path: '/admin/circuits/$circuitId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -96,6 +102,7 @@ export interface FileRoutesByFullPath {
   '/program/manual': typeof ProgramManualRoute
   '/program/new': typeof ProgramNewRoute
   '/program/wizard': typeof ProgramWizardRoute
+  '/admin/circuits/$circuitId': typeof AdminCircuitsCircuitIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -110,6 +117,7 @@ export interface FileRoutesByTo {
   '/program/manual': typeof ProgramManualRoute
   '/program/new': typeof ProgramNewRoute
   '/program/wizard': typeof ProgramWizardRoute
+  '/admin/circuits/$circuitId': typeof AdminCircuitsCircuitIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -125,6 +133,7 @@ export interface FileRoutesById {
   '/program/manual': typeof ProgramManualRoute
   '/program/new': typeof ProgramNewRoute
   '/program/wizard': typeof ProgramWizardRoute
+  '/admin/circuits/$circuitId': typeof AdminCircuitsCircuitIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -141,6 +150,7 @@ export interface FileRouteTypes {
     | '/program/manual'
     | '/program/new'
     | '/program/wizard'
+    | '/admin/circuits/$circuitId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -155,6 +165,7 @@ export interface FileRouteTypes {
     | '/program/manual'
     | '/program/new'
     | '/program/wizard'
+    | '/admin/circuits/$circuitId'
   id:
     | '__root__'
     | '/'
@@ -169,6 +180,7 @@ export interface FileRouteTypes {
     | '/program/manual'
     | '/program/new'
     | '/program/wizard'
+    | '/admin/circuits/$circuitId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -184,6 +196,7 @@ export interface RootRouteChildren {
   ProgramManualRoute: typeof ProgramManualRoute
   ProgramNewRoute: typeof ProgramNewRoute
   ProgramWizardRoute: typeof ProgramWizardRoute
+  AdminCircuitsCircuitIdRoute: typeof AdminCircuitsCircuitIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -272,6 +285,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProgramProgramIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/circuits/$circuitId': {
+      id: '/admin/circuits/$circuitId'
+      path: '/admin/circuits/$circuitId'
+      fullPath: '/admin/circuits/$circuitId'
+      preLoaderRoute: typeof AdminCircuitsCircuitIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -288,6 +308,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProgramManualRoute: ProgramManualRoute,
   ProgramNewRoute: ProgramNewRoute,
   ProgramWizardRoute: ProgramWizardRoute,
+  AdminCircuitsCircuitIdRoute: AdminCircuitsCircuitIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

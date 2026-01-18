@@ -1,5 +1,6 @@
 """Time estimation service for session duration calculation."""
 from dataclasses import dataclass
+from typing import Any
 
 
 @dataclass
@@ -301,6 +302,76 @@ class TimeEstimationService:
             cooldown_minutes=cooldown_time,
             total_minutes=total
         )
+
+    async def estimate_session_duration(
+        self,
+        db: Any,
+        user_id: int,
+        session_id: int,
+    ) -> dict:
+        """
+        Estimate duration for a session stored in DB.
+        
+        Returns dict matching SessionTimeBreakdown fields.
+        """
+        from sqlalchemy import select
+        from app.models.program import Session
+        
+        result = await db.execute(select(Session).where(Session.id == session_id))
+        session = result.scalar_one_or_none()
+        
+        if not session:
+            return {"total_minutes": 0}
+            
+        breakdown = self.estimate_session_time(
+            warmup=session.warmup_json,
+            main=session.main_json,
+            accessory=session.accessory_json,
+            finisher=session.finisher_json,
+            cooldown=session.cooldown_json,
+            intent="hypertrophy" # Default or derive from session type/program
+        )
+        
+        return {
+            "total_minutes": breakdown.total_minutes,
+            "breakdown": {
+                "warmup_minutes": breakdown.warmup_minutes,
+                "main_minutes": breakdown.main_minutes,
+                "accessory_minutes": breakdown.accessory_minutes,
+                "finisher_minutes": breakdown.finisher_minutes,
+                "cooldown_minutes": breakdown.cooldown_minutes
+            },
+            "confidence": "medium"
+        }
+
+    async def estimate_microcycle_duration(
+        self,
+        db: Any,
+        user_id: int,
+        microcycle_id: int,
+    ) -> dict:
+        """
+        Estimate duration stats for a microcycle.
+        """
+        from sqlalchemy import select
+        from app.models.program import Session
+        
+        result = await db.execute(select(Session).where(Session.microcycle_id == microcycle_id))
+        sessions = result.scalars().all()
+        
+        total_minutes = 0
+        for session in sessions:
+            est = await self.estimate_session_duration(db, user_id, session.id)
+            total_minutes += est["total_minutes"]
+            
+        count = len(sessions)
+        avg = total_minutes / count if count > 0 else 0
+        
+        return {
+            "session_count": count,
+            "total_hours": round(total_minutes / 60, 1),
+            "daily_average_minutes": round(avg)
+        }
 
 
 # Singleton instance

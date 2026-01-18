@@ -2,11 +2,12 @@
 from datetime import datetime
 from sqlalchemy import (
     Boolean, Column, Integer, String, DateTime,
-    ForeignKey, Text, JSON
+    ForeignKey, Text, JSON, Enum as SQLEnum
 )
 from sqlalchemy.orm import relationship
 
 from app.db.database import Base
+from app.models.enums import ExternalProvider, IngestionRunStatus
 
 
 class HeuristicConfig(Base):
@@ -87,3 +88,69 @@ class ConversationTurn(Base):
 
     def __repr__(self):
         return f"<ConversationTurn(id={self.id}, turn={self.turn_number}, role='{self.role}')>"
+
+
+class ExternalProviderAccount(Base):
+    __tablename__ = "external_provider_accounts"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+
+    provider = Column(SQLEnum(ExternalProvider), nullable=False, index=True)
+    external_user_id = Column(String(255), nullable=True)
+    scopes = Column(JSON, nullable=True)
+
+    access_token_encrypted = Column(Text, nullable=True)
+    refresh_token_encrypted = Column(Text, nullable=True)
+    token_expires_at = Column(DateTime, nullable=True)
+
+    status = Column(String(50), nullable=False, default="active", index=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class ExternalIngestionRun(Base):
+    __tablename__ = "external_ingestion_runs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    provider = Column(SQLEnum(ExternalProvider), nullable=False, index=True)
+
+    started_at = Column(DateTime, default=datetime.utcnow)
+    finished_at = Column(DateTime, nullable=True)
+    status = Column(SQLEnum(IngestionRunStatus), nullable=False, default=IngestionRunStatus.RUNNING, index=True)
+
+    error = Column(Text, nullable=True)
+    cursor_json = Column(JSON, nullable=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class ExternalActivityRecord(Base):
+    __tablename__ = "external_activity_records"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    provider = Column(SQLEnum(ExternalProvider), nullable=False, index=True)
+    external_id = Column(String(255), nullable=False, index=True)
+
+    activity_type_raw = Column(String(255), nullable=True)
+    start_time = Column(DateTime, nullable=True, index=True)
+    end_time = Column(DateTime, nullable=True)
+    timezone = Column(String(64), nullable=True)
+
+    raw_payload_json = Column(JSON, nullable=True)
+    ingestion_run_id = Column(Integer, ForeignKey("external_ingestion_runs.id"), nullable=True, index=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class ExternalMetricStream(Base):
+    __tablename__ = "external_metric_streams"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    external_activity_record_id = Column(Integer, ForeignKey("external_activity_records.id"), nullable=False, index=True)
+    stream_type = Column(String(100), nullable=False, index=True)
+    raw_stream_json = Column(JSON, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)

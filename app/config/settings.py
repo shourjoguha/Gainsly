@@ -29,6 +29,8 @@ class Settings(BaseSettings):
     # e1RM formula options
     default_e1rm_formula: Literal["epley", "brzycki", "lombardi", "oconner"] = "epley"
     
+    admin_api_token: str | None = "gainsly-admin-123"
+    # also in .env file in the fronend folder
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

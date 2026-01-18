@@ -74,6 +74,7 @@ class EnjoyableActivityCreate(BaseModel):
 
 class ProgramCreate(BaseModel):
     """Schema for creating a new program."""
+    name: str | None = None
     # Goals (1-3 required, weights must sum to 10)
     goals: list[GoalWeight] = Field(min_length=1, max_length=3)
     
@@ -170,6 +171,11 @@ class MicrocycleResponse(BaseModel):
         from_attributes = True
 
 
+class MicrocycleWithSessionsResponse(MicrocycleResponse):
+    """Microcycle with its sessions."""
+    sessions: list["SessionResponse"] = []
+
+
 # ============== Session Schemas ==============
 
 class ExerciseBlock(BaseModel):
@@ -228,6 +234,7 @@ class ProgramWithMicrocycleResponse(BaseModel):
     program: ProgramResponse
     active_microcycle: MicrocycleResponse | None
     upcoming_sessions: list[SessionResponse]
+    microcycles: list[MicrocycleWithSessionsResponse] = []
     
     class Config:
         from_attributes = True

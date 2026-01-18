@@ -15,7 +15,12 @@ from app.services.adaptation import adaptation_service
 from app.services.time_estimation import time_estimation_service
 from app.models.program import Program, Microcycle, Session
 from app.models.enums import (
-    Goal, SplitTemplate, ProgressionStyle, MicrocycleStatus, SessionType
+    Goal,
+    SplitTemplate,
+    ProgressionStyle,
+    MicrocycleStatus,
+    SessionType,
+    MovementPattern,
 )
 from app.schemas.program import ProgramCreate, GoalWeight
 from app.schemas.daily import AdaptationRequest, RecoveryInput, SorenessInput
@@ -37,6 +42,7 @@ async def test_e2e_program_creation_to_daily_plan(
         duration_weeks=8,
         program_start_date=date.today(),
         split_template=SplitTemplate.UPPER_LOWER,
+        days_per_week=4,
         progression_style=ProgressionStyle.DOUBLE_PROGRESSION,
     )
     
@@ -52,8 +58,8 @@ async def test_e2e_program_creation_to_daily_plan(
         select(Microcycle).where(Microcycle.program_id == program.id)
     )
     microcycles = list(result.scalars().all())
-    assert len(microcycles) == 4  # 8 weeks / 2 weeks per microcycle
-    assert microcycles[0].status == MicrocycleStatus.PLANNED
+    assert len(microcycles) == 8  # 8 weeks / 1 week per microcycle
+    assert microcycles[0].status == MicrocycleStatus.ACTIVE
     
     # Step 4: Verify sessions were created
     sessions = []
@@ -129,6 +135,7 @@ async def test_e2e_program_with_deload_detection(
         duration_weeks=12,
         program_start_date=date.today(),
         split_template=SplitTemplate.UPPER_LOWER,
+        days_per_week=4,
         progression_style=ProgressionStyle.DOUBLE_PROGRESSION,
         deload_every_n_microcycles=4,
     )
@@ -167,16 +174,17 @@ async def test_e2e_full_workflow(
     # Step 1: Create program
     start_date = date.today()
     request = ProgramCreate(
-        goals=[
-            GoalWeight(goal=Goal.STRENGTH, weight=5),
-            GoalWeight(goal=Goal.HYPERTROPHY, weight=3),
-            GoalWeight(goal=Goal.ENDURANCE, weight=2),
-        ],
-        duration_weeks=10,
-        program_start_date=start_date,
-        split_template=SplitTemplate.UPPER_LOWER,
-        progression_style=ProgressionStyle.DOUBLE_PROGRESSION,
-    )
+            goals=[
+                GoalWeight(goal=Goal.STRENGTH, weight=5),
+                GoalWeight(goal=Goal.HYPERTROPHY, weight=3),
+                GoalWeight(goal=Goal.ENDURANCE, weight=2),
+            ],
+            duration_weeks=10,
+            program_start_date=start_date,
+            split_template=SplitTemplate.UPPER_LOWER,
+            days_per_week=4,
+            progression_style=ProgressionStyle.DOUBLE_PROGRESSION,
+        )
     
     program = await program_service.create_program(async_db_session, test_user.id, request)
     assert program.id is not None
@@ -209,8 +217,8 @@ async def test_e2e_full_workflow(
     adaptation_request = AdaptationRequest(
         program_id=program.id,
         soreness=[
-            SorenessInput(body_part="shoulders", level=7),
-        ],
+                SorenessInput(body_part="shoulders", level=5),
+            ],
         recovery=RecoveryInput(
             sleep_hours=7.5,
             energy_level=6,

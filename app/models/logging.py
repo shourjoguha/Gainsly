@@ -164,6 +164,7 @@ class RecoverySignal(Base):
     sleep_score = Column(Float, nullable=True)  # 0-100
     sleep_hours = Column(Float, nullable=True)
     readiness = Column(Float, nullable=True)  # 0-100 overall readiness
+    raw_payload_json = Column(JSON, nullable=True)
     
     # Notes
     notes = Column(Text, nullable=True)
