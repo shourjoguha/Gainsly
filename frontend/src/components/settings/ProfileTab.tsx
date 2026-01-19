@@ -38,10 +38,13 @@ export function ProfileTab() {
           crossfit: 0,
           strength: 10,
         },
+        discipline_experience: profile.discipline_experience || {},
         scheduling_preferences: profile.scheduling_preferences || {
           mix_disciplines: true,
           cardio_preference: 'finisher',
         },
+        long_term_goal_category: profile.long_term_goal_category || 'general_fitness',
+        long_term_goal_description: profile.long_term_goal_description || '',
       });
     }
   }, [profile, reset]);
@@ -180,6 +183,39 @@ export function ProfileTab() {
                 <span>Aggressive</span>
               </div>
           </div>
+
+          {/* Long Term Goals */}
+          <div className="space-y-4 md:col-span-2 pt-4 border-t border-border">
+            <h4 className="text-sm font-semibold text-foreground">Long Term Goals</h4>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Primary Goal Category</label>
+                <select
+                  {...register('long_term_goal_category')}
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <option value="general_fitness">General Fitness</option>
+                  <option value="muscle_gain">Muscle Gain</option>
+                  <option value="fat_loss">Fat Loss</option>
+                  <option value="strength">Strength</option>
+                  <option value="performance">Performance</option>
+                  <option value="health_longevity">Health & Longevity</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Goal Description</label>
+                <textarea
+                  {...register('long_term_goal_description')}
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring min-h-[100px]"
+                  placeholder="Describe your goal for the next 1-3 years (e.g., run a marathon, gain 10lbs of muscle)"
+                />
+                <p className="text-xs text-foreground-muted">
+                  What do you want to achieve over the next 1-3 years?
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Advanced Filters Section */}
@@ -230,6 +266,39 @@ export function ProfileTab() {
                         {...register(`discipline_preferences.${discipline.key}`)}
                         className="w-full"
                       />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-4 pt-4 border-t border-border">
+                <h4 className="text-sm font-semibold text-foreground">Experience Level (per Discipline)</h4>
+                <p className="text-xs text-foreground-muted">
+                  Specify your experience level for each discipline to tailor the program intensity.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {(
+                    [
+                      { key: 'strength', label: 'Strength' },
+                      { key: 'mobility', label: 'Mobility' },
+                      { key: 'calisthenics', label: 'Calisthenics' },
+                      { key: 'olympic_lifts', label: 'Olympic Lifts' },
+                      { key: 'crossfit', label: 'CrossFit' },
+                    ] as const
+                  ).map((discipline) => (
+                    <div key={discipline.key} className="space-y-1">
+                      <label className="text-xs font-medium">{discipline.label}</label>
+                      <select
+                        {...register(`discipline_experience.${discipline.key}`)}
+                        className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
+                      >
+                        <option value="">Select Level</option>
+                        {Object.values(ExperienceLevel).map((level) => (
+                          <option key={level} value={level}>
+                            {level.replace('_', ' ')}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   ))}
                 </div>

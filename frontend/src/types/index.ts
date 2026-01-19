@@ -611,6 +611,14 @@ export interface DisciplinePreferences {
   strength: number;
 }
 
+export interface DisciplineExperience {
+  mobility?: ExperienceLevel;
+  calisthenics?: ExperienceLevel;
+  olympic_lifts?: ExperienceLevel;
+  crossfit?: ExperienceLevel;
+  strength?: ExperienceLevel;
+}
+
 export interface SchedulingPreferences {
   mix_disciplines: boolean;
   cardio_preference: 'dedicated_day' | 'finisher' | 'mixed' | 'none';
@@ -627,7 +635,10 @@ export interface UserProfile {
   sex?: Sex;
   height_cm?: number;
   discipline_preferences?: DisciplinePreferences;
+  discipline_experience?: DisciplineExperience;
   scheduling_preferences?: SchedulingPreferences;
+  long_term_goal_category?: string;
+  long_term_goal_description?: string;
 }
 
 export interface UserProfileUpdate {
@@ -639,5 +650,8 @@ export interface UserProfileUpdate {
   sex?: Sex;
   height_cm?: number;
   discipline_preferences?: DisciplinePreferences;
+  discipline_experience?: DisciplineExperience;
   scheduling_preferences?: SchedulingPreferences;
+  long_term_goal_category?: string;
+  long_term_goal_description?: string;
 }

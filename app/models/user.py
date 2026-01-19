@@ -139,7 +139,12 @@ class UserProfile(Base):
     
     # Advanced Preferences
     discipline_preferences = Column(JSON, nullable=True)  # {"mobility": 5, "calisthenics": 3, ...}
+    discipline_experience = Column(JSON, nullable=True)  # {"mobility": "intermediate", "crossfit": "beginner"}
     scheduling_preferences = Column(JSON, nullable=True)  # {"mix_disciplines": true, "cardio_preference": "finisher"}
+
+    # Long Term Goals
+    long_term_goal_category = Column(String(50), nullable=True)
+    long_term_goal_description = Column(Text, nullable=True)
 
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

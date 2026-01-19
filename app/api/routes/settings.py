@@ -98,7 +98,10 @@ async def get_user_profile(
         sex=profile.sex if profile else None,
         height_cm=profile.height_cm if profile else None,
         discipline_preferences=profile.discipline_preferences if profile else None,
+        discipline_experience=profile.discipline_experience if profile else None,
         scheduling_preferences=profile.scheduling_preferences if profile else None,
+        long_term_goal_category=profile.long_term_goal_category if profile else None,
+        long_term_goal_description=profile.long_term_goal_description if profile else None,
     )
 
 
@@ -121,7 +124,11 @@ async def update_user_profile(
     # Update User fields
     update_data = update.model_dump(exclude_unset=True)
     user_fields = {"name", "experience_level", "persona_tone", "persona_aggression"}
-    profile_fields = {"date_of_birth", "sex", "height_cm", "discipline_preferences", "scheduling_preferences"}
+    profile_fields = {
+        "date_of_birth", "sex", "height_cm", 
+        "discipline_preferences", "discipline_experience", "scheduling_preferences",
+        "long_term_goal_category", "long_term_goal_description"
+    }
     
     for field, value in update_data.items():
         if field in user_fields:
@@ -144,7 +151,10 @@ async def update_user_profile(
         sex=profile.sex,
         height_cm=profile.height_cm,
         discipline_preferences=profile.discipline_preferences,
+        discipline_experience=profile.discipline_experience,
         scheduling_preferences=profile.scheduling_preferences,
+        long_term_goal_category=profile.long_term_goal_category,
+        long_term_goal_description=profile.long_term_goal_description,
     )
 
 

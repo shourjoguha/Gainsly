@@ -52,7 +52,11 @@ class UserProfileUpdate(BaseModel):
     height_cm: int | None = None
     # Advanced Preferences
     discipline_preferences: dict[str, Any] | None = None
+    discipline_experience: dict[str, Any] | None = None
     scheduling_preferences: dict[str, Any] | None = None
+    # Long Term Goals
+    long_term_goal_category: str | None = None
+    long_term_goal_description: str | None = None
 
 
 class UserProfileResponse(BaseModel):
@@ -69,7 +73,11 @@ class UserProfileResponse(BaseModel):
     height_cm: int | None = None
     # Advanced Preferences
     discipline_preferences: dict[str, Any] | None = None
+    discipline_experience: dict[str, Any] | None = None
     scheduling_preferences: dict[str, Any] | None = None
+    # Long Term Goals
+    long_term_goal_category: str | None = None
+    long_term_goal_description: str | None = None
     
     class Config:
         from_attributes = True
