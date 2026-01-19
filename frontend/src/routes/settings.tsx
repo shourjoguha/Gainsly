@@ -1,5 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { Settings as SettingsIcon } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { ProfileTab } from '@/components/settings/ProfileTab';
+import { ProgramsTab } from '@/components/settings/ProgramsTab';
+import { FavoritesTab } from '@/components/settings/FavoritesTab';
 
 export const Route = createFileRoute('/settings')({
   component: SettingsPage,
@@ -8,21 +11,42 @@ export const Route = createFileRoute('/settings')({
 function SettingsPage() {
   return (
     <div className="container-app py-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-foreground">Settings</h1>
-        <p className="mt-2 text-sm text-foreground-muted">
-          Manage your account and preferences
-        </p>
-      </div>
+      <h1 className="text-2xl font-bold text-foreground mb-6">Settings</h1>
+      
+      <Tabs defaultValue="profile" className="space-y-6">
+        <TabsList className="w-full justify-start border-b border-border bg-transparent p-0">
+          <TabsTrigger 
+            value="profile" 
+            className="rounded-none border-b-2 border-transparent px-4 py-2 text-sm font-medium text-foreground-muted data-[state=active]:border-accent data-[state=active]:text-foreground"
+          >
+            Profile & Stats
+          </TabsTrigger>
+          <TabsTrigger 
+            value="programs" 
+            className="rounded-none border-b-2 border-transparent px-4 py-2 text-sm font-medium text-foreground-muted data-[state=active]:border-accent data-[state=active]:text-foreground"
+          >
+            Programs
+          </TabsTrigger>
+          <TabsTrigger 
+            value="favorites" 
+            className="rounded-none border-b-2 border-transparent px-4 py-2 text-sm font-medium text-foreground-muted data-[state=active]:border-accent data-[state=active]:text-foreground"
+          >
+            Favorites
+          </TabsTrigger>
+        </TabsList>
 
-      <div className="flex flex-col items-center justify-center rounded-lg border border-border bg-background-elevated p-12">
-        <SettingsIcon className="h-16 w-16 text-foreground-muted mb-4" />
-        <h2 className="text-lg font-semibold text-foreground mb-2">Coming Soon</h2>
-        <p className="text-center text-sm text-foreground-muted max-w-md">
-          Settings page is under development. Soon you'll be able to customize your
-          experience, manage notifications, and adjust preferences.
-        </p>
-      </div>
+        <TabsContent value="profile" className="mt-6">
+          <ProfileTab />
+        </TabsContent>
+        
+        <TabsContent value="programs" className="mt-6">
+          <ProgramsTab />
+        </TabsContent>
+        
+        <TabsContent value="favorites" className="mt-6">
+          <FavoritesTab />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

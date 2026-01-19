@@ -1,56 +1,84 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from './client';
-import type { Movement, MovementPattern, MovementRule, MovementRuleCreate, MovementCreate } from '@/types';
+import type {
+  UserProfile,
+  UserProfileUpdate,
+  Movement,
+  MovementCreate,
+} from '@/types';
+import type { MovementPattern } from '@/types';
 
-// Query keys
-export const settingsKeys = {
-  all: ['settings'] as const,
-  movements: () => [...settingsKeys.all, 'movements'] as const,
-  movementsList: (filters: MovementsFilters) => [...settingsKeys.movements(), filters] as const,
-  movement: (id: number) => [...settingsKeys.movements(), id] as const,
-  movementRules: () => [...settingsKeys.all, 'movement-rules'] as const,
-  movementFilters: () => [...settingsKeys.movements(), 'filters'] as const,
-};
-
-// Types
-export interface MovementsFilters {
-  pattern?: MovementPattern;
-  equipment?: string;
+type MovementsQueryOptions = {
+  pattern?: MovementPattern | 'all';
+  equipment?: string | 'all';
   search?: string;
   limit?: number;
   offset?: number;
-}
+};
 
-export interface MovementListResponse {
+interface MovementListResponse {
   movements: Movement[];
   total: number;
-  limit: number;
-  offset: number;
+  limit?: number | null;
+  offset?: number | null;
+  filters_applied?: Record<string, unknown> | null;
 }
 
-export interface MovementFiltersResponse {
+interface MovementFiltersResponse {
   patterns: string[];
   regions: string[];
   equipment: string[];
   primary_disciplines: string[];
-  types?: string[];
+  types?: string[] | null;
 }
 
-// API functions
-async function fetchMovements(filters: MovementsFilters = {}): Promise<MovementListResponse> {
-  const params = new URLSearchParams();
-  if (filters.pattern) params.append('pattern', filters.pattern);
-  if (filters.equipment) params.append('equipment', filters.equipment);
-  if (filters.search) params.append('search', filters.search);
-  if (filters.limit) params.append('limit', String(filters.limit));
-  if (filters.offset) params.append('offset', String(filters.offset));
-  
-  const { data } = await apiClient.get('/settings/movements', { params });
+export const settingsKeys = {
+  all: ['settings'] as const,
+  profile: () => [...settingsKeys.all, 'profile'] as const,
+  movements: (params: MovementsQueryOptions) => [
+    ...settingsKeys.all,
+    'movements',
+    params,
+  ] as const,
+  movementFilters: () => [...settingsKeys.all, 'movement-filters'] as const,
+};
+
+async function fetchUserProfile(): Promise<UserProfile> {
+  const { data } = await apiClient.get('/settings/user/profile');
   return data;
 }
 
-async function fetchMovement(id: number): Promise<Movement> {
-  const { data } = await apiClient.get(`/settings/movements/${id}`);
+async function updateUserProfile(data: UserProfileUpdate): Promise<UserProfile> {
+  const { data: response } = await apiClient.patch(
+    '/settings/user/profile',
+    data,
+  );
+  return response;
+}
+
+async function fetchMovements(
+  options: MovementsQueryOptions = {},
+): Promise<MovementListResponse> {
+  const { pattern, equipment, search, limit, offset } = options;
+  const params: Record<string, unknown> = {};
+
+  if (pattern && pattern !== 'all') {
+    params.pattern = pattern;
+  }
+  if (equipment && equipment !== 'all') {
+    params.equipment = equipment;
+  }
+  if (search) {
+    params.search = search;
+  }
+  if (typeof limit === 'number') {
+    params.limit = limit;
+  }
+  if (typeof offset === 'number') {
+    params.offset = offset;
+  }
+
+  const { data } = await apiClient.get('/settings/movements', { params });
   return data;
 }
 
@@ -59,19 +87,35 @@ async function fetchMovementFilters(): Promise<MovementFiltersResponse> {
   return data;
 }
 
-// React Query hooks
-export function useMovements(filters: MovementsFilters = {}) {
+async function createMovement(payload: MovementCreate): Promise<Movement> {
+  const { data } = await apiClient.post('/settings/movements', payload);
+  return data;
+}
+
+export function useUserProfile() {
   return useQuery({
-    queryKey: settingsKeys.movementsList(filters),
-    queryFn: () => fetchMovements(filters),
+    queryKey: settingsKeys.profile(),
+    queryFn: fetchUserProfile,
   });
 }
 
-export function useMovement(id: number) {
+export function useUpdateUserProfile() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: updateUserProfile,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: settingsKeys.profile() });
+    },
+  });
+}
+
+export function useMovements(options: MovementsQueryOptions = { limit: 1000 }) {
+  const queryOptions = { limit: 1000, ...options };
+
   return useQuery({
-    queryKey: settingsKeys.movement(id),
-    queryFn: () => fetchMovement(id),
-    enabled: !!id,
+    queryKey: settingsKeys.movements(queryOptions),
+    queryFn: () => fetchMovements(queryOptions),
   });
 }
 
@@ -82,63 +126,14 @@ export function useMovementFilters() {
   });
 }
 
-async function createMovement(movement: MovementCreate): Promise<Movement> {
-  const { data } = await apiClient.post('/settings/movements', movement);
-  return data;
-}
-
 export function useCreateMovement() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: createMovement,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: settingsKeys.movements() });
-    },
-  });
-}
-
-// Movement Rules (Favorites) API
-async function fetchMovementRules(): Promise<MovementRule[]> {
-  const { data } = await apiClient.get('/settings/movement-rules');
-  return data;
-}
-
-async function createMovementRule(rule: MovementRuleCreate): Promise<MovementRule> {
-  const { data } = await apiClient.post('/settings/movement-rules', rule);
-  return data;
-}
-
-async function deleteMovementRule(ruleId: number): Promise<void> {
-  await apiClient.delete(`/settings/movement-rules/${ruleId}`);
-}
-
-// React Query hooks for movement rules
-export function useMovementRules() {
-  return useQuery({
-    queryKey: settingsKeys.movementRules(),
-    queryFn: fetchMovementRules,
-  });
-}
-
-export function useCreateMovementRule() {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: createMovementRule,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: settingsKeys.movementRules() });
-    },
-  });
-}
-
-export function useDeleteMovementRule() {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: deleteMovementRule,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: settingsKeys.movementRules() });
+      queryClient.invalidateQueries({ queryKey: settingsKeys.all });
+      queryClient.invalidateQueries({ queryKey: settingsKeys.movementFilters() });
     },
   });
 }

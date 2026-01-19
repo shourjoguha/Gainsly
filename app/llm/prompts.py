@@ -80,6 +80,8 @@ def build_optimized_session_prompt(
     used_movement_groups: dict[str, int] | None = None,
     used_accessory_movements: dict[int, list[str]] | None = None,
     fatigued_muscles: list[str] | None = None,
+    discipline_preferences: dict | None = None,
+    scheduling_preferences: dict | None = None,
 ) -> str:
     """
     Build optimized session generation prompt with reduced token count and structured constraints.
@@ -125,6 +127,22 @@ def build_optimized_session_prompt(
     program_ctx = f"""## Program Context
 Goals: {program['goal_1']}({program['goal_weight_1']}), {program['goal_2']}({program['goal_weight_2']}), {program['goal_3']}({program['goal_weight_3']})
 Split: {program['split_template']} ({program.get('days_per_week', 'N/A')}d/wk)"""
+
+    # Add Advanced Preferences Context if available
+    if discipline_preferences or scheduling_preferences:
+        prefs_ctx = "\n## User Preferences (Apply Logic)\n"
+        if discipline_preferences:
+            prefs_ctx += f"Discipline Priorities (0-10): {discipline_preferences}\n"
+        if scheduling_preferences:
+            prefs_ctx += f"Scheduling Rules: {scheduling_preferences}\n"
+            # Add specific logic instructions based on preferences
+            if scheduling_preferences.get("mix_disciplines"):
+                prefs_ctx += "- INTEGRATE high-priority disciplines into warmup/finisher/accessory\n"
+            if scheduling_preferences.get("cardio_preference") == "finisher":
+                prefs_ctx += "- ADD cardio finisher (10-20m) if compatible with session\n"
+        program_ctx += prefs_ctx
+    
+    # OPTIMIZATION 4: Compact session context
     
     # OPTIMIZATION 4: Compact session context
     session_ctx = f"""## Session Context

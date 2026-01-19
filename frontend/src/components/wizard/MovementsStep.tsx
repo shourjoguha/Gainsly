@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { MovementPattern, MovementRuleType } from '@/types';
+import { MovementPattern, MovementRuleType, type Movement } from '@/types';
 import { useProgramWizardStore } from '@/stores/program-wizard-store';
 import { useMovements, useMovementFilters } from '@/api/settings';
 import { Card } from '@/components/ui/card';
@@ -15,18 +15,19 @@ export function MovementsStep() {
   const { data: movementsData, isLoading, error } = useMovements({ limit: 1000 });
   const { data: filtersData } = useMovementFilters();
 
-  const movements = movementsData?.movements ?? [];
+  const movements: Movement[] = movementsData?.movements ?? [];
 
-  const patternOptions = useMemo(
+  const patternOptions = useMemo<string[]>(
     () => filtersData?.patterns ?? [],
     [filtersData],
   );
 
-  const regionOptions = useMemo(
+  const regionOptions = useMemo<string[]>(
     () => filtersData?.regions ?? [],
     [filtersData],
   );
-  const filteredMovements = movements.filter((movement) => {
+
+  const filteredMovements = movements.filter((movement: Movement) => {
     const matchesSearch = movement.name
       .toLowerCase()
       .includes(search.toLowerCase());

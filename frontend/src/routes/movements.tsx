@@ -372,16 +372,17 @@ function MovementsPage() {
     [data],
   );
 
-  const patternOptions: { value: MovementPattern | 'all'; label: string }[] = useMemo(() => {
-    const patterns = filtersData?.patterns ?? [];
-    return [
-      { value: 'all', label: 'All Patterns' },
-      ...patterns.map((p) => ({
-        value: p as MovementPattern,
-        label: p.replace('_', ' '),
-      })),
-    ];
-  }, [filtersData]);
+  const patternOptions: { value: MovementPattern | 'all'; label: string }[] =
+    useMemo(() => {
+      const patterns: string[] = filtersData?.patterns ?? [];
+      return [
+        { value: 'all', label: 'All Patterns' },
+        ...patterns.map((p: string) => ({
+          value: p as MovementPattern,
+          label: p.replace('_', ' '),
+        })),
+      ];
+    }, [filtersData]);
 
   const equipmentOptions = useMemo(() => {
     const fromFilters = filtersData?.equipment ?? [];

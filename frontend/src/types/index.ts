@@ -122,6 +122,19 @@ export enum MetricType {
   DISTANCE = "distance",
 }
 
+export enum ExperienceLevel {
+  BEGINNER = 'beginner',
+  INTERMEDIATE = 'intermediate',
+  ADVANCED = 'advanced',
+  ELITE = 'elite',
+}
+
+export enum Sex {
+  MALE = 'male',
+  FEMALE = 'female',
+  OTHER = 'other',
+}
+
 export enum MovementRuleType {
   HARD_NO = 'hard_no',
   HARD_YES = 'hard_yes',
@@ -588,4 +601,43 @@ export interface HealthCheck {
   app?: string;
   provider?: string;
   model?: string;
+}
+
+export interface DisciplinePreferences {
+  mobility: number;
+  calisthenics: number;
+  olympic_lifts: number;
+  crossfit: number;
+  strength: number;
+}
+
+export interface SchedulingPreferences {
+  mix_disciplines: boolean;
+  cardio_preference: 'dedicated_day' | 'finisher' | 'mixed' | 'none';
+}
+
+export interface UserProfile {
+  id: number;
+  name?: string;
+  email?: string;
+  experience_level: ExperienceLevel;
+  persona_tone: PersonaTone;
+  persona_aggression: PersonaAggression;
+  date_of_birth?: string;
+  sex?: Sex;
+  height_cm?: number;
+  discipline_preferences?: DisciplinePreferences;
+  scheduling_preferences?: SchedulingPreferences;
+}
+
+export interface UserProfileUpdate {
+  name?: string;
+  experience_level?: ExperienceLevel;
+  persona_tone?: PersonaTone;
+  persona_aggression?: PersonaAggression;
+  date_of_birth?: string;
+  sex?: Sex;
+  height_cm?: number;
+  discipline_preferences?: DisciplinePreferences;
+  scheduling_preferences?: SchedulingPreferences;
 }

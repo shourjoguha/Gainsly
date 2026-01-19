@@ -510,3 +510,33 @@ Session tracking for continuous development with date/time headers. A new sessio
 - Roadmap-critical tables (goals, biometrics, integrations, canonical activities, fatigue) are scaffolded with migrations and models.
 - Program list and creation flows are stable again on the real Postgres backend.
 - Migrations are exercised both on SQLite (fast CI guardrail) and optionally on PostgreSQL (production-like validation).
+
+---
+
+## Session 13: 2026-01-19
+
+**Objective**: Wire advanced user preferences into program/session generation and stabilize frontend flows
+
+**Key Accomplishments**:
+
+1. **Advanced Profile Preferences**:
+   - Extended `UserProfile` model and settings API to store discipline priorities (mobility, calisthenics, Olympic lifts, CrossFit-style lifts, cardio) and scheduling preferences (mix vs dedicated days, cardio as finisher vs dedicated day).
+   - Updated Settings Profile UI to include an “Advanced Filters” collapsible section where users configure these preferences and save them reliably.
+
+2. **Program Builder Integration**:
+   - Updated `ProgramService` to read `UserProfile` preferences and feed them into split generation, dynamically converting rest days into dedicated mobility/cardio days when the user prefers dedicated discipline days.
+   - Ensured new `disciplines_json` and days-per-week settings are passed through to the LLM as part of the program context.
+
+3. **Session Generation Improvements**:
+   - Updated `SessionGeneratorService` and session prompts to include discipline and scheduling preferences so Jerome can adjust warmups, mains, accessories, and finishers (including 10–20 minute cardio finishers) in line with user goals.
+   - Added robust fallback logic for LLM failures using movement-library-driven templates and intelligent duplicate removal/replacement to keep sessions trainable even when the LLM is unavailable or returns bad JSON.
+
+4. **Bug Fixes and Stability**:
+   - Fixed `NameError` and import issues around `UserProfile` in both `ProgramService` and `SessionGeneratorService` that previously caused “Network error while creating program” and “Generation Error” states in the UI.
+   - Hardened background session generation so failed sessions are marked with clear “Generation failed” notes and placeholder content instead of hanging spinners, making failures visible but non-blocking.
+   - Resolved frontend regressions in the Settings and Program creation flows so white-screen and missing-spinner issues no longer occur when advanced preferences are enabled.
+
+**Status**:
+- Program creation now respects stored advanced profile preferences end-to-end.
+- Session generation is more resilient, with structured fallbacks and clearer error surfaces.
+- Frontend flows (Settings, Create Program, Program detail) are stable again with the new preferences wired in.

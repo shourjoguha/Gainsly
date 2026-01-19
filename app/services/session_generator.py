@@ -19,7 +19,7 @@ from app.config.settings import get_settings
 from app.llm import get_llm_provider, LLMConfig, Message
 from app.llm.prompts import JEROME_SYSTEM_PROMPT, build_optimized_session_prompt
 from app.llm.ollama_provider import SESSION_PLAN_SCHEMA
-from app.models import Movement, Session, Program, Microcycle, User, UserMovementRule
+from app.models import Movement, Session, Program, Microcycle, User, UserMovementRule, UserProfile
 from app.models.enums import SessionType, MovementRuleType
 
 logger = logging.getLogger(__name__)
@@ -179,6 +179,11 @@ class SessionGeneratorService:
         # Load user's movement rules (avoid, must include, prefer)
         movement_rules = await self._load_user_movement_rules(db, program.user_id)
         
+        # Load user profile for advanced preferences
+        user_profile = await db.get(UserProfile, program.user_id)
+        discipline_preferences = user_profile.discipline_preferences if user_profile else None
+        scheduling_preferences = user_profile.scheduling_preferences if user_profile else None
+        
         # Build program context dict
         program_dict = {
             "goal_1": program.goal_1.value,
@@ -209,6 +214,8 @@ class SessionGeneratorService:
             used_movement_groups=used_movement_groups,
             used_accessory_movements=used_accessory_movements,
             fatigued_muscles=fatigued_muscles,
+            discipline_preferences=discipline_preferences,
+            scheduling_preferences=scheduling_preferences,
         )
         
         # Use optimized model configuration

@@ -7,9 +7,7 @@ export function BurgerMenu() {
   const { isMenuOpen, setMenuOpen } = useUIStore();
 
   const menuItems = [
-    { to: '/programs', label: 'Programs', icon: History },
     { to: '/circuits', label: 'Circuits', icon: Flame },
-    { to: '/favorites', label: 'Favorites', icon: Heart },
     { to: '/movements', label: 'Movements', icon: Dumbbell },
     { to: '/friends', label: 'Friends', icon: Users },
     { to: '/settings', label: 'Settings', icon: Settings },

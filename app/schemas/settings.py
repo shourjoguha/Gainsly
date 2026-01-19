@@ -1,5 +1,5 @@
 """Pydantic schemas for settings and configuration API endpoints."""
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any, List, Optional
 
 from pydantic import BaseModel, Field
@@ -15,6 +15,7 @@ from app.models.enums import (
     SkillLevel,
     CNSLoad,
     MetricType,
+    Sex,
 )
 
 
@@ -45,6 +46,13 @@ class UserProfileUpdate(BaseModel):
     experience_level: ExperienceLevel | None = None
     persona_tone: PersonaTone | None = None
     persona_aggression: PersonaAggression | None = None
+    # UserProfile fields
+    date_of_birth: date | None = None
+    sex: Sex | None = None
+    height_cm: int | None = None
+    # Advanced Preferences
+    discipline_preferences: dict[str, Any] | None = None
+    scheduling_preferences: dict[str, Any] | None = None
 
 
 class UserProfileResponse(BaseModel):
@@ -55,6 +63,13 @@ class UserProfileResponse(BaseModel):
     experience_level: ExperienceLevel
     persona_tone: PersonaTone
     persona_aggression: PersonaAggression
+    # UserProfile fields
+    date_of_birth: date | None = None
+    sex: Sex | None = None
+    height_cm: int | None = None
+    # Advanced Preferences
+    discipline_preferences: dict[str, Any] | None = None
+    scheduling_preferences: dict[str, Any] | None = None
     
     class Config:
         from_attributes = True

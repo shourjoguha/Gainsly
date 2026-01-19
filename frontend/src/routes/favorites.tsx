@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { MovementsStep } from '@/components/wizard/MovementsStep';
+import { FavoritesTab } from '@/components/settings/FavoritesTab';
 
 export const Route = createFileRoute('/favorites')({
   component: FavoritesPage,
@@ -8,7 +8,7 @@ export const Route = createFileRoute('/favorites')({
 function FavoritesPage() {
   return (
     <div className="container-app py-6">
-      <MovementsStep />
+      <FavoritesTab />
     </div>
   );
 }

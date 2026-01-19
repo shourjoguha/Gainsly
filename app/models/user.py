@@ -136,6 +136,10 @@ class UserProfile(Base):
     date_of_birth = Column(Date, nullable=True)
     sex = Column(SQLEnum(Sex), nullable=True)
     height_cm = Column(Integer, nullable=True)
+    
+    # Advanced Preferences
+    discipline_preferences = Column(JSON, nullable=True)  # {"mobility": 5, "calisthenics": 3, ...}
+    scheduling_preferences = Column(JSON, nullable=True)  # {"mix_disciplines": true, "cardio_preference": "finisher"}
 
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

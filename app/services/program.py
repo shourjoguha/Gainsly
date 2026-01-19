@@ -16,7 +16,7 @@ from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import (
-    Program, Microcycle, Session, HeuristicConfig, User, Movement
+    Program, Microcycle, Session, HeuristicConfig, User, Movement, UserProfile
 )
 from app.schemas.program import ProgramCreate
 from app.models.enums import (
@@ -91,9 +91,15 @@ class ProgramService:
             if not is_valid:
                 raise ValueError(f"Goal validation failed: {warnings}")
         
-        # Load split template configuration with user's day preference
+        # Fetch user profile for advanced preferences
+        user_profile = await db.get(UserProfile, user_id)
+        discipline_prefs = user_profile.discipline_preferences if user_profile else None
+        scheduling_prefs = user_profile.scheduling_preferences if user_profile else None
+
+        # Load split template configuration with user's day preference and profile settings
         split_config = await self._load_split_template(
-            db, request.split_template, request.days_per_week
+            db, request.split_template, request.days_per_week,
+            discipline_prefs, scheduling_prefs
         )
         
         # Get user for defaults
@@ -122,6 +128,9 @@ class ProgramService:
         disciplines_json = None
         if request.disciplines:
             disciplines_json = [{"discipline": d.discipline, "weight": d.weight} for d in request.disciplines]
+        elif discipline_prefs:
+            # Fallback to profile preferences if request doesn't specify
+            disciplines_json = [{"discipline": k, "weight": v} for k, v in discipline_prefs.items()]
         
         program = Program(
             user_id=user_id,
@@ -618,7 +627,8 @@ class ProgramService:
         return microcycle
     
     async def _load_split_template(
-        self, db: AsyncSession, template: SplitTemplate, days_per_week: int
+        self, db: AsyncSession, template: SplitTemplate, days_per_week: int,
+        discipline_prefs: dict = None, scheduling_prefs: dict = None
     ) -> Dict[str, Any]:
         """
         Load split template configuration from heuristic configs.
@@ -627,16 +637,19 @@ class ProgramService:
             db: Database session
             template: SplitTemplate enum value
             days_per_week: User's training frequency preference (2-7)
+            discipline_prefs: User's discipline priorities
+            scheduling_prefs: User's scheduling preferences
         
         Returns:
             Split template configuration dict
         """
         # ALWAYS use dynamic generation for user-specified days_per_week
         # This ensures user preferences override any heuristic configs
-        return self._get_default_split_template(template, days_per_week)
+        return self._get_default_split_template(template, days_per_week, discipline_prefs, scheduling_prefs)
     
     def _get_default_split_template(
-        self, template: SplitTemplate, days_per_week: int
+        self, template: SplitTemplate, days_per_week: int,
+        discipline_prefs: dict = None, scheduling_prefs: dict = None
     ) -> Dict[str, Any]:
         """
         Return default split template structure adapted to user's training frequency.
@@ -644,16 +657,20 @@ class ProgramService:
         Args:
             template: Split template type
             days_per_week: User's requested training days (2-7)
+            discipline_prefs: User's discipline priorities
+            scheduling_prefs: User's scheduling preferences
         
         Returns:
             Split configuration with structure adapted to days_per_week
         """
+        split_config = None
+        
         if template == SplitTemplate.FULL_BODY:
-            return self._generate_full_body_structure(days_per_week)
+            split_config = self._generate_full_body_structure(days_per_week)
             
         elif template == SplitTemplate.UPPER_LOWER:
             # Default 4-day Upper/Lower
-            return {
+            split_config = {
                 "days_per_cycle": 7,
                 "structure": [
                     {"day": 1, "type": "upper", "focus": ["horizontal_push", "horizontal_pull"]},
@@ -670,7 +687,7 @@ class ProgramService:
             
         elif template == SplitTemplate.PPL:
             # Default 6-day PPL
-            return {
+            split_config = {
                 "days_per_cycle": 7,
                 "structure": [
                     {"day": 1, "type": "push", "focus": ["horizontal_push", "vertical_push"]},
@@ -686,7 +703,7 @@ class ProgramService:
             }
             
         elif template == SplitTemplate.HYBRID:
-            return {
+            split_config = {
                 "days_per_cycle": 7,
                 "structure": [
                     {"day": 1, "type": "full_body", "focus": ["squat", "horizontal_push"]},
@@ -701,8 +718,40 @@ class ProgramService:
                 "rest_days": 4,
             }
             
-        # Fallback to Full Body if unknown
-        return self._generate_full_body_structure(days_per_week)
+        else:
+            # Fallback to Full Body if unknown
+            split_config = self._generate_full_body_structure(days_per_week)
+            
+        # Apply Advanced Scheduling Preferences
+        # Logic: If user prefers dedicated days (mix_disciplines=False), convert a Rest day to that discipline
+        if split_config and scheduling_prefs and not scheduling_prefs.get("mix_disciplines", True):
+            # Check for dedicated Mobility day
+            if discipline_prefs and discipline_prefs.get("mobility", 0) >= 6:
+                # Find a rest day to convert (preferably mid-week or end)
+                rest_days = [d for d in split_config["structure"] if d["type"] == "rest"]
+                if rest_days:
+                    # Pick the first available rest day
+                    target_day = rest_days[0]
+                    target_day["type"] = "mobility"
+                    target_day["focus"] = ["mobility", "recovery"]
+                    split_config["training_days"] += 1
+                    split_config["rest_days"] -= 1
+                    logger.info(f"Converted Day {target_day['day']} to Mobility based on user preference")
+            
+            # Check for dedicated Cardio day (if not finisher preference)
+            if discipline_prefs and discipline_prefs.get("cardio", 0) >= 6:
+                if scheduling_prefs.get("cardio_preference") != "finisher":
+                     # Find another rest day
+                    rest_days = [d for d in split_config["structure"] if d["type"] == "rest"]
+                    if rest_days:
+                        target_day = rest_days[0]
+                        target_day["type"] = "cardio"
+                        target_day["focus"] = ["cardio", "endurance"]
+                        split_config["training_days"] += 1
+                        split_config["rest_days"] -= 1
+                        logger.info(f"Converted Day {target_day['day']} to Cardio based on user preference")
+
+        return split_config
     
     def _generate_full_body_structure(self, days_per_week: int) -> Dict[str, Any]:
         """

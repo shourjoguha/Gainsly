@@ -9,6 +9,7 @@ from app.db.database import get_db
 from app.config.settings import get_settings
 from app.models import (
     User,
+    UserProfile,
     UserSettings,
     UserMovementRule,
     UserEnjoyableActivity,
@@ -19,6 +20,8 @@ from app.models import (
 from app.schemas.settings import (
     UserSettingsResponse,
     UserSettingsUpdate,
+    UserProfileResponse,
+    UserProfileUpdate,
     MovementRuleCreate,
     MovementRuleResponse,
     EnjoyableActivityCreate,
@@ -63,6 +66,85 @@ async def get_user_settings(
         user_id=user_settings.user_id,
         active_e1rm_formula=user_settings.active_e1rm_formula,
         use_metric=user_settings.use_metric,
+    )
+
+
+# User Profile
+@router.get("/user/profile", response_model=UserProfileResponse)
+async def get_user_profile(
+    db: AsyncSession = Depends(get_db),
+    user_id: int = Depends(get_current_user_id),
+):
+    """Get current user profile."""
+    # Fetch User and UserProfile
+    user = await db.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    # UserProfile is a relationship, so it might be lazy loaded or we join it
+    # But since we use async, we should probably eager load it or query it separately if lazy loading issues arise.
+    # However, standard async access to relationships works if session is open.
+    # Let's check if we need to explicitly query it.
+    profile = await db.scalar(select(UserProfile).where(UserProfile.user_id == user_id))
+    
+    return UserProfileResponse(
+        id=user.id,
+        name=user.name,
+        email=user.email,
+        experience_level=user.experience_level,
+        persona_tone=user.persona_tone,
+        persona_aggression=user.persona_aggression,
+        date_of_birth=profile.date_of_birth if profile else None,
+        sex=profile.sex if profile else None,
+        height_cm=profile.height_cm if profile else None,
+        discipline_preferences=profile.discipline_preferences if profile else None,
+        scheduling_preferences=profile.scheduling_preferences if profile else None,
+    )
+
+
+@router.patch("/user/profile", response_model=UserProfileResponse)
+async def update_user_profile(
+    update: UserProfileUpdate,
+    db: AsyncSession = Depends(get_db),
+    user_id: int = Depends(get_current_user_id),
+):
+    """Update user profile."""
+    user = await db.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    profile = await db.scalar(select(UserProfile).where(UserProfile.user_id == user_id))
+    if not profile:
+        profile = UserProfile(user_id=user_id)
+        db.add(profile)
+    
+    # Update User fields
+    update_data = update.model_dump(exclude_unset=True)
+    user_fields = {"name", "experience_level", "persona_tone", "persona_aggression"}
+    profile_fields = {"date_of_birth", "sex", "height_cm", "discipline_preferences", "scheduling_preferences"}
+    
+    for field, value in update_data.items():
+        if field in user_fields:
+            setattr(user, field, value)
+        elif field in profile_fields:
+            setattr(profile, field, value)
+            
+    await db.commit()
+    await db.refresh(user)
+    await db.refresh(profile)
+    
+    return UserProfileResponse(
+        id=user.id,
+        name=user.name,
+        email=user.email,
+        experience_level=user.experience_level,
+        persona_tone=user.persona_tone,
+        persona_aggression=user.persona_aggression,
+        date_of_birth=profile.date_of_birth,
+        sex=profile.sex,
+        height_cm=profile.height_cm,
+        discipline_preferences=profile.discipline_preferences,
+        scheduling_preferences=profile.scheduling_preferences,
     )
 
 
