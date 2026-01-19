@@ -236,12 +236,21 @@ export function ProfileTab() {
           {isAdvancedOpen && (
             <div className="p-4 pt-0 space-y-6 border-t border-border mt-2 animate-in slide-in-from-top-2">
               <div className="space-y-4">
-                <h4 className="text-sm font-semibold text-foreground">Discipline Interests (0-10)</h4>
-                <p className="text-xs text-foreground-muted">
-                  Set the relative priority for different training styles. 0 means you don't want it, 10 means it's a high priority.
-                </p>
+                <div>
+                  <h4 className="text-sm font-semibold text-foreground">Discipline Settings</h4>
+                  <p className="text-xs text-foreground-muted">
+                    Set your interest priority (0-10) and experience level for each discipline.
+                  </p>
+                </div>
                 
-                <div className="space-y-4">
+                {/* Header for larger screens */}
+                <div className="hidden sm:grid sm:grid-cols-12 gap-4 text-xs font-medium text-foreground-muted px-1">
+                  <div className="col-span-4">Discipline</div>
+                  <div className="col-span-5">Interest Priority</div>
+                  <div className="col-span-3">Experience</div>
+                </div>
+
+                <div className="space-y-6 sm:space-y-3">
                   {(
                     [
                       { key: 'strength', label: 'Strength & Hypertrophy' },
@@ -251,54 +260,42 @@ export function ProfileTab() {
                       { key: 'crossfit', label: 'CrossFit / Metcon' },
                     ] as const
                   ).map((discipline) => (
-                    <div key={discipline.key} className="space-y-1">
-                      <div className="flex justify-between">
-                        <label className="text-xs font-medium">{discipline.label}</label>
-                        <span className="text-xs text-foreground-muted">
+                    <div key={discipline.key} className="grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-4 items-center p-2 sm:p-0 rounded-lg hover:bg-background-elevated/50 transition-colors">
+                      
+                      {/* Label */}
+                      <div className="sm:col-span-4">
+                        <label className="text-sm font-medium">{discipline.label}</label>
+                      </div>
+
+                      {/* Slider */}
+                      <div className="sm:col-span-5 flex items-center gap-3">
+                        <input
+                          type="range"
+                          min="0"
+                          max="10"
+                          step="1"
+                          {...register(`discipline_preferences.${discipline.key}`)}
+                          className="flex-1 cursor-pointer h-2 bg-secondary rounded-lg appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary"
+                        />
+                        <span className="w-6 text-right text-sm font-medium text-foreground-muted">
                           {disciplinePrefs?.[discipline.key] || 0}
                         </span>
                       </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max="10"
-                        step="1"
-                        {...register(`discipline_preferences.${discipline.key}`)}
-                        className="w-full"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
 
-              <div className="space-y-4 pt-4 border-t border-border">
-                <h4 className="text-sm font-semibold text-foreground">Experience Level (per Discipline)</h4>
-                <p className="text-xs text-foreground-muted">
-                  Specify your experience level for each discipline to tailor the program intensity.
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {(
-                    [
-                      { key: 'strength', label: 'Strength' },
-                      { key: 'mobility', label: 'Mobility' },
-                      { key: 'calisthenics', label: 'Calisthenics' },
-                      { key: 'olympic_lifts', label: 'Olympic Lifts' },
-                      { key: 'crossfit', label: 'CrossFit' },
-                    ] as const
-                  ).map((discipline) => (
-                    <div key={discipline.key} className="space-y-1">
-                      <label className="text-xs font-medium">{discipline.label}</label>
-                      <select
-                        {...register(`discipline_experience.${discipline.key}`)}
-                        className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
-                      >
-                        <option value="">Select Level</option>
-                        {Object.values(ExperienceLevel).map((level) => (
-                          <option key={level} value={level}>
-                            {level.replace('_', ' ')}
-                          </option>
-                        ))}
-                      </select>
+                      {/* Experience Select */}
+                      <div className="sm:col-span-3">
+                        <select
+                          {...register(`discipline_experience.${discipline.key}`)}
+                          className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
+                        >
+                          <option value="">Level</option>
+                          {Object.values(ExperienceLevel).map((level) => (
+                            <option key={level} value={level}>
+                              {level.replace('_', ' ')}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
                   ))}
                 </div>
