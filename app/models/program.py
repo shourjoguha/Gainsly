@@ -51,6 +51,7 @@ class Program(Base):
     # Program structure
     split_template = Column(SQLEnum(SplitTemplate), nullable=False)
     days_per_week = Column(Integer, nullable=False)  # User's training frequency (2-7)
+    max_session_duration = Column(Integer, nullable=False, default=60)  # Max minutes per session
     progression_style = Column(SQLEnum(ProgressionStyle), nullable=False)
     
     # Hybrid split definition (for SplitTemplate.HYBRID)

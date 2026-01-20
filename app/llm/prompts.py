@@ -86,6 +86,7 @@ def build_optimized_session_prompt(
     discipline_preferences: dict | None = None,
     scheduling_preferences: dict | None = None,
     draft_session_context: str | None = None,
+    max_session_duration: int | None = None,
 ) -> str:
     """
     Build optimized session generation prompt with reduced token count and structured constraints.
@@ -107,6 +108,23 @@ def build_optimized_session_prompt(
         Goal(program['goal_3'])
     ]
     
+    # Build goal weights dictionary from program (clean mapping)
+    goal_mapping = {
+        'goal_1': program['goal_1'],
+        'goal_2': program['goal_2'],
+        'goal_3': program['goal_3'],
+        'goal_weight_1': program.get('goal_weight_1', 0),
+        'goal_weight_2': program.get('goal_weight_2', 0),
+        'goal_weight_3': program.get('goal_weight_3', 0),
+    }
+    
+    goal_weights = {}
+    for i in range(1, 4):
+        goal_name = goal_mapping[f'goal_{i}']
+        weight = goal_mapping[f'goal_weight_{i}']
+        if goal_name and goal_name != 'none':
+            goal_weights[goal_name] = weight
+    
     # OPTIMIZATION 1: Apply user movement preferences (prioritize user choices)
     user_filtered_movements = LLMOptimizer.apply_user_movement_preferences(
         movements_by_pattern, movement_rules
@@ -124,13 +142,17 @@ def build_optimized_session_prompt(
         used_accessories = list(set(used_accessories))
     
     guidance_context = LLMOptimizer.build_guidance_context(
-        session_type_enum, goals, intent_tags, is_deload, used_accessories
+        session_type_enum, goals, intent_tags, is_deload, used_accessories, goal_weights
     )
     
     # OPTIMIZATION 3: Compact program context (essential info only)
     program_ctx = f"""## Program Context
 Goals: {program['goal_1']}({program['goal_weight_1']}), {program['goal_2']}({program['goal_weight_2']}), {program['goal_3']}({program['goal_weight_3']})
 Split: {program['split_template']} ({program.get('days_per_week', 'N/A')}d/wk)"""
+    
+    # Add max session duration constraint
+    if max_session_duration:
+        program_ctx += f"\nMAX SESSION DURATION: {max_session_duration} minutes - DO NOT EXCEED"
 
     # Add Advanced Preferences Context if available
     if discipline_preferences or scheduling_preferences:

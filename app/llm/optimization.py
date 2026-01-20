@@ -109,7 +109,8 @@ class LLMOptimizer:
         cls, 
         session_type: SessionType, 
         goals: List[Goal], 
-        is_deload: bool
+        is_deload: bool,
+        goal_weights: Dict[str, int] = None
     ) -> Dict[str, Any]:
         """
         Generate guidance structure (not hard constraints) for LLM decision-making.
@@ -125,8 +126,15 @@ class LLMOptimizer:
             accessory_count = max(2, accessory_count - 1)
             target_duration = int(target_duration * 0.8)
         
-        # Goal-based guidance (not hard rules)
-        primary_goal = goals[0] if goals else Goal.STRENGTH
+        # Default goal weights if not provided
+        if not goal_weights:
+            goal_weights = {
+                'strength': 1,
+                'hypertrophy': 1,
+                'endurance': 1,
+                'fat_loss': 1,
+                'mobility': 1
+            }
         
         guidance = {
             "suggested_main_lifts": main_count,
@@ -136,13 +144,29 @@ class LLMOptimizer:
             "superset_guidance": "Use supersets for hypertrophy goals to increase volume efficiency",
         }
         
-        # Goal-specific guidance
-        if primary_goal == Goal.HYPERTROPHY:
+        # Goal-specific guidance with weight-aware logic
+        if goal_weights.get('hypertrophy', 0) >= 5:
             guidance["accessory_note"] = "Consider additional accessories for muscle growth"
-        elif primary_goal == Goal.STRENGTH:
+        if goal_weights.get('strength', 0) >= 5:
             guidance["main_lift_note"] = "Focus on compound movements with progressive overload"
-        elif primary_goal in [Goal.FAT_LOSS, Goal.ENDURANCE]:
+        
+        # Endurance goal logic (weight >= 6 = high priority)
+        if goal_weights.get('endurance', 0) >= 6:
+            guidance["cardio_note"] = "Include cardio block (10-15min) for endurance - running, rowing, or cycling"
+            guidance["high_rep_note"] = "Use higher rep ranges (15-20+) for endurance adaptation"
+        elif goal_weights.get('endurance', 0) >= 4:
             guidance["conditioning_note"] = "Include finisher for metabolic conditioning"
+        
+        # Mobility goal logic (weight >= 5 = medium-high priority)
+        if goal_weights.get('mobility', 0) >= 5:
+            guidance["mobility_note"] = "Add dedicated mobility work (5-10min) to cooldown: stretching, foam rolling"
+            guidance["dynamic_stretch_note"] = "Include dynamic stretching in warmup for mobility goals"
+        elif goal_weights.get('mobility', 0) >= 3:
+            guidance["mobility_light_note"] = "Consider adding brief mobility work to cooldown"
+        
+        # Fat loss goal logic
+        if goal_weights.get('fat_loss', 0) >= 5:
+            guidance["metabolic_note"] = "Include metabolic finisher or cardio block for fat loss"
         
         return guidance
     
@@ -184,12 +208,13 @@ class LLMOptimizer:
         intent_tags: List[str],
         is_deload: bool,
         used_accessories: List[str] = None,
+        goal_weights: Dict[str, int] = None,
     ) -> str:
         """
         Build guidance context (suggestions, not hard constraints) for LLM.
         Preserves LLM decision-making while providing helpful guidance.
         """
-        guidance = cls.get_guidance_structure(session_type, goals, is_deload)
+        guidance = cls.get_guidance_structure(session_type, goals, is_deload, goal_weights)
         suggested_accessories = cls.get_goal_specific_accessories(goals, session_type)
         
         # Filter out used accessories from suggestions

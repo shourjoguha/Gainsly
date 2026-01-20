@@ -2,15 +2,16 @@
 Optimization Service using Google OR-Tools.
 Implements a Constraint Satisfaction Problem (CSP) solver for workout generation.
 """
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional, Tuple, Union
 from dataclasses import dataclass
 from ortools.sat.python import cp_model
 from app.models import Movement, CNSLoad, MuscleRole
-from app.models.enums import SkillLevel
+from app.models.enums import SkillLevel, CircuitType
+from app.config import activity_distribution as activity_distribution_config
 
 @dataclass
 class SolverMovement:
-    """Simplified movement data for the solver (picklable)."""
+    """Simplified movement data for solver (picklable)."""
     id: int
     name: str
     primary_muscle: str
@@ -20,8 +21,21 @@ class SolverMovement:
     is_complex_lift: bool
 
 @dataclass
+class SolverCircuit:
+    """Normalized circuit for optimization solver (parallel to SolverMovement)."""
+    id: int
+    name: str
+    primary_muscle: str
+    fatigue_factor: float
+    stimulus_factor: float
+    effective_work_volume: float
+    circuit_type: CircuitType
+    duration_seconds: int
+
+@dataclass
 class OptimizationRequest:
     available_movements: List[SolverMovement]
+    available_circuits: List[SolverCircuit]
     target_muscle_volumes: Dict[str, int]  # e.g., {"quadriceps": 4, "hamstrings": 3}
     max_fatigue: float
     min_stimulus: float
@@ -30,10 +44,14 @@ class OptimizationRequest:
     required_movement_ids: List[int]
     session_duration_minutes: int
     allow_complex_lifts: bool
+    allow_circuits: bool = True
+    goal_weights: Dict[str, int] | None = None
+    preferred_movement_ids: List[int] | None = None
 
 @dataclass
 class OptimizationResult:
     selected_movements: List[SolverMovement]
+    selected_circuits: List[SolverCircuit]
     total_fatigue: float
     total_stimulus: float
     estimated_duration: int
@@ -56,6 +74,8 @@ class ConstraintSolver:
         # 1. Variables
         # x[i] is a boolean variable indicating if movement i is selected
         movement_vars = {}
+        circuit_vars = {}
+        
         for m in request.available_movements:
             # Skip if explicitly excluded
             if m.id in request.excluded_movement_ids:
@@ -65,9 +85,14 @@ class ConstraintSolver:
             # Simple hierarchy check would go here
             
             movement_vars[m.id] = model.NewBoolVar(f'movement_{m.id}')
+        
+        # Add circuit variables if allowed
+        if request.allow_circuits and request.available_circuits:
+            for c in request.available_circuits:
+                circuit_vars[c.id] = model.NewBoolVar(f'circuit_{c.id}')
             
-        if not movement_vars:
-            return OptimizationResult([], 0, 0, 0, "INFEASIBLE")
+        if not movement_vars and not circuit_vars:
+            return OptimizationResult([], [], 0, 0, 0, "INFEASIBLE")
 
         # 2. Constraints
         
@@ -85,51 +110,99 @@ class ConstraintSolver:
         SETS_PER_MOVEMENT = 3
         
         for muscle, target_sets in request.target_muscle_volumes.items():
-            relevant_movements = []
+            relevant_variables = []
+            
+            # Add movement variables
             for m in request.available_movements:
                 if m.id not in movement_vars:
                     continue
                 # Check if movement hits this muscle (primary)
                 # SolverMovement stores primary_muscle as string
                 if m.primary_muscle == muscle:
-                    relevant_movements.append(movement_vars[m.id])
+                    relevant_variables.append(movement_vars[m.id])
             
-            if relevant_movements:
+            # Add circuit variables
+            if request.allow_circuits and request.available_circuits:
+                for c in request.available_circuits:
+                    if c.id not in circuit_vars:
+                        continue
+                    # Check if circuit hits this muscle
+                    if c.primary_muscle == muscle:
+                        relevant_variables.append(circuit_vars[c.id])
+            
+            if relevant_variables:
                 # Total sets >= Target
-                # We assume each selected movement provides SETS_PER_MOVEMENT sets
-                model.Add(sum(relevant_movements) * SETS_PER_MOVEMENT >= target_sets)
+                # We assume each selected movement/circuit provides SETS_PER_MOVEMENT sets
+                model.Add(sum(relevant_variables) * SETS_PER_MOVEMENT >= target_sets)
 
         # C. Max Fatigue Constraint
-        fatigue_expr = sum(
+        movement_fatigue = sum(
             movement_vars[m.id] * int(m.fatigue_factor * 100) 
             for m in request.available_movements 
             if m.id in movement_vars
         )
+        
+        circuit_fatigue = 0
+        if request.allow_circuits and request.available_circuits:
+            circuit_fatigue = sum(
+                circuit_vars[c.id] * int(c.fatigue_factor * 100)
+                for c in request.available_circuits
+                if c.id in circuit_vars
+            )
+        
+        fatigue_expr = movement_fatigue + circuit_fatigue
         model.Add(fatigue_expr <= int(request.max_fatigue * 100))
         
         # D. Max Duration Constraint
         # Assume 1 set = 2 mins + 2 mins rest = 4 mins
         # 3 sets = 12 mins
-        MINS_PER_EXERCISE = 12
-        duration_expr = sum(
-            movement_vars[m.id] * MINS_PER_EXERCISE
+        MINS_PER_MOVEMENT = 12
+        
+        movement_duration = sum(
+            movement_vars[m.id] * MINS_PER_MOVEMENT
             for m in request.available_movements
             if m.id in movement_vars
         )
+        
+        circuit_duration = 0
+        if request.allow_circuits and request.available_circuits:
+            circuit_duration = sum(
+                circuit_vars[c.id] * (c.duration_seconds / 60)  # convert to minutes
+                for c in request.available_circuits
+                if c.id in circuit_vars
+            )
+        
+        duration_expr = movement_duration + circuit_duration
         model.Add(duration_expr <= request.session_duration_minutes)
         
-        # 3. Objective Function
-        # Maximize: (Stimulus * Weight) - (Fatigue * Penalty)
-        # We want high stimulus for the "budget" of fatigue
-        
-        stimulus_expr = sum(
-            movement_vars[m.id] * int(m.stimulus_factor * 100)
-            for m in request.available_movements
-            if m.id in movement_vars
-        )
-        
-        # Maximize Stimulus
-        model.Maximize(stimulus_expr)
+        goal_weights = request.goal_weights or {}
+        strength_pressure = goal_weights.get("strength", 0) + goal_weights.get("hypertrophy", 0)
+        cardio_pressure = goal_weights.get("fat_loss", 0) + goal_weights.get("endurance", 0)
+        if strength_pressure == 0 and cardio_pressure == 0:
+            strength_pressure = 1
+
+        preferred_ids = set(request.preferred_movement_ids or [])
+        preference_bonus_pct = activity_distribution_config.preference_deviation_pct
+
+        objective_terms = []
+        for m in request.available_movements:
+            if m.id not in movement_vars:
+                continue
+            base_score = int(m.stimulus_factor * 100) * max(1, strength_pressure)
+            if m.id in preferred_ids:
+                base_score += int(base_score * preference_bonus_pct)
+            objective_terms.append(movement_vars[m.id] * base_score)
+
+        if request.allow_circuits and request.available_circuits:
+            for c in request.available_circuits:
+                if c.id not in circuit_vars:
+                    continue
+                strength_score = int(c.stimulus_factor * 100) * max(0, strength_pressure)
+                cardio_minutes = max(1, int(c.duration_seconds // 60))
+                cardio_score = cardio_minutes * 10 * max(0, cardio_pressure)
+                objective_terms.append(circuit_vars[c.id] * (strength_score + cardio_score))
+
+        model.Maximize(sum(objective_terms))
         
         # 3. Solve
         solver.parameters.max_time_in_seconds = 10.0
@@ -137,23 +210,34 @@ class ConstraintSolver:
         
         # 4. Result
         if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
-            selected = []
+            selected_movements = []
+            selected_circuits = []
             total_fatigue = 0.0
             total_stimulus = 0.0
             
+            # Process movements
             for m in request.available_movements:
                 if m.id in movement_vars and solver.Value(movement_vars[m.id]):
-                    selected.append(m)
+                    selected_movements.append(m)
                     total_fatigue += m.fatigue_factor
                     total_stimulus += m.stimulus_factor
             
+            # Process circuits
+            if request.allow_circuits and request.available_circuits:
+                for c in request.available_circuits:
+                    if c.id in circuit_vars and solver.Value(circuit_vars[c.id]):
+                        selected_circuits.append(c)
+                        total_fatigue += c.fatigue_factor
+                        total_stimulus += c.stimulus_factor
+            
             status_str = "OPTIMAL" if status == cp_model.OPTIMAL else "FEASIBLE"
             return OptimizationResult(
-                selected_movements=selected,
+                selected_movements=selected_movements,
+                selected_circuits=selected_circuits,
                 total_fatigue=total_fatigue,
                 total_stimulus=total_stimulus,
-                estimated_duration=len(selected) * MINS_PER_EXERCISE,
+                estimated_duration=(len(selected_movements) * MINS_PER_MOVEMENT) + (sum(c.duration_seconds for c in selected_circuits) // 60),
                 status=status_str
             )
             
-        return OptimizationResult([], 0, 0, 0, "INFEASIBLE")
+        return OptimizationResult([], [], 0, 0, 0, "INFEASIBLE")

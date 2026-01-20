@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { X, Users, Settings, Dumbbell, Heart, History, Flame } from 'lucide-react';
+import { X, Users, Settings, Dumbbell, Flame } from 'lucide-react';
 import { useUIStore } from '@/stores/ui-store';
 import { cn } from '@/lib/utils';
 

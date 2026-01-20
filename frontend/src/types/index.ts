@@ -303,6 +303,7 @@ export interface ExerciseBlock {
   movement: string;
   movement_id?: number;
   sets?: number;  // Optional for cooldown/stretches that only have duration
+  reps?: number; // Fixed rep count (e.g. for circuit exercises)
   rep_range_min?: number;
   rep_range_max?: number;
   target_rpe?: number;
@@ -315,8 +316,9 @@ export interface ExerciseBlock {
 
 export interface FinisherBlock {
   type: string;
+  circuit_type?: string; // e.g. AMRAP, EMOM, RFT
   duration_minutes?: number;
-  rounds?: number;
+  rounds?: string | number; // Support text like "Max Rounds"
   exercises?: ExerciseBlock[];
   notes?: string;
 }

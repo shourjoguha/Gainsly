@@ -7,16 +7,14 @@ import { WizardContainer } from '@/components/wizard/WizardContainer';
 import {
   GoalsStep,
   SplitStep,
-  DisciplinesStep,
   MovementsStep,
   ActivitiesStep,
   CoachStep,
 } from '@/components/wizard';
-import { 
-  SplitTemplate, 
-  PersonaTone, 
+import {
+  PersonaTone,
   PersonaAggression,
-  type ProgramCreate 
+  type ProgramCreate
 } from '@/types';
 import { useUIStore } from '@/stores/ui-store';
 

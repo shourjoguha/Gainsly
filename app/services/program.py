@@ -25,6 +25,7 @@ from app.models.enums import (
 )
 from app.services.interference import interference_service
 from app.services.session_generator import session_generator
+from app.config import activity_distribution as activity_distribution_config
 
 
 logger = logging.getLogger(__name__)
@@ -122,6 +123,15 @@ class ProgramService:
         # Get user for defaults
         user = await db.get(User, user_id)
         
+        split_config = self._apply_goal_based_weekly_distribution(
+            split_config=split_config,
+            goals=request.goals,
+            days_per_week=request.days_per_week,
+            max_session_duration=request.max_session_duration,
+            user_experience_level=user.experience_level if user else None,
+            scheduling_prefs=scheduling_prefs or {},
+        )
+        
         # Determine progression style if not provided
         progression_style = request.progression_style
         if not progression_style:
@@ -165,6 +175,7 @@ class ProgramService:
             name=request.name,  # Add name from request
             split_template=split_template,
             days_per_week=request.days_per_week,
+            max_session_duration=request.max_session_duration,
             start_date=start_date,
             duration_weeks=request.duration_weeks,
             goal_1=goals[0].goal,
@@ -667,6 +678,126 @@ class ProgramService:
             db.add(session)
         
         return microcycle
+
+    def _apply_goal_based_weekly_distribution(
+        self,
+        split_config: dict[str, Any],
+        goals: list[Any],
+        days_per_week: int,
+        max_session_duration: int,
+        user_experience_level: str | None,
+        scheduling_prefs: dict,
+    ) -> dict[str, Any]:
+        if not split_config or not split_config.get("structure"):
+            return split_config
+
+        goal_weights: dict[str, int] = {"strength": 0, "hypertrophy": 0, "endurance": 0, "fat_loss": 0, "mobility": 0}
+        for g in goals or []:
+            goal_value = getattr(getattr(g, "goal", None), "value", None)
+            weight_value = getattr(g, "weight", None)
+            if goal_value in goal_weights and isinstance(weight_value, int):
+                goal_weights[goal_value] = weight_value
+
+        bucket_scores: dict[str, float] = {"cardio": 0.0, "finisher": 0.0, "mobility": 0.0, "lifting": 0.0}
+        for goal, weight in goal_weights.items():
+            weights_map = activity_distribution_config.goal_bucket_weights.get(goal, {}) or {}
+            for bucket, share in weights_map.items():
+                bucket_scores[bucket] = bucket_scores.get(bucket, 0.0) + (float(weight) * float(share))
+
+        total_weekly_minutes = max(0, int(days_per_week * max_session_duration))
+        cardio_minutes = int(total_weekly_minutes * (bucket_scores.get("cardio", 0.0) / 10.0))
+        mobility_minutes = int(total_weekly_minutes * (bucket_scores.get("mobility", 0.0) / 10.0))
+        finisher_minutes = int(total_weekly_minutes * (bucket_scores.get("finisher", 0.0) / 10.0))
+        cardio_minutes = min(cardio_minutes, int(total_weekly_minutes * activity_distribution_config.cardio_max_pct))
+        mobility_minutes = min(mobility_minutes, int(total_weekly_minutes * activity_distribution_config.mobility_max_pct))
+
+        cardio_signal = goal_weights["endurance"] + goal_weights["fat_loss"]
+        strength_signal = goal_weights["strength"] + goal_weights["hypertrophy"]
+
+        experience = (user_experience_level or "").lower()
+        beginner = experience == "beginner"
+        overtraining_risk = days_per_week >= 6
+
+        allow_cardio_only = bool(scheduling_prefs.get("allow_cardio_only_days")) or overtraining_risk or beginner
+        allow_conditioning_only = bool(scheduling_prefs.get("allow_conditioning_only_days")) and (not beginner) and (not overtraining_risk)
+
+        structure = [dict(d) for d in split_config["structure"]]
+
+        def is_rest_day(d: dict[str, Any]) -> bool:
+            return (d.get("type") or "rest") == "rest"
+
+        training_indexes = [i for i, d in enumerate(structure) if not is_rest_day(d)]
+        lifting_indexes = [i for i in training_indexes if (structure[i].get("type") or "") not in {"cardio", "mobility"}]
+
+        min_lifting_days = 2 if len(lifting_indexes) >= 2 else len(lifting_indexes)
+        max_convertible = max(0, len(lifting_indexes) - min_lifting_days)
+
+        def can_convert_lifting_day(idx: int) -> bool:
+            day_type = structure[idx].get("type")
+            if day_type == "upper":
+                return sum(1 for i in lifting_indexes if structure[i].get("type") == "upper") > 1
+            if day_type == "lower":
+                return sum(1 for i in lifting_indexes if structure[i].get("type") == "lower") > 1
+            return True
+
+        convert_candidates = [i for i in reversed(lifting_indexes) if can_convert_lifting_day(i)]
+
+        conditioning_days = 0
+        if (
+            allow_conditioning_only
+            and finisher_minutes >= activity_distribution_config.min_conditioning_minutes
+            and max_convertible > 0
+            and convert_candidates
+        ):
+            idx = convert_candidates.pop(0)
+            structure[idx]["type"] = "conditioning"
+            structure[idx]["focus"] = ["conditioning"]
+            conditioning_days = 1
+            max_convertible -= 1
+
+        cardio_days = 0
+        if allow_cardio_only and cardio_minutes >= max_session_duration and max_convertible > 0 and convert_candidates:
+            idx = convert_candidates.pop(0)
+            structure[idx]["type"] = "cardio"
+            cardio_focus = ["cardio"]
+            cardio_focus.append("endurance" if goal_weights["endurance"] >= goal_weights["fat_loss"] else "fat_loss")
+            structure[idx]["focus"] = cardio_focus
+            cardio_days = 1
+            max_convertible -= 1
+
+        lifting_after = [i for i, d in enumerate(structure) if not is_rest_day(d) and (d.get("type") or "") not in {"cardio", "mobility", "conditioning"}]
+        if lifting_after:
+            desired_accessory_days = 1 if strength_signal > 0 else 0
+            remaining_cardio_minutes = max(0, cardio_minutes - (cardio_days * max_session_duration))
+            remaining_finisher_minutes = max(0, finisher_minutes + remaining_cardio_minutes)
+
+            desired_finisher_days = 0
+            if cardio_signal >= 4 and remaining_finisher_minutes > 0:
+                desired_finisher_days = max(
+                    1,
+                    round(remaining_finisher_minutes / max(1, activity_distribution_config.default_finisher_minutes)),
+                )
+            desired_finisher_days = min(desired_finisher_days, max(0, len(lifting_after) - desired_accessory_days))
+
+            finisher_targets = set(lifting_after[:desired_finisher_days])
+            accessory_targets = set(lifting_after[desired_finisher_days:desired_finisher_days + desired_accessory_days])
+
+            for i in lifting_after:
+                focus = structure[i].get("focus") or []
+                if not isinstance(focus, list):
+                    focus = []
+                if i in finisher_targets and "prefer_finisher" not in focus:
+                    focus.append("prefer_finisher")
+                if i in accessory_targets and "prefer_accessory" not in focus:
+                    focus.append("prefer_accessory")
+                structure[i]["focus"] = focus
+
+        split_config["structure"] = structure
+        split_config["training_days"] = sum(1 for d in structure if not is_rest_day(d))
+        split_config["rest_days"] = sum(1 for d in structure if is_rest_day(d))
+        split_config["goal_weights"] = goal_weights
+        split_config["goal_bias_rationale"] = activity_distribution_config.BIAS_RATIONALE
+        return split_config
     
     async def _load_split_template(
         self, db: AsyncSession, template: SplitTemplate, days_per_week: int,
@@ -1135,6 +1266,7 @@ class ProgramService:
             "full_body": SessionType.FULL_BODY,
             "cardio": SessionType.CARDIO,
             "mobility": SessionType.MOBILITY,
+            "conditioning": SessionType.CUSTOM,
             "rest": SessionType.RECOVERY,
             "recovery": SessionType.RECOVERY,
         }

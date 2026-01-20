@@ -161,20 +161,38 @@ export function SessionCard({ session }: SessionCardProps) {
                 <Flame className="h-3 w-3" />
                 Finisher
               </h4>
-              <div className="text-sm">
-                <span className="text-accent">{session.finisher.type}</span>
-                {session.finisher.duration_minutes && (
-                  <span className="text-foreground-muted ml-2">
-                    {session.finisher.duration_minutes} min
+              <div className="flex items-center justify-between text-sm mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-accent font-medium uppercase">
+                    {session.finisher.circuit_type || session.finisher.type}
+                  </span>
+                  {session.finisher.duration_minutes && (
+                    <span className="text-foreground-muted text-xs bg-background-elevated px-1.5 py-0.5 rounded">
+                      {session.finisher.duration_minutes} min
+                    </span>
+                  )}
+                </div>
+                {session.finisher.rounds && (
+                  <span className="text-xs text-foreground-muted font-medium bg-background-elevated px-2 py-0.5 rounded">
+                    {session.finisher.rounds}
                   </span>
                 )}
               </div>
+              
               {session.finisher.exercises && session.finisher.exercises.length > 0 && (
-                <div className="mt-1 space-y-1">
+                <div className="space-y-1.5 border-l-2 border-background-elevated pl-3">
                   {session.finisher.exercises.map((ex, idx) => (
-                    <div key={idx} className="text-sm text-foreground-muted">
-                      • {ex.movement} {ex.sets && `×${ex.sets}`}
-                      {ex.rep_range_min && ex.rep_range_max && ` (${ex.rep_range_min}-${ex.rep_range_max})`}
+                    <div key={idx} className="flex items-center justify-between text-sm">
+                      <span className="text-foreground">{ex.movement}</span>
+                      <span className="text-foreground-muted text-xs font-mono">
+                        {ex.reps 
+                          ? `${ex.reps} reps`
+                          : ex.duration_seconds 
+                            ? `${ex.duration_seconds}s`
+                            : ex.rep_range_min && ex.rep_range_max
+                              ? `${ex.rep_range_min}-${ex.rep_range_max}`
+                              : ''}
+                      </span>
                     </div>
                   ))}
                 </div>

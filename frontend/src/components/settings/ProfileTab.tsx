@@ -1,14 +1,13 @@
 import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { useUserProfile, useUpdateUserProfile } from '@/api/settings';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Spinner } from '@/components/common/Spinner';
 import { useUIStore } from '@/stores/ui-store';
-import { ExperienceLevel, PersonaTone, PersonaAggression, Sex } from '@/types';
+import { ExperienceLevel, PersonaTone, Sex } from '@/types';
 import type { UserProfileUpdate } from '@/types';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 export function ProfileTab() {
   const { data: profile, isLoading } = useUserProfile();
@@ -16,10 +15,9 @@ export function ProfileTab() {
   const { addToast } = useUIStore();
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
 
-  const { register, handleSubmit, reset, watch, formState: { isDirty } } = useForm<UserProfileUpdate>();
+  const { register, handleSubmit, reset, control, formState: { isDirty } } = useForm<UserProfileUpdate>();
 
-  // Watch values for display
-  const disciplinePrefs = watch('discipline_preferences');
+  const disciplinePrefs = useWatch({ control, name: 'discipline_preferences' });
 
   useEffect(() => {
     if (profile) {
@@ -70,7 +68,7 @@ export function ProfileTab() {
         type: 'success',
         message: 'Profile updated successfully',
       });
-    } catch (error) {
+    } catch {
       addToast({
         type: 'error',
         message: 'Failed to update profile',

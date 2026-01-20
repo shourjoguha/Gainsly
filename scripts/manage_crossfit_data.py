@@ -339,10 +339,6 @@ async def run_ingest():
 
         # 2. Ingest Circuits
         if os.path.exists(SCRAPED_CIRCUITS_FILE):
-            # Clean old CrossFit circuits
-            await session.execute(delete(CircuitTemplate).where(CircuitTemplate.name.like("CrossFit %")))
-            await session.commit()
-            
             with open(SCRAPED_CIRCUITS_FILE, 'r') as f:
                 circuits_data = json.load(f)
                 
@@ -392,15 +388,30 @@ async def run_ingest():
                 if meta.get('rounds'): meta_strs.append(f"Rounds: {meta['rounds']}")
                 full_desc = (" | ".join(meta_strs) + "\n\n" + base_desc).strip() if meta_strs else base_desc
 
-                new_circuit = CircuitTemplate(
-                    name=c_data['name'],
-                    description=full_desc,
-                    circuit_type=ctype_enum,
-                    exercises_json=exercises_list,
-                    tags=["crossfit", "scraped"],
-                    default_rounds=meta.get('rounds')
+                # Check if circuit already exists, update if it does
+                existing_circuit = await session.execute(
+                    select(CircuitTemplate).where(CircuitTemplate.name == c_data['name'])
                 )
-                session.add(new_circuit)
+                circuit = existing_circuit.scalar_one_or_none()
+                
+                if circuit:
+                    # Update existing circuit
+                    circuit.description = full_desc
+                    circuit.circuit_type = ctype_enum
+                    circuit.exercises_json = exercises_list
+                    circuit.tags = ["crossfit", "scraped"]
+                    circuit.default_rounds = meta.get('rounds')
+                else:
+                    # Create new circuit
+                    new_circuit = CircuitTemplate(
+                        name=c_data['name'],
+                        description=full_desc,
+                        circuit_type=ctype_enum,
+                        exercises_json=exercises_list,
+                        tags=["crossfit", "scraped"],
+                        default_rounds=meta.get('rounds')
+                    )
+                    session.add(new_circuit)
             
             await session.commit()
             print("Circuits ingested.")
