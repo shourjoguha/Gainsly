@@ -234,7 +234,6 @@ locust -f tests/performance_test_locust.py
 ## Future Enhancements
 
 - [ ] JWT authentication for multi-user support
-- [ ] PostgreSQL migration from SQLite
 - [ ] Cloud LLM providers (OpenAI, Anthropic)
 - [ ] Mobile native app (React Native)
 - [ ] Garmin integration for recovery signals
