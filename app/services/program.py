@@ -709,56 +709,13 @@ class ProgramService:
         
         if template == SplitTemplate.FULL_BODY:
             split_config = self._generate_full_body_structure(days_per_week)
-            
         elif template == SplitTemplate.UPPER_LOWER:
-            # Default 4-day Upper/Lower
-            split_config = {
-                "days_per_cycle": 7,
-                "structure": [
-                    {"day": 1, "type": "upper", "focus": ["horizontal_push", "horizontal_pull"]},
-                    {"day": 2, "type": "lower", "focus": ["squat", "hinge"]},
-                    {"day": 3, "type": "rest"},
-                    {"day": 4, "type": "upper", "focus": ["vertical_push", "vertical_pull"]},
-                    {"day": 5, "type": "lower", "focus": ["squat", "hinge"]},
-                    {"day": 6, "type": "rest"},
-                    {"day": 7, "type": "rest"},
-                ],
-                "training_days": 4,
-                "rest_days": 3,
-            }
-            
+            split_config = self._generate_upper_lower_structure(days_per_week)
         elif template == SplitTemplate.PPL:
-            # Default 6-day PPL
-            split_config = {
-                "days_per_cycle": 7,
-                "structure": [
-                    {"day": 1, "type": "push", "focus": ["horizontal_push", "vertical_push"]},
-                    {"day": 2, "type": "pull", "focus": ["horizontal_pull", "vertical_pull"]},
-                    {"day": 3, "type": "legs", "focus": ["squat", "hinge"]},
-                    {"day": 4, "type": "rest"},
-                    {"day": 5, "type": "push", "focus": ["horizontal_push", "vertical_push"]},
-                    {"day": 6, "type": "pull", "focus": ["horizontal_pull", "vertical_pull"]},
-                    {"day": 7, "type": "legs", "focus": ["squat", "hinge"]},
-                ],
-                "training_days": 6,
-                "rest_days": 1,
-            }
+            split_config = self._generate_ppl_structure(days_per_week)
             
         elif template == SplitTemplate.HYBRID:
-            split_config = {
-                "days_per_cycle": 7,
-                "structure": [
-                    {"day": 1, "type": "full_body", "focus": ["squat", "horizontal_push"]},
-                    {"day": 2, "type": "rest"},
-                    {"day": 3, "type": "full_body", "focus": ["hinge", "vertical_pull"]},
-                    {"day": 4, "type": "rest"},
-                    {"day": 5, "type": "full_body", "focus": ["lunge", "horizontal_pull"]},
-                    {"day": 6, "type": "rest"},
-                    {"day": 7, "type": "rest"},
-                ],
-                "training_days": 3,
-                "rest_days": 4,
-            }
+            split_config = self._generate_hybrid_structure(days_per_week)
             
         else:
             # Fallback to Full Body if unknown
@@ -887,6 +844,274 @@ class ProgramService:
                 {"day": 5, "type": "full_body", "focus": focus_patterns[0]},
                 {"day": 6, "type": "full_body", "focus": focus_patterns[1]},
                 {"day": 7, "type": "full_body", "focus": focus_patterns[2]},
+            ]
+            training_day_count = 7
+        
+        return {
+            "days_per_cycle": 7,
+            "structure": structure,
+            "training_days": training_day_count,
+            "rest_days": 7 - training_day_count,
+        }
+    
+    def _generate_hybrid_structure(self, days_per_week: int) -> Dict[str, Any]:
+        """
+        Generate hybrid split structure (mix of Upper/Lower and Full Body) adapted to user's training frequency.
+        
+        Hybrid split combines Upper/Lower days with Full Body days for variety.
+        This provides both body part focus and full-body compound movements.
+        
+        Args:
+            days_per_week: Requested training days (2-7)
+        
+        Returns:
+            Split configuration dict with structure for the week
+        """
+        structure = []
+        training_day_count = 0
+        
+        if days_per_week == 2:
+            structure = [
+                {"day": 1, "type": "upper", "focus": ["horizontal_push", "horizontal_pull"]},
+                {"day": 2, "type": "rest"},
+                {"day": 3, "type": "rest"},
+                {"day": 4, "type": "lower", "focus": ["squat", "hinge"]},
+                {"day": 5, "type": "rest"},
+                {"day": 6, "type": "rest"},
+                {"day": 7, "type": "rest"},
+            ]
+            training_day_count = 2
+        elif days_per_week == 3:
+            structure = [
+                {"day": 1, "type": "full_body", "focus": ["squat", "horizontal_push"]},
+                {"day": 2, "type": "rest"},
+                {"day": 3, "type": "upper", "focus": ["vertical_push", "vertical_pull"]},
+                {"day": 4, "type": "rest"},
+                {"day": 5, "type": "lower", "focus": ["hinge", "lunge"]},
+                {"day": 6, "type": "rest"},
+                {"day": 7, "type": "rest"},
+            ]
+            training_day_count = 3
+        elif days_per_week == 4:
+            structure = [
+                {"day": 1, "type": "upper", "focus": ["horizontal_push", "horizontal_pull"]},
+                {"day": 2, "type": "lower", "focus": ["squat", "hinge"]},
+                {"day": 3, "type": "rest"},
+                {"day": 4, "type": "full_body", "focus": ["vertical_push", "vertical_pull"]},
+                {"day": 5, "type": "lower", "focus": ["lunge", "hinge"]},
+                {"day": 6, "type": "rest"},
+                {"day": 7, "type": "rest"},
+            ]
+            training_day_count = 4
+        elif days_per_week == 5:
+            structure = [
+                {"day": 1, "type": "upper", "focus": ["horizontal_push", "horizontal_pull"]},
+                {"day": 2, "type": "lower", "focus": ["squat", "hinge"]},
+                {"day": 3, "type": "rest"},
+                {"day": 4, "type": "full_body", "focus": ["vertical_push", "vertical_pull", "lunge"]},
+                {"day": 5, "type": "upper", "focus": ["horizontal_push", "horizontal_pull"]},
+                {"day": 6, "type": "lower", "focus": ["hinge", "lunge"]},
+                {"day": 7, "type": "rest"},
+            ]
+            training_day_count = 5
+        elif days_per_week == 6:
+            structure = [
+                {"day": 1, "type": "upper", "focus": ["horizontal_push", "horizontal_pull"]},
+                {"day": 2, "type": "lower", "focus": ["squat", "hinge"]},
+                {"day": 3, "type": "full_body", "focus": ["vertical_push", "vertical_pull"]},
+                {"day": 4, "type": "rest"},
+                {"day": 5, "type": "upper", "focus": ["horizontal_push", "vertical_push"]},
+                {"day": 6, "type": "lower", "focus": ["hinge", "lunge"]},
+                {"day": 7, "type": "full_body", "focus": ["squat", "horizontal_pull"]},
+            ]
+            training_day_count = 6
+        else:
+            structure = [
+                {"day": 1, "type": "upper", "focus": ["horizontal_push", "horizontal_pull"]},
+                {"day": 2, "type": "lower", "focus": ["squat", "hinge"]},
+                {"day": 3, "type": "full_body", "focus": ["vertical_push", "vertical_pull"]},
+                {"day": 4, "type": "upper", "focus": ["horizontal_push", "vertical_push"]},
+                {"day": 5, "type": "lower", "focus": ["hinge", "lunge"]},
+                {"day": 6, "type": "full_body", "focus": ["squat", "horizontal_pull"]},
+                {"day": 7, "type": "cardio", "focus": ["cardio", "recovery"]},
+            ]
+            training_day_count = 7
+        
+        return {
+            "days_per_cycle": 7,
+            "structure": structure,
+            "training_days": training_day_count,
+            "rest_days": 7 - training_day_count,
+        }
+    
+    def _generate_upper_lower_structure(self, days_per_week: int) -> Dict[str, Any]:
+        """
+        Generate Upper/Lower split structure adapted to user's training frequency.
+        
+        Upper/Lower split focuses on specific body regions with adequate recovery.
+        
+        Args:
+            days_per_week: Requested training days (2-7)
+        
+        Returns:
+            Split configuration dict with structure for the week
+        """
+        structure = []
+        training_day_count = 0
+        
+        if days_per_week == 2:
+            structure = [
+                {"day": 1, "type": "upper", "focus": ["horizontal_push", "horizontal_pull"]},
+                {"day": 2, "type": "rest"},
+                {"day": 3, "type": "rest"},
+                {"day": 4, "type": "lower", "focus": ["squat", "hinge"]},
+                {"day": 5, "type": "rest"},
+                {"day": 6, "type": "rest"},
+                {"day": 7, "type": "rest"},
+            ]
+            training_day_count = 2
+        elif days_per_week == 3:
+            structure = [
+                {"day": 1, "type": "upper", "focus": ["horizontal_push", "horizontal_pull"]},
+                {"day": 2, "type": "lower", "focus": ["squat", "hinge"]},
+                {"day": 3, "type": "rest"},
+                {"day": 4, "type": "upper", "focus": ["vertical_push", "vertical_pull"]},
+                {"day": 5, "type": "rest"},
+                {"day": 6, "type": "rest"},
+                {"day": 7, "type": "rest"},
+            ]
+            training_day_count = 3
+        elif days_per_week == 4:
+            structure = [
+                {"day": 1, "type": "upper", "focus": ["horizontal_push", "horizontal_pull"]},
+                {"day": 2, "type": "lower", "focus": ["squat", "hinge"]},
+                {"day": 3, "type": "rest"},
+                {"day": 4, "type": "upper", "focus": ["vertical_push", "vertical_pull"]},
+                {"day": 5, "type": "lower", "focus": ["squat", "hinge"]},
+                {"day": 6, "type": "rest"},
+                {"day": 7, "type": "rest"},
+            ]
+            training_day_count = 4
+        elif days_per_week == 5:
+            structure = [
+                {"day": 1, "type": "upper", "focus": ["horizontal_push", "horizontal_pull"]},
+                {"day": 2, "type": "lower", "focus": ["squat", "hinge"]},
+                {"day": 3, "type": "rest"},
+                {"day": 4, "type": "upper", "focus": ["vertical_push", "vertical_pull"]},
+                {"day": 5, "type": "lower", "focus": ["hinge", "lunge"]},
+                {"day": 6, "type": "rest"},
+                {"day": 7, "type": "full_body", "focus": ["squat", "horizontal_push"]},
+            ]
+            training_day_count = 5
+        elif days_per_week == 6:
+            structure = [
+                {"day": 1, "type": "upper", "focus": ["horizontal_push", "horizontal_pull"]},
+                {"day": 2, "type": "lower", "focus": ["squat", "hinge"]},
+                {"day": 3, "type": "rest"},
+                {"day": 4, "type": "upper", "focus": ["vertical_push", "vertical_pull"]},
+                {"day": 5, "type": "lower", "focus": ["squat", "hinge"]},
+                {"day": 6, "type": "upper", "focus": ["horizontal_push", "vertical_push"]},
+                {"day": 7, "type": "rest"},
+            ]
+            training_day_count = 6
+        else:
+            structure = [
+                {"day": 1, "type": "upper", "focus": ["horizontal_push", "horizontal_pull"]},
+                {"day": 2, "type": "lower", "focus": ["squat", "hinge"]},
+                {"day": 3, "type": "rest"},
+                {"day": 4, "type": "upper", "focus": ["vertical_push", "vertical_pull"]},
+                {"day": 5, "type": "lower", "focus": ["squat", "hinge"]},
+                {"day": 6, "type": "upper", "focus": ["horizontal_push", "vertical_push"]},
+                {"day": 7, "type": "lower", "focus": ["hinge", "lunge"]},
+            ]
+            training_day_count = 7
+        
+        return {
+            "days_per_cycle": 7,
+            "structure": structure,
+            "training_days": training_day_count,
+            "rest_days": 7 - training_day_count,
+        }
+    
+    def _generate_ppl_structure(self, days_per_week: int) -> Dict[str, Any]:
+        """
+        Generate Push/Pull/Legs (PPL) split structure adapted to user's training frequency.
+        
+        PPL split separates movements by muscle group action pattern.
+        
+        Args:
+            days_per_week: Requested training days (2-7)
+        
+        Returns:
+            Split configuration dict with structure for the week
+        """
+        structure = []
+        training_day_count = 0
+        
+        if days_per_week == 2:
+            structure = [
+                {"day": 1, "type": "push", "focus": ["horizontal_push", "vertical_push"]},
+                {"day": 2, "type": "rest"},
+                {"day": 3, "type": "rest"},
+                {"day": 4, "type": "legs", "focus": ["squat", "hinge"]},
+                {"day": 5, "type": "rest"},
+                {"day": 6, "type": "rest"},
+                {"day": 7, "type": "rest"},
+            ]
+            training_day_count = 2
+        elif days_per_week == 3:
+            structure = [
+                {"day": 1, "type": "push", "focus": ["horizontal_push", "vertical_push"]},
+                {"day": 2, "type": "pull", "focus": ["horizontal_pull", "vertical_pull"]},
+                {"day": 3, "type": "legs", "focus": ["squat", "hinge"]},
+                {"day": 4, "type": "rest"},
+                {"day": 5, "type": "rest"},
+                {"day": 6, "type": "rest"},
+                {"day": 7, "type": "rest"},
+            ]
+            training_day_count = 3
+        elif days_per_week == 4:
+            structure = [
+                {"day": 1, "type": "push", "focus": ["horizontal_push", "vertical_push"]},
+                {"day": 2, "type": "pull", "focus": ["horizontal_pull", "vertical_pull"]},
+                {"day": 3, "type": "legs", "focus": ["squat", "hinge"]},
+                {"day": 4, "type": "rest"},
+                {"day": 5, "type": "push", "focus": ["horizontal_push", "vertical_push"]},
+                {"day": 6, "type": "pull", "focus": ["horizontal_pull", "vertical_pull"]},
+                {"day": 7, "type": "rest"},
+            ]
+            training_day_count = 4
+        elif days_per_week == 5:
+            structure = [
+                {"day": 1, "type": "push", "focus": ["horizontal_push", "vertical_push"]},
+                {"day": 2, "type": "pull", "focus": ["horizontal_pull", "vertical_pull"]},
+                {"day": 3, "type": "legs", "focus": ["squat", "hinge"]},
+                {"day": 4, "type": "rest"},
+                {"day": 5, "type": "push", "focus": ["horizontal_push", "vertical_push"]},
+                {"day": 6, "type": "pull", "focus": ["horizontal_pull", "vertical_pull"]},
+                {"day": 7, "type": "rest"},
+            ]
+            training_day_count = 5
+        elif days_per_week == 6:
+            structure = [
+                {"day": 1, "type": "push", "focus": ["horizontal_push", "vertical_push"]},
+                {"day": 2, "type": "pull", "focus": ["horizontal_pull", "vertical_pull"]},
+                {"day": 3, "type": "legs", "focus": ["squat", "hinge"]},
+                {"day": 4, "type": "rest"},
+                {"day": 5, "type": "push", "focus": ["horizontal_push", "vertical_push"]},
+                {"day": 6, "type": "pull", "focus": ["horizontal_pull", "vertical_pull"]},
+                {"day": 7, "type": "legs", "focus": ["squat", "hinge"]},
+            ]
+            training_day_count = 6
+        else:
+            structure = [
+                {"day": 1, "type": "push", "focus": ["horizontal_push", "vertical_push"]},
+                {"day": 2, "type": "pull", "focus": ["horizontal_pull", "vertical_pull"]},
+                {"day": 3, "type": "legs", "focus": ["squat", "hinge"]},
+                {"day": 4, "type": "push", "focus": ["horizontal_push", "vertical_push"]},
+                {"day": 5, "type": "pull", "focus": ["horizontal_pull", "vertical_pull"]},
+                {"day": 6, "type": "legs", "focus": ["hinge", "lunge"]},
+                {"day": 7, "type": "cardio", "focus": ["cardio", "recovery"]},
             ]
             training_day_count = 7
         
