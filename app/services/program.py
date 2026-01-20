@@ -96,9 +96,26 @@ class ProgramService:
         discipline_prefs = user_profile.discipline_preferences if user_profile else None
         scheduling_prefs = user_profile.scheduling_preferences if user_profile else None
 
+        # Determine split template if not provided
+        split_template = request.split_template
+        if not split_template:
+            # Default logic based on days_per_week
+            if request.days_per_week <= 3:
+                split_template = SplitTemplate.FULL_BODY
+            elif request.days_per_week == 4:
+                split_template = SplitTemplate.UPPER_LOWER
+            elif request.days_per_week == 5:
+                # 5-day is typically Upper/Lower + Full Body or PPL + Upper/Lower
+                # For now default to Hybrid to allow flexible scheduling
+                split_template = SplitTemplate.HYBRID 
+            elif request.days_per_week >= 6:
+                split_template = SplitTemplate.PPL
+            else:
+                split_template = SplitTemplate.FULL_BODY
+
         # Load split template configuration with user's day preference and profile settings
         split_config = await self._load_split_template(
-            db, request.split_template, request.days_per_week,
+            db, split_template, request.days_per_week,
             discipline_prefs, scheduling_prefs
         )
         
@@ -131,11 +148,22 @@ class ProgramService:
         elif discipline_prefs:
             # Fallback to profile preferences if request doesn't specify
             disciplines_json = [{"discipline": k, "weight": v} for k, v in discipline_prefs.items()]
+        else:
+            # Fallback based on experience level
+            # Default to Bodybuilding if no other signals
+            default_discipline = "bodybuilding"
+            if user and user.experience_level == "beginner":
+                disciplines_json = [{"discipline": "bodybuilding", "weight": 10}]
+            elif user and user.experience_level == "intermediate":
+                disciplines_json = [{"discipline": "bodybuilding", "weight": 6}, {"discipline": "powerlifting", "weight": 4}]
+            else:
+                # Advanced/Expert/Other
+                disciplines_json = [{"discipline": "bodybuilding", "weight": 5}, {"discipline": "powerlifting", "weight": 5}]
         
         program = Program(
             user_id=user_id,
             name=request.name,  # Add name from request
-            split_template=request.split_template,
+            split_template=split_template,
             days_per_week=request.days_per_week,
             start_date=start_date,
             duration_weeks=request.duration_weeks,
@@ -152,6 +180,19 @@ class ProgramService:
             disciplines_json=disciplines_json,
             is_active=True,
         )
+        
+        # Deactivate other active programs for this user
+        other_active = await db.execute(
+            select(Program).where(
+                and_(
+                    Program.user_id == user_id,
+                    Program.is_active == True
+                )
+            )
+        )
+        for prog in other_active.scalars():
+            prog.is_active = False
+            
         db.add(program)
         await db.flush()  # Get program.id
         
@@ -283,6 +324,7 @@ class ProgramService:
                     microcycle_id,
                     used_movements=list(used_movements),
                     used_movement_groups=dict(used_movement_groups),
+                    used_main_patterns=dict(used_main_patterns),
                     used_accessory_movements=dict(used_accessory_movements),
                     previous_day_volume=previous_day_volume,
                 )

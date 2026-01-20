@@ -40,6 +40,8 @@ interface ProgramWizardState {
   // Step 2: Split
   daysPerWeek: number;
   setDaysPerWeek: (days: number) => void;
+  maxDuration: number;
+  setMaxDuration: (minutes: number) => void;
   splitPreference: SplitTemplate | null;
   setSplitPreference: (split: SplitTemplate | null) => void;
   
@@ -85,6 +87,7 @@ interface ProgramWizardState {
 const initialState = {
   goals: [],
   daysPerWeek: 4,
+  maxDuration: 60,
   splitPreference: null,
   disciplines: [],
   progressionStyle: null,
@@ -120,6 +123,7 @@ export const useProgramWizardStore = create<ProgramWizardState>()((set, get) => 
   
   // Step 2: Split
   setDaysPerWeek: (days) => set({ daysPerWeek: days }),
+  setMaxDuration: (minutes) => set({ maxDuration: minutes }),
   setSplitPreference: (split) => set({ splitPreference: split }),
   
   // Step 3: Disciplines

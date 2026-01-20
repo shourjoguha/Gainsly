@@ -27,7 +27,6 @@ export const Route = createFileRoute('/program/wizard')({
 const STEP_LABELS = [
   'Set Your Goals',
   'Choose Your Schedule',
-  'Training Styles',
   'Exercise Preferences',
   'Favorite Activities',
   'Meet Your Coach',
@@ -50,10 +49,8 @@ function ProgramWizardPage() {
   const {
     goals,
     isGoalsValid,
-    splitPreference,
     daysPerWeek,
-    disciplines,
-    isDisciplinesValid,
+    maxDuration,
     movementRules,
     enjoyableActivities,
     communicationStyle,
@@ -72,16 +69,12 @@ function ProgramWizardPage() {
       case 0: // Goals
         return isGoalsValid();
       case 1: // Split
-        return splitPreference !== null;
-      case 2: // Disciplines (optional, but must complete if started)
-        // If user hasn't allocated any dollars, they can skip
-        // If they started allocating, they must allocate all 10
-        return disciplines.length === 0 || isDisciplinesValid();
-      case 3: // Movements (optional)
         return true;
-      case 4: // Activities (optional)
+      case 2: // Movements (optional)
         return true;
-      case 5: // Coach
+      case 3: // Activities (optional)
+        return true;
+      case 4: // Coach
         return true;
       default:
         return false;
@@ -105,12 +98,12 @@ function ProgramWizardPage() {
     const payload: ProgramCreate = {
       goals: goals,
       duration_weeks: durationWeeks,
-      split_template: splitPreference || SplitTemplate.FULL_BODY,
       days_per_week: daysPerWeek,  // User's training frequency preference
+      split_template: useProgramWizardStore.getState().splitPreference || undefined,
+      max_session_duration: maxDuration,
       // progression_style is now auto-assigned by backend based on experience level
       persona_tone: TONE_MAP[communicationStyle] || PersonaTone.SUPPORTIVE,
       persona_aggression: pushIntensity as PersonaAggression,
-      disciplines: disciplines.length > 0 ? disciplines : undefined,  // Training style preferences
       movement_rules: movementRules.length > 0 ? movementRules : undefined,
       enjoyable_activities: enjoyableActivities.length > 0 ? enjoyableActivities : undefined,
     };
@@ -165,12 +158,10 @@ function ProgramWizardPage() {
       case 1:
         return <SplitStep />;
       case 2:
-        return <DisciplinesStep />;
-      case 3:
         return <MovementsStep />;
-      case 4:
+      case 3:
         return <ActivitiesStep />;
-      case 5:
+      case 4:
         return <CoachStep />;
       default:
         return null;

@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     
     # Ollama LLM settings
     ollama_base_url: str = "http://localhost:11434"
-    ollama_model: str = "llama3.1:8b"
+    ollama_model: str = "llama3.2:3b"
     ollama_timeout: float = 1100.0  # seconds (18+ minutes for local LLM generation)
     
     # LLM Provider (for future cloud providers)

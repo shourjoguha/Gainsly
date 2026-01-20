@@ -181,44 +181,24 @@ async def get_program(
         upcoming_sessions = list(sessions_result.scalars().all())
     
     # Convert upcoming sessions to response format with duration estimates
+    # Use simple estimation to avoid N+1 query problem
     session_responses = []
     for session in upcoming_sessions:
-        # Estimate duration if not already calculated
         if not session.estimated_duration_minutes:
             try:
-                duration_estimate = await time_estimation_service.estimate_session_duration(
-                    db, user_id, session.id
-                )
-                session.estimated_duration_minutes = duration_estimate["total_minutes"]
-                session.warmup_duration_minutes = duration_estimate["breakdown"]["warmup_minutes"]
-                session.main_duration_minutes = duration_estimate["breakdown"]["main_minutes"]
-                session.cooldown_duration_minutes = duration_estimate["breakdown"]["cooldown_minutes"]
+                breakdown = time_estimation_service.estimate_session_duration(session)
+                session.estimated_duration_minutes = breakdown.total_minutes
+                session.warmup_duration_minutes = breakdown.warmup_minutes
+                session.main_duration_minutes = breakdown.main_minutes
+                session.accessory_duration_minutes = breakdown.accessory_minutes
+                session.finisher_duration_minutes = breakdown.finisher_minutes
+                session.cooldown_duration_minutes = breakdown.cooldown_minutes
             except Exception:
-                # If estimation fails, use existing values or defaults
-                pass
-        
-        session_responses.append(
-            SessionResponse(
-                id=session.id,
-                microcycle_id=session.microcycle_id,
-                session_date=session.date,
-                day_number=session.day_number,
-                session_type=session.session_type,
-                intent_tags=session.intent_tags or [],
-                warmup=session.warmup_json,
-                main=session.main_json,
-                accessory=session.accessory_json,
-                finisher=session.finisher_json,
-                cooldown=session.cooldown_json,
-                estimated_duration_minutes=session.estimated_duration_minutes,
-                warmup_duration_minutes=session.warmup_duration_minutes,
-                main_duration_minutes=session.main_duration_minutes,
-                accessory_duration_minutes=session.accessory_duration_minutes,
-                finisher_duration_minutes=session.finisher_duration_minutes,
-                cooldown_duration_minutes=session.cooldown_duration_minutes,
-                coach_notes=session.coach_notes,
-            )
-        )
+                # Simple estimation: 4 mins per exercise + 10 mins warmup
+                exercise_count = len(session.main_json or []) + len(session.accessory_json or [])
+                session.estimated_duration_minutes = 10 + (exercise_count * 4)
+            
+        session_responses.append(SessionResponse.model_validate(session))
 
     # Build per-microcycle session views
     microcycle_responses: list[MicrocycleWithSessionsResponse] = []
@@ -231,39 +211,11 @@ async def get_program(
         )
         for session in ordered_sessions:
             if not session.estimated_duration_minutes:
-                try:
-                    duration_estimate = await time_estimation_service.estimate_session_duration(
-                        db, user_id, session.id
-                    )
-                    session.estimated_duration_minutes = duration_estimate["total_minutes"]
-                    session.warmup_duration_minutes = duration_estimate["breakdown"]["warmup_minutes"]
-                    session.main_duration_minutes = duration_estimate["breakdown"]["main_minutes"]
-                    session.cooldown_duration_minutes = duration_estimate["breakdown"]["cooldown_minutes"]
-                except Exception:
-                    pass
+                # Simple estimation: 4 mins per exercise + 10 mins warmup
+                exercise_count = len(session.main_json or []) + len(session.accessory_json or [])
+                session.estimated_duration_minutes = 10 + (exercise_count * 4)
 
-            microcycle_sessions.append(
-                SessionResponse(
-                    id=session.id,
-                    microcycle_id=session.microcycle_id,
-                    session_date=session.date,
-                    day_number=session.day_number,
-                    session_type=session.session_type,
-                    intent_tags=session.intent_tags or [],
-                    warmup=session.warmup_json,
-                    main=session.main_json,
-                    accessory=session.accessory_json,
-                    finisher=session.finisher_json,
-                    cooldown=session.cooldown_json,
-                    estimated_duration_minutes=session.estimated_duration_minutes,
-                    warmup_duration_minutes=session.warmup_duration_minutes,
-                    main_duration_minutes=session.main_duration_minutes,
-                    accessory_duration_minutes=session.accessory_duration_minutes,
-                    finisher_duration_minutes=session.finisher_duration_minutes,
-                    cooldown_duration_minutes=session.cooldown_duration_minutes,
-                    coach_notes=session.coach_notes,
-                )
-            )
+            microcycle_sessions.append(SessionResponse.model_validate(session))
 
         microcycle_responses.append(
             MicrocycleWithSessionsResponse(

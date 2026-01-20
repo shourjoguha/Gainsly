@@ -195,8 +195,9 @@ export interface ProgramCreate {
   goals: GoalWeight[];
   duration_weeks: number;
   program_start_date?: string;
-  split_template: SplitTemplate;
+  split_template?: SplitTemplate;
   days_per_week: number;
+  max_session_duration?: number;
   progression_style?: ProgressionStyle;
   hybrid_definition?: HybridDefinition;
   deload_every_n_microcycles?: number;

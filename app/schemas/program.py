@@ -83,8 +83,9 @@ class ProgramCreate(BaseModel):
     program_start_date: DateType | None = None  # Defaults to today (renamed to avoid shadowing)
     
     # Structure
-    split_template: SplitTemplate
+    split_template: SplitTemplate | None = None  # Optional - system determines if not provided
     days_per_week: int = Field(ge=2, le=7)  # User's training frequency preference
+    max_session_duration: int = Field(default=60, ge=15, le=180)  # Max minutes per session
     progression_style: ProgressionStyle | None = None
     hybrid_definition: HybridDefinition | None = None
     
@@ -208,15 +209,15 @@ class SessionResponse(BaseModel):
     """Session response schema."""
     id: int
     microcycle_id: int
-    session_date: DateType | None = None  # Renamed to avoid shadowing
+    session_date: DateType | None = Field(None, validation_alias="date")
     day_number: int
     session_type: SessionType
     intent_tags: list[str] = []
-    warmup: list[ExerciseBlock] | None = None
-    main: list[ExerciseBlock] | None = None
-    accessory: list[ExerciseBlock] | None = None
-    finisher: FinisherBlock | None = None
-    cooldown: list[ExerciseBlock] | None = None
+    warmup: list[ExerciseBlock] | None = Field(None, validation_alias="warmup_json")
+    main: list[ExerciseBlock] | None = Field(None, validation_alias="main_json")
+    accessory: list[ExerciseBlock] | None = Field(None, validation_alias="accessory_json")
+    finisher: FinisherBlock | None = Field(None, validation_alias="finisher_json")
+    cooldown: list[ExerciseBlock] | None = Field(None, validation_alias="cooldown_json")
     estimated_duration_minutes: int | None = None
     warmup_duration_minutes: int | None = None
     main_duration_minutes: int | None = None

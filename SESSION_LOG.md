@@ -571,3 +571,36 @@ Session tracking for continuous development with date/time headers. A new sessio
 - **Frontend**: React, React Hook Form, Zustand, Shadcn UI (Tabs, Collapsible).
 - **Backend**: FastAPI, SQLAlchemy (Async), Alembic, Pydantic.
 - **Database**: PostgreSQL (JSON columns).
+
+---
+
+## Session 15: 2026-01-20
+
+**Objective**: Resolve app-wide loading failures, fix program creation errors, and optimize session generation.
+
+**Key Accomplishments**:
+
+1.  **Resolved Database & Async Blocking Issues**:
+    *   Increased database connection pool size (20) and max overflow (20) in `app/db/database.py` to prevent pool exhaustion.
+    *   Offloaded synchronous OR-Tools solver calls to separate threads using `asyncio.run_in_executor` in `app/services/session_generator.py` to fix app-wide event loop blocking.
+    *   Converted `SolverMovement` objects to Pydantic DTOs for thread safety.
+
+2.  **Fixed Program Creation & Session Generation**:
+    *   Added `used_main_patterns` parameter to `populate_session_by_id` in `app/services/session_generator.py` to fix keyword argument errors.
+    *   Implemented `split_template` inference in `app/services/program.py` to handle missing frontend payload data and prevent database integrity errors.
+    *   Added 10-second timeout to OR-Tools solver in `app/llm/optimization.py` to prevent infinite loops.
+    *   Fixed `ProgramCreate` schema validation aliases in `app/schemas/program.py` to correctly map database JSON columns (`warmup_json`, `main_json`, etc.) to frontend fields.
+
+3.  **Configuration & Testing**:
+    *   Updated default LLM model to `llama3.2:3b` (faster, JSON-optimized) in `app/config/settings.py`.
+    *   Created `repro_create_program_v2.py` and `debug_session_generation.py` for targeted diagnostics.
+
+**Status**:
+- App responsiveness restored.
+- Program creation flow unblocked (no more "Network error").
+- Frontend session card expansion issue resolved (schema mapping fixed).
+- LLM timeout risk reduced with optimized model selection.
+
+**Key Decisions & Updates**:
+*   **Model Optimization**: Switched to `llama3.2:3b` to resolve timeout issues and improve inference speed (settings.py).
+*   **Documentation**: Fully updated `Gainsly Database System Overview.md` with all new tables and enums.

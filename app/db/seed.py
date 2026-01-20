@@ -12,6 +12,8 @@ from app.models import (
     User,
     UserSettings,
     HeuristicConfig,
+    ActivityDefinition,
+    ActivityCategory,
     MovementPattern,
     PrimaryMuscle,
     PrimaryRegion,
@@ -22,6 +24,7 @@ from app.models import (
     ExperienceLevel,
     PersonaTone,
     PersonaAggression,
+    ActivitySource,
 )
 
 
@@ -96,6 +99,51 @@ async def seed_movements(db: AsyncSession) -> int:
     
     await db.commit()
     print(f"Created {created_count} movements")
+    return created_count
+
+
+async def seed_activity_definitions(db: AsyncSession) -> int:
+    """Seed activity definitions from JSON file."""
+    activities_file = SEED_DATA_DIR / "activities.json"
+    
+    if not activities_file.exists():
+        print(f"Activities file not found: {activities_file}")
+        return 0
+    
+    with open(activities_file) as f:
+        activities = json.load(f)
+    
+    created_count = 0
+    
+    for a in activities:
+        # Check if activity already exists
+        existing = await db.execute(
+            select(ActivityDefinition).where(ActivityDefinition.name == a["name"])
+        )
+        if existing.scalar_one_or_none():
+            continue
+        
+        try:
+            category = get_enum_value(ActivityCategory, a["category"])
+            default_metric = get_enum_value(MetricType, a["default_metric_type"])
+        except (ValueError, KeyError) as e:
+            print(f"Skipping activity {a['name']}: {e}")
+            continue
+            
+        activity = ActivityDefinition(
+            name=a["name"],
+            category=category.value,
+            default_metric_type=default_metric.value,
+            default_equipment_tags=a.get("default_equipment_tags", []),
+            # Note: cns_impact will be stored in ActivityMuscleMap later, 
+            # but we can't seed it directly here without the junction model fully set up for seeding.
+            # For now, we seed the definition.
+        )
+        db.add(activity)
+        created_count += 1
+        
+    await db.commit()
+    print(f"Created {created_count} activity definitions")
     return created_count
 
 
@@ -182,6 +230,9 @@ async def seed_all():
         
         # Seed movements
         await seed_movements(db)
+        
+        # Seed activities
+        await seed_activity_definitions(db)
         
         # Seed heuristic configs
         await seed_heuristic_configs(db)

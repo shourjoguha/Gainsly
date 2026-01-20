@@ -33,6 +33,8 @@ Generate workout session based on program goals and guidance.
 
 {session_context}
 
+{draft_context}
+
 {guidance_context}
 
 {interference_context}
@@ -43,6 +45,7 @@ Generate workout session based on program goals and guidance.
 - Main lifts should prioritize specified patterns
 - Respect user movement preferences (avoid, must_include, prefer)
 - Follow rep/set guidelines from system prompt (lines 18-22)
+- Review the Draft Session (if provided) and use it as a baseline. You may swap exercises for injuries or specific user needs, but try to respect the volume allocation.
 
 ## LLM Decision Areas (Use Your Expertise)
 - Exercise selection from available movements
@@ -82,6 +85,7 @@ def build_optimized_session_prompt(
     fatigued_muscles: list[str] | None = None,
     discipline_preferences: dict | None = None,
     scheduling_preferences: dict | None = None,
+    draft_session_context: str | None = None,
 ) -> str:
     """
     Build optimized session generation prompt with reduced token count and structured constraints.
@@ -173,9 +177,15 @@ Day: {day_number}/{microcycle_number}"""
             if pattern in intent_tags:  # Only show relevant patterns
                 movement_ctx += f"- {pattern}: {', '.join(movements)}\n"
     
+    # OPTIMIZATION 7: Include Draft Session Context
+    draft_ctx = ""
+    if draft_session_context:
+        draft_ctx = f"\n## Draft Session (Optimization Engine Output)\n{draft_session_context}\n"
+
     return SESSION_GENERATION_PROMPT.format(
         program_context=program_ctx,
         session_context=session_ctx,
+        draft_context=draft_ctx,
         guidance_context=guidance_context,
         interference_context=interference_ctx + movement_ctx,
     )

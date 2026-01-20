@@ -44,6 +44,8 @@ from app.models.user import (
     UserSettings,
     UserProfile,
     UserBiometricHistory,
+    UserSkill,
+    UserInjury,
 )
 from app.models.program import (
     Program,
@@ -120,6 +122,8 @@ __all__ = [
     "UserSettings",
     "UserProfile",
     "UserBiometricHistory",
+    "UserSkill",
+    "UserInjury",
     "Program",
     "Microcycle",
     "Session",

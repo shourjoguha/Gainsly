@@ -55,6 +55,12 @@ class Movement(Base):
     is_complex_lift = Column(Boolean, default=False)  # Requires confirmation for safety
     is_unilateral = Column(Boolean, default=False)
     
+    # Fitness Function Metrics (RL Reward Signals)
+    fatigue_factor = Column(Float, nullable=False, default=1.0)  # Systemic fatigue cost (for SFR)
+    stimulus_factor = Column(Float, nullable=False, default=1.0) # Raw hypertrophy/strength stimulus (for SFR)
+    injury_risk_factor = Column(Float, nullable=False, default=1.0) # Base injury risk (for Biomechanical Match)
+    min_recovery_hours = Column(Integer, nullable=False, default=24) # Estimated recovery time
+    
     # Measurement
     metric_type = Column(String(50), nullable=False, default="reps")  # Stores enum value
     
@@ -90,6 +96,9 @@ class Movement(Base):
         cascade="all, delete-orphan"
     )
 
+    # Anatomy Bridge
+    muscle_maps = relationship("MovementMuscleMap", back_populates="movement", cascade="all, delete-orphan")
+
     def __repr__(self):
         return f"<Movement(id={self.id}, name='{self.name}', pattern={self.pattern})>"
 
@@ -112,3 +121,6 @@ class MovementMuscleMap(Base):
     muscle_id = Column(Integer, ForeignKey("muscles.id"), nullable=False, index=True)
     role = Column(SQLEnum(MuscleRole), nullable=False, index=True)
     magnitude = Column(Float, nullable=False, default=1.0)
+    
+    movement = relationship("Movement", back_populates="muscle_maps")
+    muscle = relationship("Muscle")

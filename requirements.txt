@@ -37,3 +37,6 @@ ruff==0.1.15
 # Scraping
 beautifulsoup4==4.12.3
 requests==2.31.0
+
+# Optimization
+ortools==9.15.6755

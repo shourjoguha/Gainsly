@@ -2,7 +2,7 @@
 from datetime import datetime
 from sqlalchemy import (
     Boolean, Column, Integer, String, DateTime,
-    ForeignKey, Text, JSON, Enum as SQLEnum
+    ForeignKey, Text, JSON, Enum as SQLEnum, Float
 )
 from sqlalchemy.orm import relationship
 
@@ -139,6 +139,15 @@ class ExternalActivityRecord(Base):
     start_time = Column(DateTime, nullable=True, index=True)
     end_time = Column(DateTime, nullable=True)
     timezone = Column(String(64), nullable=True)
+    
+    # Queryable metrics (denormalized from payload)
+    distance_meters = Column(Float, nullable=True)
+    elevation_gain_meters = Column(Float, nullable=True)
+    calories = Column(Integer, nullable=True)
+    average_hr = Column(Integer, nullable=True)
+    max_hr = Column(Integer, nullable=True)
+    average_watts = Column(Integer, nullable=True)
+    device_name = Column(String(100), nullable=True)
 
     raw_payload_json = Column(JSON, nullable=True)
     ingestion_run_id = Column(Integer, ForeignKey("external_ingestion_runs.id"), nullable=True, index=True)

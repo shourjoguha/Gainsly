@@ -7,6 +7,7 @@ from sqlalchemy.orm import relationship
 from app.db.database import Base
 from app.models.enums import (
     ExperienceLevel,
+    SkillLevel,
     PersonaTone,
     PersonaAggression,
     MovementRuleType,
@@ -60,6 +61,8 @@ class User(Base):
     macro_cycles = relationship("MacroCycle", back_populates="user", cascade="all, delete-orphan")
     goals = relationship("UserGoal", back_populates="user", cascade="all, delete-orphan")
     activity_instances = relationship("ActivityInstance", back_populates="user", cascade="all, delete-orphan")
+    skills = relationship("UserSkill", back_populates="user", cascade="all, delete-orphan")
+    injuries = relationship("UserInjury", back_populates="user", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<User(id={self.id}, name='{self.name}')>"
@@ -167,3 +170,37 @@ class UserBiometricHistory(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="biometrics_history")
+
+
+class UserSkill(Base):
+    """User's skill level in specific disciplines."""
+    __tablename__ = "user_skills"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    discipline_id = Column(Integer, ForeignKey("disciplines.id"), nullable=False, index=True)
+    
+    skill_level = Column(SQLEnum(SkillLevel), nullable=False, default=SkillLevel.BEGINNER)
+    experience_years = Column(Float, nullable=True)
+    
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    user = relationship("User", back_populates="skills")
+    discipline = relationship("Discipline")
+
+
+class UserInjury(Base):
+    """User-reported injuries/contraindications."""
+    __tablename__ = "user_injuries"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    
+    body_part = Column(String(50), nullable=False, index=True)  # e.g., "lower_back", "knee_left"
+    severity = Column(Float, nullable=False, default=1.0)  # 0.0-1.0 (1.0 = total exclusion)
+    description = Column(String(255), nullable=True)
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    user = relationship("User", back_populates="injuries")

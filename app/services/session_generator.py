@@ -20,7 +20,8 @@ from app.llm import get_llm_provider, LLMConfig, Message
 from app.llm.prompts import JEROME_SYSTEM_PROMPT, build_optimized_session_prompt
 from app.llm.ollama_provider import SESSION_PLAN_SCHEMA
 from app.models import Movement, Session, Program, Microcycle, User, UserMovementRule, UserProfile
-from app.models.enums import SessionType, MovementRuleType
+from app.models.enums import SessionType, MovementRuleType, SkillLevel
+from app.services.optimization import ConstraintSolver, OptimizationRequest, SolverMovement
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -39,6 +40,9 @@ class SessionGeneratorService:
     INITIAL_RETRY_DELAY = 2.0  # seconds
     RETRY_BACKOFF_MULTIPLIER = 2.0
     MAX_RETRY_DELAY = 10.0  # seconds
+    
+    def __init__(self):
+        self.optimizer = ConstraintSolver()
     
     async def _call_llm_with_retry(
         self,
@@ -184,6 +188,17 @@ class SessionGeneratorService:
         discipline_preferences = user_profile.discipline_preferences if user_profile else None
         scheduling_preferences = user_profile.scheduling_preferences if user_profile else None
         
+        # Generate optimal draft using Constraint Solver
+        draft_context = ""
+        try:
+            draft_result = await self._generate_draft_session(db, session, used_movements)
+            if draft_result.status in ["OPTIMAL", "FEASIBLE"] and draft_result.selected_movements:
+                draft_content = self._convert_optimization_result_to_content(draft_result, session.session_type)
+                draft_context = self._format_draft_for_llm(draft_content)
+                logger.info(f"Generated optimal draft for session {session.id}")
+        except Exception as e:
+            logger.warning(f"Failed to generate draft session: {e}")
+        
         # Build program context dict
         program_dict = {
             "goal_1": program.goal_1.value,
@@ -216,6 +231,7 @@ class SessionGeneratorService:
             fatigued_muscles=fatigued_muscles,
             discipline_preferences=discipline_preferences,
             scheduling_preferences=scheduling_preferences,
+            draft_session_context=draft_context,
         )
         
         # Use optimized model configuration
@@ -269,8 +285,17 @@ class SessionGeneratorService:
             # All retries exhausted or non-retryable error
             logger.error(
                 f"LLM generation failed for session {session.id} ({session.session_type.value}). "
-                f"Using smart fallback. Error: {type(e).__name__}: {e}"
+                f"Error: {type(e).__name__}: {e}"
             )
+            
+            # Fallback Logic:
+            # 1. If we have a valid Draft from OR, use that (it's better than smart fallback)
+            if draft_content:
+                logger.info("Falling back to Optimization Engine Draft.")
+                return draft_content
+
+            # 2. Otherwise use Smart Fallback
+            logger.info("Falling back to Smart Fallback.")
             return self._get_smart_fallback_session_content(
                 session.session_type,
                 session.intent_tags or [],
@@ -285,31 +310,20 @@ class SessionGeneratorService:
         microcycle_id: int,
         used_movements: list[str] | None = None,
         used_movement_groups: dict[str, int] | None = None,
+        used_main_patterns: dict[str, list[str]] | None = None,
         used_accessory_movements: dict[int, list[str]] | None = None,
         previous_day_volume: dict[str, int] | None = None,
     ) -> dict[str, int]:
         """
         Generate and save exercise content to a session using IDs.
         
-        Creates its own database session to avoid holding locks during LLM calls.
-        
-        Args:
-            session_id: ID of session to populate
-            program_id: ID of parent program
-            microcycle_id: ID of parent microcycle
-            used_movements: List of movements already used in this microcycle
-            used_movement_groups: Dict tracking usage count by substitution_group
-            used_accessory_movements: Dict mapping day_number to accessory movements used
-            previous_day_volume: Volume dict from previous session (muscle -> volume)
-            
-        Returns:
-            Dict of muscle volume generated in this session (muscle -> volume)
+        Refactored to NOT hold a database connection during LLM generation.
         """
         from app.db.database import async_session_maker
         
-        # Create new DB session for this operation
+        # 1. Fetch all necessary context (short DB transaction)
+        context_data = {}
         async with async_session_maker() as db:
-            # Fetch objects
             session = await db.get(Session, session_id)
             program = await db.get(Program, program_id)
             microcycle = await db.get(Microcycle, microcycle_id)
@@ -317,17 +331,300 @@ class SessionGeneratorService:
             if not session or not program or not microcycle:
                 return {}
             
-            # Call the existing populate_session logic
-            volume = await self.populate_session(
-                db, session, program, microcycle,
-                used_movements, used_movement_groups, used_accessory_movements, previous_day_volume
+            # Fetch supporting data
+            movements_by_pattern = await self._load_movements_by_pattern(db)
+            movement_rules = await self._load_user_movement_rules(db, program.user_id)
+            user_profile = await db.get(UserProfile, program.user_id)
+            all_movements = await self._load_all_movements(db)
+            
+            # Store in context (convert Enums to values for safety)
+            context_data = {
+                "program": {
+                    "goal_1": program.goal_1,
+                    "goal_2": program.goal_2,
+                    "goal_3": program.goal_3,
+                    "goal_weight_1": program.goal_weight_1,
+                    "goal_weight_2": program.goal_weight_2,
+                    "goal_weight_3": program.goal_weight_3,
+                    "split_template": program.split_template,
+                    "days_per_week": program.days_per_week,
+                    "progression_style": program.progression_style,
+                    "duration_weeks": program.duration_weeks,
+                    "deload_every_n_microcycles": program.deload_every_n_microcycles,
+                    "disciplines_json": program.disciplines_json,
+                    "user_id": program.user_id,
+                },
+                "session": {
+                    "id": session.id,
+                    "session_type": session.session_type,
+                    "intent_tags": session.intent_tags,
+                    "day_number": session.day_number,
+                },
+                "microcycle": {
+                    "is_deload": microcycle.is_deload,
+                    "sequence_number": microcycle.sequence_number,
+                },
+                "movements_by_pattern": movements_by_pattern,
+                "movement_rules": movement_rules,
+                # Detach objects manually or use dictionaries
+                "all_movements": all_movements, 
+                "discipline_preferences": user_profile.discipline_preferences if user_profile else None,
+                "scheduling_preferences": user_profile.scheduling_preferences if user_profile else None,
+            }
+
+        # 2. Generate Content (Long running, NO DB connection)
+        # We pass the context data instead of DB objects where possible
+        
+        # Determine fatigued muscles
+        fatigued_muscles = []
+        if previous_day_volume:
+            fatigued_muscles = [m for m, v in previous_day_volume.items() if v > 2]
+
+        content = await self.generate_session_exercises_offline(
+            context_data,
+            used_movements,
+            used_movement_groups,
+            used_accessory_movements,
+            fatigued_muscles
+        )
+        
+        # Post-processing (duplicates removal)
+        if used_accessory_movements:
+            current_day = context_data["session"]["day_number"]
+            previous_days = [d for d in used_accessory_movements.keys() if d < current_day]
+            if previous_days:
+                last_day = max(previous_days)
+                previous_accessories = used_accessory_movements.get(last_day) or []
+                if previous_accessories:
+                    content = self._remove_cross_session_accessory_duplicates(
+                        content, set(previous_accessories), context_data["session"]["session_type"]
+                    )
+
+        # 3. Save Results (Short DB transaction)
+        current_session_volume = {}
+        async with async_session_maker() as db:
+            session = await db.get(Session, session_id)
+            if session:
+                session.warmup_json = content.get("warmup")
+                session.main_json = content.get("main")
+                session.accessory_json = content.get("accessory")
+                session.finisher_json = content.get("finisher")
+                session.cooldown_json = content.get("cooldown")
+                session.estimated_duration_minutes = content.get("estimated_duration_minutes", 60)
+                session.coach_notes = content.get("reasoning")
+                db.add(session)
+                await db.commit()
+                
+                # Calculate volume (needs DB for movement lookup)
+                current_session_volume = await self._calculate_session_volume(db, session)
+        
+        return current_session_volume
+
+    async def generate_session_exercises_offline(
+        self,
+        context: dict,
+        used_movements: list[str] | None = None,
+        used_movement_groups: dict[str, int] | None = None,
+        used_accessory_movements: dict[int, list[str]] | None = None,
+        fatigued_muscles: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """
+        Generate exercise content without active DB session.
+        """
+        session_type = context["session"]["session_type"]
+        
+        # Skip generation for rest/recovery sessions
+        if session_type == SessionType.RECOVERY:
+            return self._get_recovery_session_content()
+            
+        movements_by_pattern = context["movements_by_pattern"]
+        movement_rules = context["movement_rules"]
+        discipline_preferences = context["discipline_preferences"]
+        scheduling_preferences = context["scheduling_preferences"]
+        
+        # Generate optimal draft
+        draft_context = ""
+        draft_content = None
+        try:
+            draft_result = await self._generate_draft_session_offline(
+                context["all_movements"], 
+                session_type, 
+                used_movements
+            )
+            if draft_result.status in ["OPTIMAL", "FEASIBLE"] and draft_result.selected_movements:
+                draft_content = self._convert_optimization_result_to_content(draft_result, session_type)
+                draft_context = self._format_draft_for_llm(draft_content)
+                logger.info(f"Generated optimal draft for session {context['session']['id']}")
+        except Exception as e:
+            logger.warning(f"Failed to generate draft session: {e}")
+
+        # Build program dict (already in context, just formatting)
+        program_info = context["program"]
+        program_dict = {
+            "goal_1": program_info["goal_1"].value,
+            "goal_2": program_info["goal_2"].value,
+            "goal_3": program_info["goal_3"].value,
+            "goal_weight_1": program_info["goal_weight_1"],
+            "goal_weight_2": program_info["goal_weight_2"],
+            "goal_weight_3": program_info["goal_weight_3"],
+            "split_template": program_info["split_template"].value,
+            "days_per_week": program_info["days_per_week"],
+            "progression_style": program_info["progression_style"].value,
+            "duration_weeks": program_info["duration_weeks"],
+            "deload_every_n_microcycles": program_info["deload_every_n_microcycles"],
+            "disciplines": program_info["disciplines_json"],
+        }
+        
+        # Build prompt
+        user_prompt = build_optimized_session_prompt(
+            program=program_dict,
+            session_type=session_type.value,
+            intent_tags=context["session"]["intent_tags"] or [],
+            day_number=context["session"]["day_number"],
+            is_deload=context["microcycle"]["is_deload"],
+            microcycle_number=context["microcycle"]["sequence_number"],
+            movements_by_pattern=movements_by_pattern,
+            movement_rules=movement_rules,
+            used_movements=used_movements,
+            used_movement_groups=used_movement_groups,
+            used_accessory_movements=used_accessory_movements,
+            fatigued_muscles=fatigued_muscles,
+            discipline_preferences=discipline_preferences,
+            scheduling_preferences=scheduling_preferences,
+            draft_session_context=draft_context,
+        )
+
+        # Call LLM
+        from app.llm.optimization import ModelOptimizer
+        optimized_model_config = ModelOptimizer.get_optimized_config("standard")
+        
+        provider = get_llm_provider()
+        config = LLMConfig(
+            model=settings.ollama_model,
+            temperature=optimized_model_config["temperature"],
+            max_tokens=optimized_model_config["max_tokens"],
+            json_schema=SESSION_PLAN_SCHEMA,
+        )
+        
+        messages = [
+            Message(role="system", content=JEROME_SYSTEM_PROMPT),
+            Message(role="user", content=user_prompt),
+        ]
+        
+        try:
+            # Wrap LLM call with timeout to fallback to draft if too slow
+            content = await asyncio.wait_for(
+                self._call_llm_with_retry(
+                    provider,
+                    messages,
+                    config,
+                    session_id=context["session"]["id"],
+                    session_type=session_type.value,
+                ),
+                timeout=150.0  # 150s timeout to prevent hanging, fallback to draft
             )
             
-            # Commit the changes
-            await db.commit()
+            content = self._validate_and_complete_session(content, session_type)
             
-            return volume
-    
+            # Enhancements (using PromptCache which is static/pure)
+            from app.llm.optimization import PromptCache
+            if not content.get("warmup") or len(content.get("warmup", [])) < 2:
+                content["warmup"] = PromptCache.get_pattern_based_warmup(
+                    context["session"]["intent_tags"] or [], session_type
+                )
+            if not content.get("cooldown") or len(content.get("cooldown", [])) < 2:
+                content["cooldown"] = PromptCache.get_pattern_based_cooldown(
+                    context["session"]["intent_tags"] or []
+                )
+            
+            return content
+            
+        except Exception as e:
+            if isinstance(e, asyncio.TimeoutError):
+                logger.warning(f"LLM generation timed out for session {context['session']['id']}. Using draft.")
+            else:
+                logger.error(f"LLM generation failed: {e}")
+            
+            if draft_content:
+                return draft_content
+            return self._get_smart_fallback_session_content(
+                session_type,
+                context["session"]["intent_tags"] or [],
+                movements_by_pattern,
+                used_movements=used_movements,
+            )
+
+    async def _calculate_session_volume(self, db: AsyncSession, session: Session) -> dict[str, int]:
+        """Helper to calculate volume after session is saved."""
+        current_session_volume = {}
+        all_movements = []
+        
+        if session.main_json: all_movements.extend([(m["movement"], 3) for m in session.main_json if "movement" in m])
+        if session.accessory_json: all_movements.extend([(m["movement"], 2) for m in session.accessory_json if "movement" in m])
+        if session.finisher_json and session.finisher_json.get("exercises"):
+            all_movements.extend([(m["movement"], 1) for m in session.finisher_json["exercises"] if "movement" in m])
+            
+        if all_movements:
+            names = [m[0] for m in all_movements]
+            # Use unique names to reduce query size
+            unique_names = list(set(names))
+            result = await db.execute(select(Movement).where(Movement.name.in_(unique_names)))
+            found_movements = {m.name: m for m in result.scalars().all()}
+            
+            for name, weight in all_movements:
+                mov = found_movements.get(name)
+                if mov:
+                    # Access Enums or attributes carefully if detached
+                    p_muscle = str(mov.primary_muscle.value) if hasattr(mov.primary_muscle, 'value') else str(mov.primary_muscle)
+                    current_session_volume[p_muscle] = current_session_volume.get(p_muscle, 0) + weight
+                    
+                    if mov.secondary_muscles:
+                        secs = mov.secondary_muscles if isinstance(mov.secondary_muscles, list) else []
+                        for sec in secs:
+                            current_session_volume[sec] = current_session_volume.get(sec, 0) + (weight // 2)
+                            
+        return current_session_volume
+
+    async def _generate_draft_session_offline(
+        self, 
+        all_movements: list[Movement], 
+        session_type: SessionType,
+        used_movements: list[str] | None = None
+    ) -> Any:
+        """
+        Offline version of _generate_draft_session.
+        """
+        filtered_movements = self._filter_movements_for_session_type(all_movements, session_type)
+        
+        # Convert to DTOs for thread safety
+        solver_movements = self._to_solver_movements(filtered_movements)
+        
+        targets = self._get_muscle_targets_for_session(session_type)
+        
+        excluded_ids = []
+        if used_movements:
+            name_to_id = {m.name: m.id for m in all_movements}
+            for name in used_movements:
+                if name in name_to_id:
+                    excluded_ids.append(name_to_id[name])
+        
+        req = OptimizationRequest(
+            available_movements=solver_movements,
+            target_muscle_volumes=targets,
+            max_fatigue=5.0,
+            min_stimulus=2.0,
+            user_skill_level=SkillLevel.INTERMEDIATE,
+            excluded_movement_ids=excluded_ids,
+            required_movement_ids=[],
+            session_duration_minutes=60,
+            allow_complex_lifts=True
+        )
+        # Solve in a separate thread to avoid blocking the event loop
+        import asyncio
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(None, self.optimizer.solve_session, req)
+
+    # Kept for backward compatibility if needed, but not used by populate_session_by_id anymore
     async def populate_session(
         self,
         db: AsyncSession,
@@ -398,20 +695,18 @@ class SessionGeneratorService:
             
         if all_movements:
             names = [m[0] for m in all_movements]
-            # Resolve muscles
-            result = await db.execute(select(Movement).where(Movement.name.in_(names)))
+            # Use unique names to reduce query size
+            unique_names = list(set(names))
+            result = await db.execute(select(Movement).where(Movement.name.in_(unique_names)))
             found_movements = {m.name: m for m in result.scalars().all()}
             
             for name, weight in all_movements:
                 mov = found_movements.get(name)
                 if mov:
-                    # Credit primary muscle
-                    p_muscle = mov.primary_muscle
+                    # Access Enums or attributes carefully if detached (but here we are in active session)
+                    p_muscle = str(mov.primary_muscle.value) if hasattr(mov.primary_muscle, 'value') else str(mov.primary_muscle)
                     current_session_volume[p_muscle] = current_session_volume.get(p_muscle, 0) + weight
-                    
-                    # Credit secondary muscles (partial weight)
                     if mov.secondary_muscles:
-                        # Handle JSON list
                         secs = mov.secondary_muscles if isinstance(mov.secondary_muscles, list) else []
                         for sec in secs:
                             current_session_volume[sec] = current_session_volume.get(sec, 0) + (weight // 2)
@@ -1190,6 +1485,214 @@ class SessionGeneratorService:
         }
         
         return fallbacks.get(session_type, default)
+
+    async def _load_all_movements(self, db: AsyncSession) -> list[Movement]:
+        """Load all movements from the database."""
+        result = await db.execute(select(Movement))
+        return list(result.scalars().all())
+
+    def _get_muscle_targets_for_session(self, session_type: SessionType) -> dict[str, int]:
+        """Define muscle volume targets based on session type."""
+        # Uses exact Enum string values from PrimaryMuscle
+        if session_type == SessionType.UPPER:
+            return {
+                "chest": 1, 
+                "lats": 1, 
+                "side_delts": 1, 
+                "biceps": 1, 
+                "triceps": 1
+            }
+        elif session_type == SessionType.LOWER:
+            return {
+                "quadriceps": 1, 
+                "hamstrings": 1, 
+                "glutes": 1, 
+                "calves": 1
+            }
+        elif session_type == SessionType.PUSH:
+            return {
+                "chest": 1, 
+                "front_delts": 1, 
+                "triceps": 1, 
+                "quadriceps": 1
+            }
+        elif session_type == SessionType.PULL:
+            return {
+                "lats": 1, 
+                "biceps": 1, 
+                "hamstrings": 1, 
+                "rear_delts": 1
+            }
+        elif session_type == SessionType.FULL_BODY:
+            return {
+                "quadriceps": 1, 
+                "hamstrings": 1, 
+                "chest": 1, 
+                "lats": 1, 
+                "side_delts": 1
+            }
+        return {}
+        
+    def _filter_movements_for_session_type(self, movements: list[Movement], session_type: SessionType) -> list[Movement]:
+        """Filter movements that are appropriate for the session type."""
+        
+        lower_regions = ["anterior lower", "posterior lower", "lower body"]
+        upper_regions = ["anterior upper", "posterior upper", "shoulder", "upper body"]
+        
+        filtered = []
+        for m in movements:
+            # Handle Enum or string
+            region = str(m.primary_region.value) if hasattr(m.primary_region, 'value') else str(m.primary_region)
+            
+            if session_type == SessionType.LOWER:
+                if region in lower_regions or region == "full body":
+                    filtered.append(m)
+            elif session_type == SessionType.UPPER:
+                if region in upper_regions:
+                    filtered.append(m)
+            else:
+                # Full body, Push, Pull - keeping it simple for now, allow all or refine later
+                filtered.append(m)
+                
+        return filtered
+
+    def _to_solver_movements(self, movements: list[Movement]) -> list[SolverMovement]:
+        """Convert SQLAlchemy models to picklable DTOs for the solver thread."""
+        return [
+            SolverMovement(
+                id=m.id,
+                name=m.name,
+                primary_muscle=str(m.primary_muscle.value) if hasattr(m.primary_muscle, 'value') else str(m.primary_muscle),
+                fatigue_factor=m.fatigue_factor,
+                stimulus_factor=m.stimulus_factor,
+                compound=m.compound,
+                is_complex_lift=m.is_complex_lift
+            )
+            for m in movements
+        ]
+
+    async def _generate_draft_session(
+        self, 
+        db: AsyncSession, 
+        session: Session,
+        used_movements: list[str] | None = None
+    ) -> Any:
+        """
+        Generate a draft session using the Optimization Engine (OR-Tools).
+        This serves as the 'Draft Generator' in the Chain of Reasoning.
+        """
+        # Load all movements for the solver
+        all_movements = await self._load_all_movements(db)
+        
+        # Filter movements based on session type
+        filtered_movements = self._filter_movements_for_session_type(all_movements, session.session_type)
+        
+        # Convert to DTOs for thread safety
+        solver_movements = self._to_solver_movements(filtered_movements)
+        
+        # Determine targets based on session type
+        targets = self._get_muscle_targets_for_session(session.session_type)
+        
+        # Map used_movements (names) to excluded_movement_ids for Variety
+        excluded_ids = []
+        if used_movements:
+            name_to_id = {m.name: m.id for m in all_movements}
+            for name in used_movements:
+                if name in name_to_id:
+                    excluded_ids.append(name_to_id[name])
+        
+        # Build request
+        req = OptimizationRequest(
+            available_movements=solver_movements,
+            target_muscle_volumes=targets,
+            max_fatigue=5.0,  # Default budget
+            min_stimulus=2.0,
+            user_skill_level=SkillLevel.INTERMEDIATE,
+            excluded_movement_ids=excluded_ids,
+            required_movement_ids=[],
+            session_duration_minutes=60,
+            allow_complex_lifts=True
+        )
+        
+        # Solve in a separate thread to avoid blocking the event loop
+        import asyncio
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(None, self.optimizer.solve_session, req)
+
+    def _format_draft_for_llm(self, draft_content: dict) -> str:
+        """Format the draft session content into a string for the LLM prompt."""
+        lines = ["Based on mathematical optimization, here is a starting point:"]
+        
+        if draft_content.get("main"):
+            lines.append("Main Lifts:")
+            for ex in draft_content["main"]:
+                lines.append(f"- {ex['movement']} ({ex['sets']} sets)")
+        
+        if draft_content.get("accessory"):
+            lines.append("Accessories:")
+            for ex in draft_content["accessory"]:
+                lines.append(f"- {ex['movement']} ({ex['sets']} sets)")
+                
+        return "\n".join(lines)
+
+    def _convert_optimization_result_to_content(self, result: Any, session_type: SessionType) -> dict[str, Any]:
+        """Convert OptimizationResult to session content dict."""
+        
+        main_exercises = []
+        accessory_exercises = []
+        
+        # Heuristic to split into Main vs Accessory
+        # Compound + High Fatigue -> Main
+        # Isolation / Low Fatigue -> Accessory
+        
+        for m in result.selected_movements:
+            is_main = m.compound and (m.fatigue_factor > 0.6 or m.is_complex_lift)
+            
+            exercise = {
+                "movement": m.name,
+                "sets": 3,
+                "rep_range_min": 8 if is_main else 10,
+                "rep_range_max": 10 if is_main else 15,
+                "target_rpe": 8 if is_main else 7,
+                "rest_seconds": 120 if is_main else 60,
+                "notes": "Optimized selection"
+            }
+            
+            if is_main:
+                main_exercises.append(exercise)
+            else:
+                accessory_exercises.append(exercise)
+                
+        # If no main, move biggest accessory to main
+        if not main_exercises and accessory_exercises:
+            main_exercises.append(accessory_exercises.pop(0))
+            
+        # Fallback for failed generation (Infeasible or Timeout)
+        if not main_exercises:
+            main_exercises.append({
+                "movement": "Generation Failed",
+                "sets": 0,
+                "rep_range_min": 0,
+                "rep_range_max": 0,
+                "target_rpe": 0,
+                "rest_seconds": 0,
+                "notes": f"Could not generate valid session. Status: {result.status}. Please try regenerating or editing manually."
+            })
+            
+        return {
+            "warmup": [
+                {"movement": "Dynamic Stretching", "sets": 1, "duration_seconds": 300, "notes": "General prep"},
+                {"movement": "Light Cardio", "duration_seconds": 300, "notes": "Raise body temp"}
+            ],
+            "main": main_exercises,
+            "accessory": accessory_exercises,
+            "finisher": None,
+            "cooldown": [
+                {"movement": "Static Stretching", "duration_seconds": 300, "notes": "Full body"}
+            ],
+            "estimated_duration_minutes": result.estimated_duration + 10, # +10 for warmup/cool
+            "reasoning": f"Optimization Engine generated session. Status: {result.status}. Stimulus: {result.total_stimulus:.2f}, Fatigue: {result.total_fatigue:.2f}"
+        }
 
 
 # Singleton instance
