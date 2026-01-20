@@ -604,3 +604,4 @@ Session tracking for continuous development with date/time headers. A new sessio
 **Key Decisions & Updates**:
 *   **Model Optimization**: Switched to `llama3.2:3b` to resolve timeout issues and improve inference speed (settings.py).
 *   **Documentation**: Fully updated `Gainsly Database System Overview.md` with all new tables and enums.
+*   **Git**: Renamed branch to `Iteration/new-DB-structure-and-ensemble-model-generation-wfl` for ongoing development.
