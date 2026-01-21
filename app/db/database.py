@@ -1,4 +1,5 @@
 """Database connection and session management."""
+from pathlib import Path
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
@@ -44,6 +45,19 @@ async def get_db() -> AsyncSession:
 
 async def init_db():
     """Initialize database tables."""
+    if settings.debug and not settings.database_url.startswith("sqlite"):
+        try:
+            from alembic import command
+            from alembic.config import Config
+
+            repo_root = Path(__file__).resolve().parents[2]
+            cfg = Config(str(repo_root / "alembic.ini"))
+            cfg.set_main_option("script_location", str(repo_root / "alembic"))
+            cfg.set_main_option("sqlalchemy.url", settings.database_url)
+            command.upgrade(cfg, "head")
+        except Exception:
+            pass
+
     # Enable WAL mode for SQLite to support concurrent access
     if settings.database_url.startswith("sqlite"):
         async with engine.connect() as conn:

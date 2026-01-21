@@ -67,7 +67,7 @@ async def test_create_program_generates_microcycles(
     )
     microcycles = list(result.scalars().all())
     
-    assert len(microcycles) == 8
+    assert len(microcycles) == 4
     assert all(mc.program_id == program.id for mc in microcycles)
 
 
@@ -140,6 +140,23 @@ async def test_create_program_invalid_week_count_too_long(
                 GoalWeight(goal=Goal.ENDURANCE, weight=2),
             ],
             duration_weeks=16,  # Too long
+            program_start_date=date.today(),
+            split_template=SplitTemplateEnum.UPPER_LOWER,
+            days_per_week=4,
+            progression_style=ProgressionStyle.DOUBLE_PROGRESSION,
+        )
+
+
+@pytest.mark.asyncio
+async def test_create_program_invalid_week_count_odd(async_db_session: AsyncSession, test_user):
+    with pytest.raises(ValidationError):
+        ProgramCreate(
+            goals=[
+                GoalWeight(goal=Goal.STRENGTH, weight=5),
+                GoalWeight(goal=Goal.HYPERTROPHY, weight=3),
+                GoalWeight(goal=Goal.ENDURANCE, weight=2),
+            ],
+            duration_weeks=9,
             program_start_date=date.today(),
             split_template=SplitTemplateEnum.UPPER_LOWER,
             days_per_week=4,
@@ -273,7 +290,7 @@ async def test_microcycle_dates_sequential(
     microcycles = sorted(list(result.scalars().all()), key=lambda m: m.sequence_number)
     
     for i, mc in enumerate(microcycles):
-        expected_date = start_date + timedelta(weeks=i)
+        expected_date = start_date + timedelta(days=14 * i)
         assert mc.start_date == expected_date
 
 

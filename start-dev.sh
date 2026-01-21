@@ -16,6 +16,8 @@ echo -e "${GREEN}✓ PostgreSQL container started${NC}"
 
 echo -e "${BLUE}Starting backend (FastAPI)...${NC}"
 source .venv/bin/activate
+echo -e "${BLUE}Running migrations (Alembic)...${NC}"
+alembic upgrade head
 uvicorn app.main:app --reload --port 8000 &
 BACKEND_PID=$!
 echo -e "${GREEN}✓ Backend started (PID: $BACKEND_PID)${NC}"

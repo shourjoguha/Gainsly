@@ -31,7 +31,7 @@ class DisciplineWeight(BaseModel):
 
 class HybridDayDefinition(BaseModel):
     """Day definition for hybrid splits."""
-    day: int = Field(ge=1, le=10)
+    day: int = Field(ge=1, le=14)
     session_type: SessionType
     focus: list[str] | None = None  # Movement patterns to focus on
     notes: str | None = None
@@ -115,6 +115,13 @@ class ProgramCreate(BaseModel):
         goal_names = [g.goal for g in v]
         if len(goal_names) != len(set(goal_names)):
             raise ValueError("Goals must be unique")
+        return v
+
+    @field_validator("duration_weeks")
+    @classmethod
+    def validate_duration_weeks_even(cls, v: int):
+        if v % 2 != 0:
+            raise ValueError("duration_weeks must be an even number")
         return v
     
     @model_validator(mode="after")

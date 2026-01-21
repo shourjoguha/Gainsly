@@ -625,6 +625,8 @@ export interface DisciplineExperience {
 export interface SchedulingPreferences {
   mix_disciplines: boolean;
   cardio_preference: 'dedicated_day' | 'finisher' | 'mixed' | 'none';
+  microcycle_length_days?: 'auto' | number;
+  split_template_preference?: 'none' | 'full_body' | 'upper_lower' | 'ppl' | 'hybrid';
 }
 
 export interface UserProfile {

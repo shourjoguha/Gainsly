@@ -65,6 +65,8 @@ class ProgramService:
         # Validate week count
         if not (8 <= request.duration_weeks <= 12):
             raise ValueError("Program must be 8-12 weeks")
+        if request.duration_weeks % 2 != 0:
+            raise ValueError("Program must be an even number of weeks")
         
         # Extract goals from request (1-3 goals allowed)
         goals = request.goals  # List of GoalWeight objects
@@ -95,42 +97,24 @@ class ProgramService:
         # Fetch user profile for advanced preferences
         user_profile = await db.get(UserProfile, user_id)
         discipline_prefs = user_profile.discipline_preferences if user_profile else None
-        scheduling_prefs = user_profile.scheduling_preferences if user_profile else None
+        scheduling_prefs = user_profile.scheduling_preferences if user_profile else {}
+        scheduling_prefs = scheduling_prefs or {}
 
-        # Determine split template if not provided
         split_template = request.split_template
         if not split_template:
-            # Default logic based on days_per_week
-            if request.days_per_week <= 3:
-                split_template = SplitTemplate.FULL_BODY
-            elif request.days_per_week == 4:
-                split_template = SplitTemplate.UPPER_LOWER
-            elif request.days_per_week == 5:
-                # 5-day is typically Upper/Lower + Full Body or PPL + Upper/Lower
-                # For now default to Hybrid to allow flexible scheduling
-                split_template = SplitTemplate.HYBRID 
-            elif request.days_per_week >= 6:
-                split_template = SplitTemplate.PPL
-            else:
-                split_template = SplitTemplate.FULL_BODY
+            preference = scheduling_prefs.get("split_template_preference")
+            if isinstance(preference, str) and preference.strip() and preference.strip().lower() != "none":
+                try:
+                    split_template = SplitTemplate[preference.strip().upper()]
+                except KeyError:
+                    split_template = None
+        if not split_template:
+            split_template = SplitTemplate.HYBRID
 
-        # Load split template configuration with user's day preference and profile settings
-        split_config = await self._load_split_template(
-            db, split_template, request.days_per_week,
-            discipline_prefs, scheduling_prefs
-        )
+        preferred_cycle_length_days = self._resolve_preferred_microcycle_length_days(scheduling_prefs)
         
         # Get user for defaults
         user = await db.get(User, user_id)
-        
-        split_config = self._apply_goal_based_weekly_distribution(
-            split_config=split_config,
-            goals=request.goals,
-            days_per_week=request.days_per_week,
-            max_session_duration=request.max_session_duration,
-            user_experience_level=user.experience_level if user else None,
-            scheduling_prefs=scheduling_prefs or {},
-        )
         
         # Determine progression style if not provided
         progression_style = request.progression_style
@@ -207,10 +191,8 @@ class ProgramService:
         db.add(program)
         await db.flush()  # Get program.id
         
-        # Calculate number of microcycles (each microcycle = days_per_cycle from split)
-        days_per_cycle = split_config.get("days_per_cycle", 7)
         total_days = request.duration_weeks * 7
-        microcycle_count = total_days // days_per_cycle
+        microcycle_lengths = self._partition_microcycle_lengths(total_days, preferred_cycle_length_days)
         
         # Generate microcycles with sessions
         current_date = start_date
@@ -219,8 +201,26 @@ class ProgramService:
         # Track active microcycle for session generation
         active_microcycle = None
         
-        for mc_idx in range(microcycle_count):
+        for mc_idx, cycle_length_days in enumerate(microcycle_lengths):
             is_deload = ((mc_idx + 1) % deload_frequency == 0)
+
+            split_config = self._build_freeform_split_config(
+                cycle_length_days=cycle_length_days,
+                days_per_week=request.days_per_week,
+            )
+            split_config = self._apply_goal_based_cycle_distribution(
+                split_config=split_config,
+                goals=request.goals,
+                days_per_week=request.days_per_week,
+                cycle_length_days=cycle_length_days,
+                max_session_duration=request.max_session_duration,
+                user_experience_level=user.experience_level if user else None,
+                scheduling_prefs=scheduling_prefs,
+            )
+            split_config = self._assign_freeform_day_types_and_focus(
+                split_config=split_config,
+                days_per_week=request.days_per_week,
+            )
             
             microcycle = await self._create_microcycle(
                 db,
@@ -235,7 +235,7 @@ class ProgramService:
             if mc_idx == 0:
                 active_microcycle = microcycle
             
-            current_date += timedelta(days=days_per_cycle)
+            current_date += timedelta(days=cycle_length_days)
         
         await db.commit()
         await db.refresh(program)
@@ -444,6 +444,10 @@ class ProgramService:
             Session with updated intent_tags based on interference rules
         """
         if session.session_type == SessionType.RECOVERY:
+            return session
+        if session.session_type in {SessionType.CARDIO, SessionType.MOBILITY}:
+            return session
+        if session.session_type == SessionType.CUSTOM and "conditioning" in (session.intent_tags or []):
             return session
         
         current_day = session.day_number
@@ -679,11 +683,141 @@ class ProgramService:
         
         return microcycle
 
-    def _apply_goal_based_weekly_distribution(
+    def _resolve_preferred_microcycle_length_days(self, scheduling_prefs: dict[str, Any]) -> int:
+        preferred = scheduling_prefs.get("microcycle_length_days")
+        if isinstance(preferred, int) and 7 <= preferred <= 14:
+            return preferred
+        return activity_distribution_config.default_microcycle_length_days
+
+    def _partition_microcycle_lengths(self, total_days: int, preferred_length_days: int) -> list[int]:
+        if total_days <= 0:
+            return []
+
+        preferred_length_days = min(14, max(7, int(preferred_length_days)))
+        count = max(1, int(round(total_days / preferred_length_days)))
+
+        for _ in range(50):
+            base = total_days // count
+            remainder = total_days % count
+            if base < 7:
+                count = max(1, count - 1)
+                continue
+            if base > 14 or (base == 14 and remainder > 0):
+                count += 1
+                continue
+            break
+
+        base = total_days // count
+        remainder = total_days % count
+        lengths = [base + 1] * remainder + [base] * (count - remainder)
+        return lengths
+
+    def _pick_evenly_spaced_days(self, cycle_length_days: int, session_count: int) -> list[int]:
+        cycle_length_days = max(1, int(cycle_length_days))
+        session_count = max(0, min(int(session_count), cycle_length_days))
+        if session_count == 0:
+            return []
+        if session_count == cycle_length_days:
+            return list(range(1, cycle_length_days + 1))
+
+        step = cycle_length_days / session_count
+        taken: set[int] = set()
+        chosen: list[int] = []
+        for k in range(session_count):
+            ideal = int(round((k + 0.5) * step))
+            day = min(cycle_length_days, max(1, ideal))
+            while day in taken and day < cycle_length_days:
+                day += 1
+            while day in taken and day > 1:
+                day -= 1
+            taken.add(day)
+            chosen.append(day)
+        return sorted(chosen)
+
+    def _build_freeform_split_config(self, cycle_length_days: int, days_per_week: int) -> dict[str, Any]:
+        cycle_length_days = min(14, max(7, int(cycle_length_days)))
+        target_sessions = int(round(days_per_week * (cycle_length_days / 7.0)))
+        target_sessions = max(2, min(target_sessions, cycle_length_days))
+        training_days = set(self._pick_evenly_spaced_days(cycle_length_days, target_sessions))
+        structure: list[dict[str, Any]] = []
+        for day in range(1, cycle_length_days + 1):
+            if day in training_days:
+                structure.append({"day": day, "type": "full_body", "focus": []})
+            else:
+                structure.append({"day": day, "type": "rest"})
+        return {
+            "days_per_cycle": cycle_length_days,
+            "structure": structure,
+            "training_days": len(training_days),
+            "rest_days": cycle_length_days - len(training_days),
+        }
+
+    def _assign_freeform_day_types_and_focus(self, split_config: dict[str, Any], days_per_week: int) -> dict[str, Any]:
+        structure = [dict(d) for d in (split_config.get("structure") or [])]
+        lifting_indexes = [
+            i
+            for i, d in enumerate(structure)
+            if (d.get("type") or "rest") not in {"rest", "recovery", "cardio", "mobility", "conditioning"}
+        ]
+
+        if days_per_week <= 3:
+            type_cycle = ["full_body"]
+        elif days_per_week == 4:
+            type_cycle = ["upper", "lower", "upper", "lower", "full_body"]
+        elif days_per_week == 5:
+            type_cycle = ["upper", "lower", "full_body", "upper", "lower"]
+        else:
+            type_cycle = ["push", "pull", "legs", "upper", "lower", "full_body"]
+
+        lower_cycle = ["squat", "hinge", "lunge"]
+        push_cycle = ["horizontal_push", "vertical_push"]
+        pull_cycle = ["horizontal_pull", "vertical_pull"]
+        lower_idx = 0
+        push_idx = 0
+        pull_idx = 0
+
+        for seq, i in enumerate(lifting_indexes):
+            day_type = type_cycle[seq % len(type_cycle)]
+            existing_focus = structure[i].get("focus") or []
+            if not isinstance(existing_focus, list):
+                existing_focus = []
+            tags = [t for t in existing_focus if t.startswith("prefer_")]
+
+            if day_type == "upper":
+                patterns = [push_cycle[push_idx % len(push_cycle)], pull_cycle[pull_idx % len(pull_cycle)]]
+                push_idx += 1
+                pull_idx += 1
+            elif day_type in {"lower", "legs"}:
+                patterns = [lower_cycle[lower_idx % len(lower_cycle)], lower_cycle[(lower_idx + 1) % len(lower_cycle)]]
+                lower_idx += 1
+            elif day_type == "push":
+                patterns = [push_cycle[push_idx % len(push_cycle)], push_cycle[(push_idx + 1) % len(push_cycle)]]
+                push_idx += 1
+            elif day_type == "pull":
+                patterns = [pull_cycle[pull_idx % len(pull_cycle)], pull_cycle[(pull_idx + 1) % len(pull_cycle)]]
+                pull_idx += 1
+            else:
+                patterns = [
+                    lower_cycle[lower_idx % len(lower_cycle)],
+                    push_cycle[push_idx % len(push_cycle)],
+                    pull_cycle[pull_idx % len(pull_cycle)],
+                ]
+                lower_idx += 1
+                push_idx += 1
+                pull_idx += 1
+
+            structure[i]["type"] = day_type
+            structure[i]["focus"] = patterns + tags
+
+        split_config["structure"] = structure
+        return split_config
+
+    def _apply_goal_based_cycle_distribution(
         self,
         split_config: dict[str, Any],
         goals: list[Any],
         days_per_week: int,
+        cycle_length_days: int,
         max_session_duration: int,
         user_experience_level: str | None,
         scheduling_prefs: dict,
@@ -704,12 +838,18 @@ class ProgramService:
             for bucket, share in weights_map.items():
                 bucket_scores[bucket] = bucket_scores.get(bucket, 0.0) + (float(weight) * float(share))
 
-        total_weekly_minutes = max(0, int(days_per_week * max_session_duration))
-        cardio_minutes = int(total_weekly_minutes * (bucket_scores.get("cardio", 0.0) / 10.0))
-        mobility_minutes = int(total_weekly_minutes * (bucket_scores.get("mobility", 0.0) / 10.0))
-        finisher_minutes = int(total_weekly_minutes * (bucket_scores.get("finisher", 0.0) / 10.0))
-        cardio_minutes = min(cardio_minutes, int(total_weekly_minutes * activity_distribution_config.cardio_max_pct))
-        mobility_minutes = min(mobility_minutes, int(total_weekly_minutes * activity_distribution_config.mobility_max_pct))
+        structure = [dict(d) for d in split_config["structure"]]
+
+        def is_rest_day(d: dict[str, Any]) -> bool:
+            return (d.get("type") or "rest") == "rest"
+
+        training_days_in_cycle = sum(1 for d in structure if not is_rest_day(d))
+        total_cycle_minutes = max(0, int(training_days_in_cycle * max_session_duration))
+        cardio_minutes = int(total_cycle_minutes * (bucket_scores.get("cardio", 0.0) / 10.0))
+        mobility_minutes = int(total_cycle_minutes * (bucket_scores.get("mobility", 0.0) / 10.0))
+        finisher_minutes = int(total_cycle_minutes * (bucket_scores.get("finisher", 0.0) / 10.0))
+        cardio_minutes = min(cardio_minutes, int(total_cycle_minutes * activity_distribution_config.cardio_max_pct))
+        mobility_minutes = min(mobility_minutes, int(total_cycle_minutes * activity_distribution_config.mobility_max_pct))
 
         cardio_signal = goal_weights["endurance"] + goal_weights["fat_loss"]
         strength_signal = goal_weights["strength"] + goal_weights["hypertrophy"]
@@ -720,11 +860,6 @@ class ProgramService:
 
         allow_cardio_only = bool(scheduling_prefs.get("allow_cardio_only_days")) or overtraining_risk or beginner
         allow_conditioning_only = bool(scheduling_prefs.get("allow_conditioning_only_days")) and (not beginner) and (not overtraining_risk)
-
-        structure = [dict(d) for d in split_config["structure"]]
-
-        def is_rest_day(d: dict[str, Any]) -> bool:
-            return (d.get("type") or "rest") == "rest"
 
         training_indexes = [i for i, d in enumerate(structure) if not is_rest_day(d)]
         lifting_indexes = [i for i in training_indexes if (structure[i].get("type") or "") not in {"cardio", "mobility"}]
@@ -742,28 +877,31 @@ class ProgramService:
 
         convert_candidates = [i for i in reversed(lifting_indexes) if can_convert_lifting_day(i)]
 
+        cycle_blocks = max(1, int(round(max(7, int(cycle_length_days)) / 7)))
+
         conditioning_days = 0
-        if (
-            allow_conditioning_only
-            and finisher_minutes >= activity_distribution_config.min_conditioning_minutes
-            and max_convertible > 0
-            and convert_candidates
-        ):
-            idx = convert_candidates.pop(0)
-            structure[idx]["type"] = "conditioning"
-            structure[idx]["focus"] = ["conditioning"]
-            conditioning_days = 1
-            max_convertible -= 1
+        available_conditioning_days = int(finisher_minutes // max(1, activity_distribution_config.min_conditioning_minutes))
+        desired_conditioning_days = min(cycle_blocks, available_conditioning_days, max_convertible, len(convert_candidates))
+        if allow_conditioning_only and desired_conditioning_days > 0:
+            for _ in range(desired_conditioning_days):
+                idx = convert_candidates.pop(0)
+                structure[idx]["type"] = "conditioning"
+                structure[idx]["focus"] = ["conditioning"]
+                conditioning_days += 1
+                max_convertible -= 1
 
         cardio_days = 0
-        if allow_cardio_only and cardio_minutes >= max_session_duration and max_convertible > 0 and convert_candidates:
-            idx = convert_candidates.pop(0)
-            structure[idx]["type"] = "cardio"
-            cardio_focus = ["cardio"]
-            cardio_focus.append("endurance" if goal_weights["endurance"] >= goal_weights["fat_loss"] else "fat_loss")
-            structure[idx]["focus"] = cardio_focus
-            cardio_days = 1
-            max_convertible -= 1
+        available_cardio_days = int(cardio_minutes // max(1, max_session_duration))
+        desired_cardio_days = min(cycle_blocks, available_cardio_days, max_convertible, len(convert_candidates))
+        if allow_cardio_only and desired_cardio_days > 0:
+            for _ in range(desired_cardio_days):
+                idx = convert_candidates.pop(0)
+                structure[idx]["type"] = "cardio"
+                cardio_focus = ["cardio"]
+                cardio_focus.append("endurance" if goal_weights["endurance"] >= goal_weights["fat_loss"] else "fat_loss")
+                structure[idx]["focus"] = cardio_focus
+                cardio_days += 1
+                max_convertible -= 1
 
         lifting_after = [i for i, d in enumerate(structure) if not is_rest_day(d) and (d.get("type") or "") not in {"cardio", "mobility", "conditioning"}]
         if lifting_after:

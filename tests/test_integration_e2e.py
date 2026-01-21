@@ -58,7 +58,7 @@ async def test_e2e_program_creation_to_daily_plan(
         select(Microcycle).where(Microcycle.program_id == program.id)
     )
     microcycles = list(result.scalars().all())
-    assert len(microcycles) == 8  # 8 weeks / 1 week per microcycle
+    assert len(microcycles) == 4
     assert microcycles[0].status == MicrocycleStatus.ACTIVE
     
     # Step 4: Verify sessions were created

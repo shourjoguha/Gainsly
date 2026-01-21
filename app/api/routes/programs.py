@@ -7,12 +7,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.db.database import get_db
+from app.config import activity_distribution as activity_distribution_config
 from app.config.settings import get_settings
 from app.models import (
     Program,
     Microcycle,
     Session,
     User,
+    UserProfile,
     UserMovementRule,
     UserEnjoyableActivity,
     MicrocycleStatus,
@@ -304,12 +306,20 @@ async def generate_next_microcycle(
     
     # Determine if this is a deload week
     is_deload = (next_seq % program.deload_every_n_microcycles == 0)
+
+    user_profile = await db.scalar(select(UserProfile).where(UserProfile.user_id == user_id))
+    scheduling_prefs = user_profile.scheduling_preferences if user_profile else {}
+    pref_length = (scheduling_prefs or {}).get("microcycle_length_days")
+    if isinstance(pref_length, int) and 7 <= pref_length <= 14:
+        length_days = pref_length
+    else:
+        length_days = activity_distribution_config.default_microcycle_length_days
     
     # Create new microcycle
     new_microcycle = Microcycle(
         program_id=program_id,
         start_date=next_start,
-        length_days=7,  # Default to 7, can be adjusted
+        length_days=length_days,
         sequence_number=next_seq,
         status=MicrocycleStatus.ACTIVE,
         is_deload=is_deload,

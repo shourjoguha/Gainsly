@@ -40,6 +40,8 @@ export function ProfileTab() {
         scheduling_preferences: profile.scheduling_preferences || {
           mix_disciplines: true,
           cardio_preference: 'finisher',
+          microcycle_length_days: 'auto',
+          split_template_preference: 'none',
         },
         long_term_goal_category: profile.long_term_goal_category || 'general_fitness',
         long_term_goal_description: profile.long_term_goal_description || '',
@@ -49,6 +51,17 @@ export function ProfileTab() {
 
   const onSubmit = async (data: UserProfileUpdate) => {
     try {
+      let scheduling_preferences = data.scheduling_preferences;
+      if (scheduling_preferences) {
+        const microcycle = (scheduling_preferences as any).microcycle_length_days;
+        if (typeof microcycle === 'string' && microcycle !== 'auto') {
+          scheduling_preferences = {
+            ...scheduling_preferences,
+            microcycle_length_days: Number(microcycle),
+          };
+        }
+      }
+
       // Ensure number types
       const payload = {
         ...data,
@@ -61,6 +74,7 @@ export function ProfileTab() {
           crossfit: Number(data.discipline_preferences.crossfit),
           strength: Number(data.discipline_preferences.strength),
         } : undefined,
+        scheduling_preferences,
       };
       
       await updateMutation.mutateAsync(payload);
@@ -327,6 +341,39 @@ export function ProfileTab() {
                     <option value="finisher">Add as finishers (10-20 mins)</option>
                     <option value="dedicated_day">Dedicated conditioning day</option>
                     <option value="mixed">Mix both (finishers + dedicated)</option>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Microcycle Duration</label>
+                  <p className="text-xs text-foreground-muted">
+                    Defaults to 14 days. You can also let the system decide.
+                  </p>
+                  <select
+                    {...register('scheduling_preferences.microcycle_length_days' as any)}
+                    className="w-full rounded-md border-0 bg-background-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    <option value="auto">Auto (recommended)</option>
+                    {[7, 8, 9, 10, 11, 12, 13, 14].map((d) => (
+                      <option key={d} value={d}>{d} days</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Split Template Preference</label>
+                  <p className="text-xs text-foreground-muted">
+                    Stored as a preference only. Scheduling is not constrained by templates by default.
+                  </p>
+                  <select
+                    {...register('scheduling_preferences.split_template_preference' as any)}
+                    className="w-full rounded-md border-0 bg-background-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    <option value="none">None</option>
+                    <option value="full_body">Full Body</option>
+                    <option value="upper_lower">Upper/Lower</option>
+                    <option value="ppl">PPL</option>
+                    <option value="hybrid">Hybrid</option>
                   </select>
                 </div>
               </div>

@@ -93,7 +93,7 @@ class Program(Base):
 
 
 class Microcycle(Base):
-    """Training microcycle (7-10 days)."""
+    """Training microcycle (7-14 days)."""
     __tablename__ = "microcycles"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -101,7 +101,7 @@ class Microcycle(Base):
     
     # Timing
     start_date = Column(Date, nullable=False)
-    length_days = Column(Integer, nullable=False)  # 7-10
+    length_days = Column(Integer, nullable=False)  # 7-14
     sequence_number = Column(Integer, nullable=False)  # 1, 2, 3, etc.
     
     # Status
@@ -110,7 +110,7 @@ class Microcycle(Base):
     
     # Constraints
     __table_args__ = (
-        CheckConstraint('length_days >= 7 AND length_days <= 10', name='valid_length'),
+        CheckConstraint('length_days >= 7 AND length_days <= 14', name='valid_length'),
     )
     
     # Relationships
@@ -141,7 +141,7 @@ class Session(Base):
     
     # Scheduling
     date = Column(Date, nullable=False, index=True)
-    day_number = Column(Integer, nullable=False)  # Day within microcycle (1-10)
+    day_number = Column(Integer, nullable=False)  # Day within microcycle (1-14)
     
     # Session type and intent
     session_type = Column(SQLEnum(SessionType), nullable=False)

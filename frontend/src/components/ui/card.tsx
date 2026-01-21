@@ -7,10 +7,10 @@ const cardVariants = cva(
   {
     variants: {
       variant: {
-        default: '',
-        interactive: 'cursor-pointer hover:bg-background-secondary active:scale-[0.99]',
-        selected: 'bg-primary-muted',
-        grouped: 'bg-white shadow-sm',
+        default: 'shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.06)]',
+        interactive: 'cursor-pointer hover:bg-background-secondary active:scale-[0.99] shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)]',
+        selected: 'bg-primary-muted shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.06)]',
+        grouped: 'bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.06)]',
       },
     },
     defaultVariants: {

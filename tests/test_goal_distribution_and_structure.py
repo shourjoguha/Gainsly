@@ -69,10 +69,11 @@ def test_goal_based_weekly_distribution_tags_days():
         GoalWeight(goal=Goal.FAT_LOSS, weight=6),
         GoalWeight(goal=Goal.STRENGTH, weight=4),
     ]
-    out = svc._apply_goal_based_weekly_distribution(
+    out = svc._apply_goal_based_cycle_distribution(
         split_config=split_config,
         goals=goals,
         days_per_week=4,
+        cycle_length_days=7,
         max_session_duration=60,
         user_experience_level="intermediate",
         scheduling_prefs={"allow_cardio_only_days": False, "allow_conditioning_only_days": False},
@@ -105,4 +106,3 @@ async def test_jerome_notes_are_trimmed(monkeypatch):
         is_deload=False,
     )
     assert len(note) <= 200
-

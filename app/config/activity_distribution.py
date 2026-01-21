@@ -14,6 +14,8 @@ cardio_max_pct: float = 0.75
 
 preference_deviation_pct: float = 0.15
 
+default_microcycle_length_days: int = 14
+
 min_conditioning_minutes: int = 30
 min_conditioning_unique_movements: int = 5
 
@@ -57,8 +59,8 @@ goal_finisher_presets = {
 goal_bucket_weights = {
     "strength": {"lifting": 1.0},
     "hypertrophy": {"lifting": 1.0},
-    "fat_loss": {"cardio": 0.6, "finisher": 0.4},
-    "endurance": {"cardio": 0.8, "finisher": 0.2},
+    "fat_loss": {"cardio": 0.2, "finisher": 0.5, "lifting": 0.3},
+    "endurance": {"cardio": 0.5, "finisher": 0.5},
     "mobility": {"mobility": 1.0},
 }
 
