@@ -12,7 +12,7 @@ Responsible for:
 from datetime import datetime, timedelta, date
 from typing import Optional, Dict, Any
 import logging
-from sqlalchemy import select, and_, or_
+from sqlalchemy import select, and_, or_, cast, String
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import (
@@ -253,8 +253,8 @@ class ProgramService:
                         or_(
                             Movement.primary_discipline.ilike("%cardio%"),
                             Movement.primary_discipline.ilike("%endurance%"),
-                            Movement.tags.contains(["cardio"]),
-                            Movement.discipline_tags.contains(["cardio"]),
+                            cast(Movement.tags, String).ilike("%cardio%"),
+                            cast(Movement.discipline_tags, String).ilike("%cardio%"),
                         ),
                     )
                 )
@@ -262,6 +262,10 @@ class ProgramService:
             )
             return result.scalar_one_or_none() is not None
         except Exception:
+            try:
+                await db.rollback()
+            except Exception:
+                pass
             return False
     
     async def generate_active_microcycle_sessions(

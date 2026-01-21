@@ -190,7 +190,9 @@ export const useProgramWizardStore = create<ProgramWizardState>()((set, get) => 
   isGoalsValid: () => {
     const { goals } = get();
     const total = goals.reduce((sum, g) => sum + g.weight, 0);
-    return goals.length >= 1 && goals.length <= 3 && total === 10;
+    const goalNames = goals.map((g) => g.goal);
+    const unique = new Set(goalNames).size === goalNames.length;
+    return goals.length >= 1 && goals.length <= 3 && total === 10 && unique;
   },
   isDisciplinesValid: () => {
     const total = get().getTotalDisciplineWeight();

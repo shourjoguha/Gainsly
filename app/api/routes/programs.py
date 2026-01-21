@@ -1,5 +1,6 @@
 """API routes for program management."""
 from datetime import date
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy import select, and_
@@ -18,6 +19,7 @@ from app.models import (
     UserMovementRule,
     UserEnjoyableActivity,
     MicrocycleStatus,
+    EnjoyableActivity,
 )
 from app.schemas.program import (
     ProgramCreate,
@@ -34,11 +36,23 @@ from app.services.time_estimation import time_estimation_service
 
 router = APIRouter()
 settings = get_settings()
+logger = logging.getLogger(__name__)
 
 
 def get_current_user_id() -> int:
     """Get current user ID (MVP: hardcoded default user)."""
     return settings.default_user_id
+
+
+def _normalize_enjoyable_activity(activity_type: str, custom_name: str | None) -> tuple[EnjoyableActivity, str | None]:
+    if not activity_type:
+        return EnjoyableActivity.OTHER, custom_name
+    if activity_type == "custom":
+        return EnjoyableActivity.OTHER, custom_name or "custom"
+    try:
+        return EnjoyableActivity(activity_type), custom_name
+    except ValueError:
+        return EnjoyableActivity.OTHER, custom_name or activity_type
 
 
 @router.post("", response_model=ProgramResponse, status_code=status.HTTP_201_CREATED)
@@ -91,7 +105,12 @@ async def create_program(
         # Use ProgramService to create program with microcycles and sessions
         program = await program_service.create_program(db, user_id, program_data)
     except ValueError as e:
+        await db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        await db.rollback()
+        logger.exception("Unhandled error while creating program")
+        raise HTTPException(status_code=500, detail="Internal server error")
     
     # Create movement rules if provided (post-program creation)
     if program_data.movement_rules:
@@ -108,17 +127,26 @@ async def create_program(
     # Create enjoyable activities if provided
     if program_data.enjoyable_activities:
         for activity in program_data.enjoyable_activities:
+            activity_enum, normalized_custom_name = _normalize_enjoyable_activity(
+                activity.activity_type,
+                activity.custom_name,
+            )
             user_activity = UserEnjoyableActivity(
                 user_id=user_id,
-                activity_type=activity.activity_type,
-                custom_name=activity.custom_name,
+                activity_type=activity_enum,
+                custom_name=normalized_custom_name,
                 recommend_every_days=activity.recommend_every_days,
                 enabled=True,
             )
             db.add(user_activity)
     
     if program_data.movement_rules or program_data.enjoyable_activities:
-        await db.commit()
+        try:
+            await db.commit()
+        except Exception as e:
+            await db.rollback()
+            logger.exception("Unhandled error while saving program preferences")
+            raise HTTPException(status_code=500, detail="Internal server error")
 
     background_tasks.add_task(
         program_service.generate_active_microcycle_sessions,
