@@ -15,21 +15,21 @@ function SettingsPage() {
       
       <Tabs defaultValue="profile" className="space-y-6">
         <TabsList className="w-full justify-start border-b border-border bg-transparent p-0">
-          <TabsTrigger 
-            value="profile" 
-            className="rounded-none border-b-2 border-transparent px-4 py-2 text-sm font-medium text-foreground-muted data-[state=active]:border-accent data-[state=active]:text-foreground"
+          <TabsTrigger
+            value="profile"
+            className="rounded-none border-b-2 border-transparent px-4 py-2 text-sm font-medium text-foreground-muted data-[state=active]:border-primary data-[state=active]:text-foreground"
           >
             Profile & Stats
           </TabsTrigger>
-          <TabsTrigger 
-            value="programs" 
-            className="rounded-none border-b-2 border-transparent px-4 py-2 text-sm font-medium text-foreground-muted data-[state=active]:border-accent data-[state=active]:text-foreground"
+          <TabsTrigger
+            value="programs"
+            className="rounded-none border-b-2 border-transparent px-4 py-2 text-sm font-medium text-foreground-muted data-[state=active]:border-primary data-[state=active]:text-foreground"
           >
             Programs
           </TabsTrigger>
-          <TabsTrigger 
-            value="favorites" 
-            className="rounded-none border-b-2 border-transparent px-4 py-2 text-sm font-medium text-foreground-muted data-[state=active]:border-accent data-[state=active]:text-foreground"
+          <TabsTrigger
+            value="favorites"
+            className="rounded-none border-b-2 border-transparent px-4 py-2 text-sm font-medium text-foreground-muted data-[state=active]:border-primary data-[state=active]:text-foreground"
           >
             Favorites
           </TabsTrigger>

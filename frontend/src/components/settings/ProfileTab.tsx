@@ -85,7 +85,7 @@ export function ProfileTab() {
   }
 
   return (
-    <Card className="p-6">
+    <Card variant="grouped" className="p-6">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-2xl">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Personal Info */}
@@ -93,7 +93,7 @@ export function ProfileTab() {
             <label className="text-sm font-medium">Name</label>
             <input
               {...register('name')}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full rounded-md border-0 bg-background-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               placeholder="Your name"
             />
           </div>
@@ -103,7 +103,7 @@ export function ProfileTab() {
             <input
               type="date"
               {...register('date_of_birth')}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full rounded-md border-0 bg-background-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
 
@@ -111,7 +111,7 @@ export function ProfileTab() {
             <label className="text-sm font-medium">Sex</label>
             <select
               {...register('sex')}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full rounded-md border-0 bg-background-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             >
               <option value="">Select sex</option>
               {Object.values(Sex).map((value) => (
@@ -127,7 +127,7 @@ export function ProfileTab() {
             <input
               type="number"
               {...register('height_cm')}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full rounded-md border-0 bg-background-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               placeholder="175"
             />
           </div>
@@ -137,7 +137,7 @@ export function ProfileTab() {
             <label className="text-sm font-medium">Experience Level</label>
             <select
               {...register('experience_level')}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full rounded-md border-0 bg-background-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             >
               {Object.values(ExperienceLevel).map((value) => (
                 <option key={value} value={value} className="capitalize">
@@ -151,7 +151,7 @@ export function ProfileTab() {
             <label className="text-sm font-medium">Persona Tone</label>
             <select
               {...register('persona_tone')}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full rounded-md border-0 bg-background-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             >
               {Object.values(PersonaTone).map((value) => (
                 <option key={value} value={value} className="capitalize">
@@ -170,7 +170,7 @@ export function ProfileTab() {
                 max="5"
                 step="1"
                 {...register('persona_aggression')}
-                className="flex-1"
+                className="flex-1 h-2 bg-background-input rounded-lg appearance-none cursor-pointer accent-primary"
               />
               <span className="text-sm font-medium w-8 text-center">
                 {/* We rely on form state but range input is tricky to display value without watching */}
@@ -190,7 +190,7 @@ export function ProfileTab() {
                 <label className="text-sm font-medium">Primary Goal Category</label>
                 <select
                   {...register('long_term_goal_category')}
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="w-full rounded-md border-0 bg-background-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                 >
                   <option value="general_fitness">General Fitness</option>
                   <option value="muscle_gain">Muscle Gain</option>
@@ -205,8 +205,8 @@ export function ProfileTab() {
                 <label className="text-sm font-medium">Goal Description</label>
                 <textarea
                   {...register('long_term_goal_description')}
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring min-h-[100px]"
-                  placeholder="Describe your goal for the next 1-3 years (e.g., run a marathon, gain 10lbs of muscle)"
+                  className="w-full rounded-md border-0 bg-background-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary min-h-[100px]"
+                  placeholder="Describe your goal for next 1-3 years (e.g., run a marathon, gain 10lbs of muscle)"
                 />
                 <p className="text-xs text-foreground-muted">
                   What do you want to achieve over the next 1-3 years?
@@ -217,11 +217,11 @@ export function ProfileTab() {
         </div>
 
         {/* Advanced Filters Section */}
-        <div className="border rounded-lg border-border">
+        <Card variant="grouped" className="border border-border">
           <button
             type="button"
             onClick={() => setIsAdvancedOpen(!isAdvancedOpen)}
-            className="flex w-full items-center justify-between p-4 text-sm font-medium hover:bg-background-elevated transition-colors rounded-lg"
+            className="flex w-full items-center justify-between p-4 text-sm font-medium hover:bg-background-secondary transition-colors rounded-lg"
           >
             <span>Advanced Filters</span>
             {isAdvancedOpen ? (
@@ -230,7 +230,7 @@ export function ProfileTab() {
               <ChevronDown className="h-4 w-4 text-foreground-muted" />
             )}
           </button>
-          
+
           {isAdvancedOpen && (
             <div className="p-4 pt-0 space-y-6 border-t border-border mt-2 animate-in slide-in-from-top-2">
               <div className="space-y-4">
@@ -240,7 +240,7 @@ export function ProfileTab() {
                     Set your interest priority (0-10) and experience level for each discipline.
                   </p>
                 </div>
-                
+
                 {/* Header for larger screens */}
                 <div className="hidden sm:grid sm:grid-cols-12 gap-4 text-xs font-medium text-foreground-muted px-1">
                   <div className="col-span-4">Discipline</div>
@@ -258,8 +258,8 @@ export function ProfileTab() {
                       { key: 'crossfit', label: 'CrossFit / Metcon' },
                     ] as const
                   ).map((discipline) => (
-                    <div key={discipline.key} className="grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-4 items-center p-2 sm:p-0 rounded-lg hover:bg-background-elevated/50 transition-colors">
-                      
+                    <div key={discipline.key} className="grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-4 items-center p-2 sm:p-0 rounded-lg hover:bg-background-secondary transition-colors">
+
                       {/* Label */}
                       <div className="sm:col-span-4">
                         <label className="text-sm font-medium">{discipline.label}</label>
@@ -273,7 +273,7 @@ export function ProfileTab() {
                           max="10"
                           step="1"
                           {...register(`discipline_preferences.${discipline.key}`)}
-                          className="flex-1 cursor-pointer h-2 bg-secondary rounded-lg appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary"
+                          className="flex-1 cursor-pointer h-2 bg-background-input rounded-lg appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary accent-primary"
                         />
                         <span className="w-6 text-right text-sm font-medium text-foreground-muted">
                           {disciplinePrefs?.[discipline.key] || 0}
@@ -284,7 +284,7 @@ export function ProfileTab() {
                       <div className="sm:col-span-3">
                         <select
                           {...register(`discipline_experience.${discipline.key}`)}
-                          className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
+                          className="w-full rounded-md border-0 bg-background-input px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
                         >
                           <option value="">Level</option>
                           {Object.values(ExperienceLevel).map((level) => (
@@ -301,7 +301,7 @@ export function ProfileTab() {
 
               <div className="space-y-4 pt-4 border-t border-border">
                 <h4 className="text-sm font-semibold text-foreground">Scheduling Preferences</h4>
-                
+
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <label className="text-sm font-medium">Mix Disciplines</label>
@@ -312,7 +312,7 @@ export function ProfileTab() {
                   <input
                     type="checkbox"
                     {...register('scheduling_preferences.mix_disciplines')}
-                    className="h-4 w-4 rounded border-border text-accent focus:ring-accent"
+                    className="h-4 w-4 rounded border-border text-primary focus:ring-primary accent-primary"
                   />
                 </div>
 
@@ -321,7 +321,7 @@ export function ProfileTab() {
                   <p className="text-xs text-foreground-muted">How should we schedule your cardio?</p>
                   <select
                     {...register('scheduling_preferences.cardio_preference')}
-                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    className="w-full rounded-md border-0 bg-background-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                   >
                     <option value="none">None / I do it separately</option>
                     <option value="finisher">Add as finishers (10-20 mins)</option>
@@ -332,7 +332,7 @@ export function ProfileTab() {
               </div>
             </div>
           )}
-        </div>
+        </Card>
 
         <div className="flex justify-end pt-4">
           <Button type="submit" disabled={!isDirty || updateMutation.isPending}>

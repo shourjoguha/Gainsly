@@ -34,7 +34,7 @@ export function WizardContainer({
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
-      <header className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border">
+      <header className="sticky top-0 z-10 bg-white/95 backdrop-blur border-b border-border">
         <div className="container-app py-3">
           <div className="flex items-center justify-between mb-3">
             <Link to="/program/new" className="text-foreground-muted hover:text-foreground">
@@ -45,15 +45,15 @@ export function WizardContainer({
               {currentStep + 1}/{totalSteps}
             </span>
           </div>
-          
+
           {/* Progress bar */}
-          <div className="h-1 bg-background-elevated rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-accent transition-all duration-300"
+          <div className="h-1 bg-background-input rounded-full overflow-hidden">
+            <div
+              className="h-full bg-primary transition-all duration-300"
               style={{ width: `${progress}%` }}
             />
           </div>
-          
+
           {/* Step indicator */}
           <p className="text-xs text-foreground-muted text-center mt-2">
             {stepLabels[currentStep]}
@@ -67,7 +67,7 @@ export function WizardContainer({
       </main>
 
       {/* Footer navigation */}
-      <footer className="sticky bottom-0 bg-background/95 backdrop-blur border-t border-border">
+      <footer className="sticky bottom-0 bg-white/95 backdrop-blur border-t border-border">
         <div className="container-app py-4">
           <div className="flex gap-3">
             {!isFirstStep && (
@@ -80,7 +80,7 @@ export function WizardContainer({
                 Back
               </Button>
             )}
-            
+
             {isLastStep ? (
               <Button
                 variant="cta"

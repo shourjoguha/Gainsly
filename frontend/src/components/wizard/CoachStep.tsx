@@ -45,12 +45,12 @@ export function CoachStep() {
       <div className="space-y-3">
         <div className="flex justify-between items-center">
           <label className="text-sm font-medium">Push Intensity</label>
-          <span className="text-sm text-accent font-bold">
+          <span className="text-sm text-primary font-bold">
             {pushIntensity === 1 && '🌿 Conservative'}
             {pushIntensity === 2 && '🌱 Moderate'}
             {pushIntensity === 3 && '⚖️ Balanced'}
             {pushIntensity === 4 && '🔥 Aggressive'}
-            {pushIntensity === 5 && '💀 All Out'}
+            {pushIntensity === 5 && '💥 All Out'}
           </span>
         </div>
         <div className="space-y-2">
@@ -60,11 +60,11 @@ export function CoachStep() {
             max="5"
             value={pushIntensity}
             onChange={(e) => setPushIntensity(Number(e.target.value))}
-            className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-background-elevated accent-accent"
+            className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-background-input accent-primary"
           />
           <div className="flex justify-between text-xs text-foreground-muted">
             <span>Play it safe</span>
-            <span>Push the limits</span>
+            <span>Push your limits</span>
           </div>
         </div>
         <p className="text-xs text-foreground-muted text-center">
@@ -85,8 +85,8 @@ export function CoachStep() {
               className={cn(
                 "h-12 rounded-lg font-bold transition-all",
                 durationWeeks === weeks
-                  ? "bg-accent text-background"
-                  : "bg-background-elevated hover:bg-border text-foreground"
+                  ? "bg-primary text-white"
+                  : "bg-background-input hover:bg-background-secondary text-foreground"
               )}
             >
               {weeks}w
@@ -101,7 +101,7 @@ export function CoachStep() {
       </div>
 
       {/* Summary card */}
-      <Card className="p-4 bg-accent/5 border-accent/30">
+      <Card variant="selected" className="p-4">
         <div className="flex items-start gap-3">
           <div className="text-3xl">🤖</div>
           <div>

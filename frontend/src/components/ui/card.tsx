@@ -3,13 +3,14 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const cardVariants = cva(
-  'rounded-xl border border-border bg-background-card transition-all duration-200',
+  'rounded-xl bg-background-card transition-all duration-200',
   {
     variants: {
       variant: {
         default: '',
-        interactive: 'cursor-pointer hover:border-foreground-subtle active:scale-[0.99]',
-        selected: 'border-accent bg-accent-muted',
+        interactive: 'cursor-pointer hover:bg-background-secondary active:scale-[0.99]',
+        selected: 'bg-primary-muted',
+        grouped: 'bg-white shadow-sm',
       },
     },
     defaultVariants: {

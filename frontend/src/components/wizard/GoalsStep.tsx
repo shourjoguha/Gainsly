@@ -47,21 +47,21 @@ export function GoalsStep() {
       </div>
 
       {/* Progress indicator */}
-      <div className="bg-background-elevated rounded-lg p-4">
+      <Card variant="grouped" className="p-4">
         <div className="flex justify-between items-center mb-2">
           <span className="text-sm font-medium">Budget Remaining</span>
           <span className={cn(
             "text-lg font-bold",
-            remaining === 0 ? "text-cta" : remaining < 0 ? "text-error" : "text-accent"
+            remaining === 0 ? "text-cta" : remaining < 0 ? "text-error" : "text-primary"
           )}>
             ${remaining}
           </span>
         </div>
-        <div className="h-2 bg-background rounded-full overflow-hidden">
-          <div 
+        <div className="h-2 bg-background-input rounded-full overflow-hidden">
+          <div
             className={cn(
               "h-full transition-all duration-300",
-              totalWeight === 10 ? "bg-cta" : "bg-accent"
+              totalWeight === 10 ? "bg-cta" : "bg-primary"
             )}
             style={{ width: `${Math.min(100, totalWeight * 10)}%` }}
           />
@@ -71,7 +71,7 @@ export function GoalsStep() {
             Maximum 3 goals allowed (currently {goals.length})
           </p>
         )}
-      </div>
+      </Card>
 
       {/* Goal cards */}
       <div className="grid gap-3">
@@ -79,14 +79,12 @@ export function GoalsStep() {
           const weight = getGoalWeight(goal.id);
           const isActive = weight > 0;
           const canAdd = totalWeight < 10 && (isActive || goals.length < 3);
-          
+
           return (
             <Card
               key={goal.id}
-              className={cn(
-                "p-4 transition-all",
-                isActive && "border-accent bg-accent/5"
-              )}
+              variant={isActive ? "selected" : "grouped"}
+              className="p-4"
             >
               <div className="flex items-center gap-4">
                 <div className="text-2xl">{goal.icon}</div>
@@ -100,16 +98,16 @@ export function GoalsStep() {
                     disabled={weight === 0}
                     className={cn(
                       "h-8 w-8 rounded-lg flex items-center justify-center text-lg font-bold transition-colors",
-                      weight === 0 
-                        ? "bg-background-elevated text-foreground-subtle cursor-not-allowed"
-                        : "bg-background-elevated hover:bg-accent hover:text-background"
+                      weight === 0
+                        ? "bg-background-input text-foreground-subtle cursor-not-allowed"
+                        : "bg-background-input hover:bg-primary hover:text-white"
                     )}
                   >
                     −
                   </button>
                   <div className={cn(
                     "w-10 h-10 rounded-lg flex items-center justify-center text-lg font-bold",
-                    isActive ? "bg-accent text-background" : "bg-background-elevated text-foreground-muted"
+                    isActive ? "bg-primary text-white" : "bg-background-input text-foreground"
                   )}>
                     ${weight}
                   </div>
@@ -119,8 +117,8 @@ export function GoalsStep() {
                     className={cn(
                       "h-8 w-8 rounded-lg flex items-center justify-center text-lg font-bold transition-colors",
                       !canAdd
-                        ? "bg-background-elevated text-foreground-subtle cursor-not-allowed"
-                        : "bg-background-elevated hover:bg-accent hover:text-background"
+                        ? "bg-background-input text-foreground-subtle cursor-not-allowed"
+                        : "bg-background-input hover:bg-primary hover:text-white"
                     )}
                   >
                     +

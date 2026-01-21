@@ -62,7 +62,7 @@ export function ProgramsTab() {
       </div>
 
       {!programs || programs.length === 0 ? (
-        <Card className="p-6 text-center">
+        <Card variant="grouped" className="p-6 text-center">
           <div className="text-foreground-muted mb-2">No programs yet</div>
           <Button variant="outline" asChild>
             <Link to="/program/new">Create your first program</Link>
@@ -76,7 +76,7 @@ export function ProgramsTab() {
             const daysPerWeek = program.days_per_week || 7;
 
             return (
-              <Card key={program.id} className="p-4">
+              <Card key={program.id} variant="grouped" className="p-4">
                 <div className="flex items-start justify-between gap-3">
                   <button
                     type="button"
@@ -94,7 +94,7 @@ export function ProgramsTab() {
                         defaultValue={program.name || ''}
                         placeholder="Program name"
                         onBlur={(e) => handleNameBlur(program, e.target.value)}
-                        className="w-full bg-transparent border-b border-border/60 focus:border-accent text-sm font-medium outline-none"
+                        className="w-full bg-transparent border-b border-border/60 focus:border-primary text-sm font-medium outline-none"
                       />
                       <div className="text-xs text-foreground-muted flex items-center gap-2">
                         <span className="capitalize">{formatSplit(program.split_template)}</span>
@@ -145,7 +145,7 @@ export function ProgramsTab() {
                               {Array.from({ length: daysPerWeek }).map((__, dayIndex) => (
                                 <div
                                   key={dayIndex}
-                                  className="w-10 h-10 rounded-md border border-border bg-background-elevated flex items-center justify-center text-xs text-foreground-muted"
+                                  className="w-10 h-10 rounded-md border border-border bg-background-input flex items-center justify-center text-xs text-foreground-muted"
                                 >
                                   D{dayIndex + 1}
                                 </div>

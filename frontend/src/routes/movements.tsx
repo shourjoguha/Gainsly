@@ -47,7 +47,7 @@ const ALL_COLUMNS: ColumnConfig[] = [
       <div className="flex items-center gap-2">
         <span className="font-medium">{m.name}</span>
         {m.user_id && (
-          <span title="Custom Movement" className="text-accent">
+          <span title="Custom Movement" className="text-primary">
             <User className="h-3 w-3" />
           </span>
         )}
@@ -181,7 +181,7 @@ function AddMovementModal({ onClose, equipmentOptions }: { onClose: () => void; 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-3xl flex flex-col max-h-[85vh] rounded-lg bg-background-elevated border border-border shadow-xl">
+      <div className="w-full max-w-3xl flex flex-col max-h-[85vh] rounded-lg bg-white border border-border shadow-xl">
         <div className="flex items-center justify-between p-6 border-b border-border">
           <h2 className="text-xl font-bold text-foreground">Add Custom Movement</h2>
           <button onClick={onClose} className="text-foreground-muted hover:text-foreground">
@@ -191,7 +191,7 @@ function AddMovementModal({ onClose, equipmentOptions }: { onClose: () => void; 
 
         <div className="flex-1 overflow-y-auto p-6">
           {error && (
-            <div className="mb-4 rounded bg-destructive/10 p-3 text-sm text-destructive">
+            <div className="mb-4 rounded bg-error/10 p-3 text-sm text-error">
               {error}
             </div>
           )}
@@ -204,7 +204,7 @@ function AddMovementModal({ onClose, equipmentOptions }: { onClose: () => void; 
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none"
+                  className="w-full rounded-lg border-0 bg-background-input px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                   placeholder="e.g. My Custom Squat"
                 />
               </div>
@@ -214,7 +214,7 @@ function AddMovementModal({ onClose, equipmentOptions }: { onClose: () => void; 
                 <select
                   value={formData.pattern}
                   onChange={(e) => setFormData({ ...formData, pattern: e.target.value as MovementPattern })}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none capitalize"
+                  className="w-full rounded-lg border-0 bg-background-input px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary capitalize"
                 >
                   {Object.values(MovementPattern).map((p) => (
                     <option key={p} value={p}>{p.replace('_', ' ')}</option>
@@ -227,7 +227,7 @@ function AddMovementModal({ onClose, equipmentOptions }: { onClose: () => void; 
                 <select
                   value={formData.primary_region}
                   onChange={(e) => setFormData({ ...formData, primary_region: e.target.value as PrimaryRegion })}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none capitalize"
+                  className="w-full rounded-lg border-0 bg-background-input px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary capitalize"
                 >
                   {Object.values(PrimaryRegion).map((r) => (
                     <option key={r} value={r}>{r}</option>
@@ -240,7 +240,7 @@ function AddMovementModal({ onClose, equipmentOptions }: { onClose: () => void; 
                 <select
                   value={formData.primary_muscle}
                   onChange={(e) => setFormData({ ...formData, primary_muscle: e.target.value as PrimaryMuscle })}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none capitalize"
+                  className="w-full rounded-lg border-0 bg-background-input px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary capitalize"
                 >
                   {Object.values(PrimaryMuscle).map((m) => (
                     <option key={m} value={m}>{m.replace('_', ' ')}</option>
@@ -253,7 +253,7 @@ function AddMovementModal({ onClose, equipmentOptions }: { onClose: () => void; 
                 <select
                   value={formData.default_equipment}
                   onChange={(e) => setFormData({ ...formData, default_equipment: e.target.value })}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none"
+                  className="w-full rounded-lg border-0 bg-background-input px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 >
                   <option value="">Select Equipment</option>
                   {equipmentOptions.filter(e => e !== 'all').map((e) => (
@@ -268,7 +268,7 @@ function AddMovementModal({ onClose, equipmentOptions }: { onClose: () => void; 
                 <select
                   value={formData.skill_level}
                   onChange={(e) => setFormData({ ...formData, skill_level: e.target.value as SkillLevel })}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none capitalize"
+                  className="w-full rounded-lg border-0 bg-background-input px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary capitalize"
                 >
                   {Object.values(SkillLevel).map((l) => (
                     <option key={l} value={l}>{l}</option>
@@ -281,7 +281,7 @@ function AddMovementModal({ onClose, equipmentOptions }: { onClose: () => void; 
                 <select
                   value={formData.cns_load}
                   onChange={(e) => setFormData({ ...formData, cns_load: e.target.value as CNSLoad })}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none capitalize"
+                  className="w-full rounded-lg border-0 bg-background-input px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary capitalize"
                 >
                   {Object.values(CNSLoad).map((l) => (
                     <option key={l} value={l}>{l.replace('_', ' ')}</option>
@@ -294,7 +294,7 @@ function AddMovementModal({ onClose, equipmentOptions }: { onClose: () => void; 
                 <select
                   value={formData.metric_type}
                   onChange={(e) => setFormData({ ...formData, metric_type: e.target.value as MetricType })}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none capitalize"
+                  className="w-full rounded-lg border-0 bg-background-input px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary capitalize"
                 >
                   {Object.values(MetricType).map((m) => (
                     <option key={m} value={m}>{m.replace('_', ' ')}</option>
@@ -308,7 +308,7 @@ function AddMovementModal({ onClose, equipmentOptions }: { onClose: () => void; 
                     type="checkbox"
                     checked={formData.compound}
                     onChange={(e) => setFormData({ ...formData, compound: e.target.checked })}
-                    className="h-4 w-4 rounded border-border bg-background text-accent"
+                    className="h-4 w-4 rounded border-border bg-background text-primary accent-primary"
                   />
                   <span className="text-sm font-medium text-foreground">Compound Movement</span>
                 </label>
@@ -316,14 +316,14 @@ function AddMovementModal({ onClose, equipmentOptions }: { onClose: () => void; 
 
               <div className="col-span-1 md:col-span-2">
                 <label className="mb-2 block text-sm font-medium text-foreground">Secondary Muscles</label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-40 overflow-y-auto p-2 border border-border rounded-lg bg-background">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-40 overflow-y-auto p-2 border border-border rounded-lg bg-background-input">
                   {Object.values(PrimaryMuscle).map((muscle) => (
-                    <label key={muscle} className="flex items-center gap-2 text-xs cursor-pointer hover:bg-background-elevated p-1 rounded">
+                    <label key={muscle} className="flex items-center gap-2 text-xs cursor-pointer hover:bg-background-secondary p-1 rounded">
                       <input
                         type="checkbox"
                         checked={formData.secondary_muscles?.includes(muscle)}
                         onChange={() => toggleSecondaryMuscle(muscle)}
-                        className="h-3 w-3 rounded border-border text-accent"
+                        className="h-3 w-3 rounded border-border bg-background text-primary accent-primary"
                       />
                       <span className="capitalize">{muscle.replace('_', ' ')}</span>
                     </label>
@@ -334,11 +334,11 @@ function AddMovementModal({ onClose, equipmentOptions }: { onClose: () => void; 
           </form>
         </div>
 
-        <div className="flex items-center justify-end gap-3 p-6 border-t border-border bg-background-elevated">
+        <div className="flex items-center justify-end gap-3 p-6 border-t border-border bg-background-input">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg px-4 py-2 text-sm font-medium text-foreground-muted hover:bg-background hover:text-foreground transition-colors"
+            className="rounded-lg px-4 py-2 text-sm font-medium text-foreground-muted hover:bg-background-secondary hover:text-foreground transition-colors"
           >
             Cancel
           </button>
@@ -346,7 +346,7 @@ function AddMovementModal({ onClose, equipmentOptions }: { onClose: () => void; 
             type="submit"
             form="create-movement-form"
             disabled={createMutation.isPending}
-            className="rounded-lg bg-cta px-6 py-2 text-sm font-medium text-background hover:bg-cta/90 disabled:opacity-50 transition-colors shadow-sm"
+            className="rounded-lg bg-cta px-6 py-2 text-sm font-medium text-white hover:bg-cta/90 disabled:opacity-50 transition-colors shadow-sm"
           >
             {createMutation.isPending ? 'Creating...' : 'Create Movement'}
           </button>
@@ -474,7 +474,7 @@ function MovementsPage() {
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="inline-flex items-center gap-2 rounded-lg bg-cta px-4 py-2 text-sm font-medium text-background hover:bg-cta/90 transition-colors"
+          className="inline-flex items-center gap-2 rounded-lg bg-cta px-4 py-2 text-sm font-medium text-white hover:bg-cta/90 transition-colors"
         >
           <Plus className="h-6 w-6" />
           Add Custom Movement
@@ -489,7 +489,7 @@ function MovementsPage() {
             placeholder="Search movements..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg border border-border bg-background-elevated px-9 py-2 text-sm text-foreground placeholder:text-foreground-muted focus:border-accent focus:outline-none"
+            className="w-full rounded-lg border-0 bg-background-input px-9 py-2 text-sm text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-primary"
           />
         </div>
 
@@ -504,7 +504,7 @@ function MovementsPage() {
                   : (e.target.value as MovementPattern),
               )
             }
-            className="h-9 flex-1 rounded-lg border border-border bg-background-elevated px-2 text-xs text-foreground"
+            className="h-9 flex-1 rounded-lg border-0 bg-background-input px-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
           >
             {patternOptions.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -521,7 +521,7 @@ function MovementsPage() {
             onChange={(e) =>
               setSelectedEquipment(e.target.value as typeof selectedEquipment)
             }
-            className="h-9 flex-1 rounded-lg border border-border bg-background-elevated px-2 text-xs text-foreground"
+            className="h-9 flex-1 rounded-lg border-0 bg-background-input px-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
           >
             {equipmentOptions.map((opt) => (
               <option key={opt} value={opt}>
@@ -540,7 +540,7 @@ function MovementsPage() {
           type="button"
           onClick={() => setShowColumnPicker((prev) => !prev)}
           className={cn(
-            'inline-flex items-center gap-2 rounded-lg border border-border bg-background-elevated px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-background',
+            'inline-flex items-center gap-2 rounded-lg border border-border bg-background-input px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-background-secondary',
           )}
         >
           <Settings2 className="h-4 w-4" />
@@ -549,7 +549,7 @@ function MovementsPage() {
       </div>
 
       {showColumnPicker && (
-        <div className="mb-4 rounded-lg border border-border bg-background-elevated p-3">
+        <div className="mb-4 rounded-lg border border-border bg-background-input p-3">
           <p className="mb-2 text-xs font-medium text-foreground-muted">
             Select columns to display:
           </p>
@@ -560,7 +560,7 @@ function MovementsPage() {
                   type="checkbox"
                   checked={visibleColumns.includes(col.id)}
                   onChange={() => toggleColumn(col.id)}
-                  className="h-3 w-3 rounded border-border bg-background-elevated text-accent"
+                  className="h-3 w-3 rounded border-border bg-background text-primary accent-primary"
                 />
                 <span>{col.label}</span>
               </label>
@@ -569,7 +569,7 @@ function MovementsPage() {
         </div>
       )}
 
-      <div className="rounded-lg border border-border bg-background-elevated">
+      <div className="rounded-lg border border-border bg-white">
         {isLoading ? (
           <div className="py-10 text-center text-foreground-muted text-sm">
             Loading movements...
@@ -586,21 +586,21 @@ function MovementsPage() {
           <div className="overflow-x-auto">
             <div className="max-h-[480px] overflow-y-auto">
               <table className="min-w-full text-left text-xs">
-                <thead className="sticky top-0 bg-background-elevated border-b border-border z-10">
+                <thead className="sticky top-0 bg-background-input border-b border-border z-10">
                   <tr>
                     {columnsToRender.map((col) => (
                       <th
                         key={col.id}
-                        className="px-3 py-2 font-semibold text-foreground-muted whitespace-nowrap cursor-pointer hover:text-foreground hover:bg-background/50 select-none"
+                        className="px-3 py-2 font-semibold text-foreground-muted whitespace-nowrap cursor-pointer hover:text-foreground hover:bg-background-secondary select-none"
                         onClick={() => handleSort(col.id)}
                       >
                         <div className="flex items-center gap-1">
                           {col.label}
                           {sortConfig?.key === col.id && (
                             sortConfig.direction === 'asc' ? (
-                              <ArrowUp className="h-3 w-3 text-accent" />
+                              <ArrowUp className="h-3 w-3 text-primary" />
                             ) : (
-                              <ArrowDown className="h-3 w-3 text-accent" />
+                              <ArrowDown className="h-3 w-3 text-primary" />
                             )
                           )}
                         </div>
@@ -612,7 +612,7 @@ function MovementsPage() {
                   {filteredMovements.map((movement) => (
                     <tr
                       key={movement.id}
-                      className="border-b border-border/60 last:border-b-0 hover:bg-background"
+                      className="border-b border-border/60 last:border-b-0 hover:bg-background-secondary"
                     >
                       {columnsToRender.map((col) => (
                         <td key={col.id} className="px-3 py-1.5 text-foreground whitespace-nowrap">

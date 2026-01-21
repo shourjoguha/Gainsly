@@ -5,24 +5,17 @@ import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-medium ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
+  'inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
   {
     variants: {
       variant: {
-        // Primary amber/gold button
-        primary: 'bg-accent text-background hover:bg-accent-hover active:scale-[0.98]',
-        // Green CTA button (Start Workout, etc.)
-        cta: 'bg-cta text-background hover:bg-cta-hover active:scale-[0.98]',
-        // Secondary dark button
-        secondary: 'bg-background-elevated text-foreground hover:bg-border active:scale-[0.98]',
-        // Outline button
-        outline: 'border border-accent text-accent hover:bg-accent-muted active:scale-[0.98]',
-        // Ghost button
-        ghost: 'text-foreground-muted hover:bg-background-elevated hover:text-foreground',
-        // Destructive button
-        destructive: 'bg-error text-foreground hover:bg-error/90 active:scale-[0.98]',
-        // Link style
-        link: 'text-accent underline-offset-4 hover:underline',
+        primary: 'bg-primary text-white hover:bg-primary-hover active:scale-[0.98]',
+        cta: 'bg-cta text-white hover:bg-cta-hover active:scale-[0.98]',
+        secondary: 'bg-background-input text-foreground hover:bg-background-secondary active:scale-[0.98]',
+        outline: 'border border-primary text-primary hover:bg-primary-muted active:scale-[0.98]',
+        ghost: 'text-primary hover:bg-background-secondary',
+        destructive: 'bg-error text-white hover:bg-error/90 active:scale-[0.98]',
+        link: 'text-primary underline-offset-4 hover:underline',
       },
       size: {
         default: 'h-10 px-4 py-2',

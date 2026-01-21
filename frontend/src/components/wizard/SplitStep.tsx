@@ -1,4 +1,5 @@
 import { useProgramWizardStore } from '@/stores/program-wizard-store';
+import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
 const DURATION_OPTIONS = [30, 45, 60, 75, 90, 120];
@@ -26,8 +27,8 @@ export function SplitStep() {
               className={cn(
                 "h-12 rounded-lg font-bold transition-all",
                 daysPerWeek === days
-                  ? "bg-accent text-background"
-                  : "bg-background-elevated hover:bg-border text-foreground"
+                  ? "bg-primary text-white"
+                  : "bg-background-input hover:bg-background-secondary text-foreground"
               )}
             >
               {days}
@@ -53,8 +54,8 @@ export function SplitStep() {
               className={cn(
                 "h-14 rounded-lg font-medium transition-all flex flex-col items-center justify-center gap-1",
                 maxDuration === mins
-                  ? "bg-accent text-background"
-                  : "bg-background-elevated hover:bg-border text-foreground"
+                  ? "bg-primary text-white"
+                  : "bg-background-input hover:bg-background-secondary text-foreground"
               )}
             >
               <span className="text-lg font-bold">{mins}</span>
@@ -65,11 +66,11 @@ export function SplitStep() {
       </div>
 
       {/* Summary hint */}
-      <div className="bg-accent/10 rounded-lg p-4 text-center">
+      <Card variant="grouped" className="p-4 text-center">
         <p className="text-sm text-foreground-muted">
           <span className="text-cta">✓ Jerome will design a program for {daysPerWeek} days/week, max {maxDuration} mins/day.</span>
         </p>
-      </div>
+      </Card>
     </div>
   );
 }

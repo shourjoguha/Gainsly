@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useProgramWizardStore } from '@/stores/program-wizard-store';
+import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Plus, X } from 'lucide-react';
 
@@ -81,12 +82,12 @@ export function ActivitiesStep() {
           {enjoyableActivities.map((activity) => (
             <span
               key={activity.activity_type + (activity.custom_name || '')}
-              className="inline-flex items-center gap-1 text-sm px-3 py-1.5 rounded-full bg-accent/20 text-accent"
+              className="inline-flex items-center gap-1 text-sm px-3 py-1.5 rounded-full bg-primary/10 text-primary"
             >
               {activity.custom_name || activity.activity_type}
-              <button 
+              <button
                 onClick={() => removeEnjoyableActivity(activity.activity_type)}
-                className="hover:bg-accent/30 rounded-full p-0.5"
+                className="hover:bg-primary/20 rounded-full p-0.5"
               >
                 <X className="h-3 w-3" />
               </button>
@@ -107,8 +108,8 @@ export function ActivitiesStep() {
                 className={cn(
                   "flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all",
                   isSelected(activity.type)
-                    ? "bg-accent text-background"
-                    : "bg-background-elevated hover:bg-border text-foreground"
+                    ? "bg-primary text-white"
+                    : "bg-background-input hover:bg-background-secondary text-foreground"
                 )}
               >
                 <span>{activity.icon}</span>
@@ -129,7 +130,7 @@ export function ActivitiesStep() {
             value={customActivity}
             onChange={(e) => setCustomActivity(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && addCustomActivity()}
-            className="flex-1 h-10 px-4 rounded-lg bg-background-elevated border border-border focus:border-accent focus:outline-none text-sm"
+            className="flex-1 h-10 px-4 rounded-lg bg-background-input border-0 focus:outline-none focus:ring-2 focus:ring-primary text-sm"
           />
           <button
             onClick={addCustomActivity}
@@ -137,8 +138,8 @@ export function ActivitiesStep() {
             className={cn(
               "h-10 w-10 rounded-lg flex items-center justify-center transition-colors",
               customActivity.trim()
-                ? "bg-accent text-background"
-                : "bg-background-elevated text-foreground-subtle cursor-not-allowed"
+                ? "bg-primary text-white"
+                : "bg-background-input text-foreground-subtle cursor-not-allowed"
             )}
           >
             <Plus className="h-4 w-4" />

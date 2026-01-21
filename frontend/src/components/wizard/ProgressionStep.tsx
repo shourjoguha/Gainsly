@@ -73,20 +73,20 @@ export function ProgressionStep() {
                   <p className="text-sm text-foreground-muted mt-1">{style.description}</p>
                 </div>
               </div>
-              <div className="ml-10 pl-1 border-l-2 border-accent/30">
-                <p className="text-xs text-accent font-mono">{style.example}</p>
+              <div className="ml-10 pl-1 border-l-2 border-primary/30">
+                <p className="text-xs text-primary font-mono">{style.example}</p>
               </div>
             </div>
           </Card>
         ))}
       </div>
 
-      <div className="bg-background-elevated rounded-lg p-4">
+      <Card variant="grouped" className="p-4">
         <p className="text-sm text-foreground-muted">
           💡 <strong>Not sure?</strong> Double Progression is the most flexible and works well for most goals.
           Jerome will also auto-regulate based on your logged performance.
         </p>
-      </div>
+      </Card>
     </div>
   );
 }

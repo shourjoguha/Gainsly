@@ -85,7 +85,7 @@ export function MovementsStep() {
                 : (e.target.value as MovementPattern)
             )
           }
-          className="h-9 rounded-lg bg-background-elevated border border-border px-2 text-xs"
+          className="h-9 rounded-lg bg-background-input border-0 px-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
         >
           <option value="all">All Patterns</option>
           {patternOptions.map((pattern) => (
@@ -98,7 +98,7 @@ export function MovementsStep() {
         <select
           value={selectedRegion}
           onChange={(e) => setSelectedRegion(e.target.value as typeof selectedRegion)}
-          className="h-9 rounded-lg bg-background-elevated border border-border px-2 text-xs"
+          className="h-9 rounded-lg bg-background-input border-0 px-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
         >
           <option value="all">All Body Parts</option>
           {regionOptions.map((region) => (
@@ -113,7 +113,7 @@ export function MovementsStep() {
           onChange={(e) =>
             setSelectedType(e.target.value as 'all' | 'compound' | 'accessory')
           }
-          className="h-9 rounded-lg bg-background-elevated border border-border px-2 text-xs"
+          className="h-9 rounded-lg bg-background-input border-0 px-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
         >
           <option value="all">All Types</option>
           <option value="compound">Compound</option>
@@ -129,15 +129,15 @@ export function MovementsStep() {
           placeholder="Search movements..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full h-10 pl-10 pr-4 rounded-lg bg-background-elevated border border-border focus:border-accent focus:outline-none text-sm"
+          className="w-full h-10 pl-10 pr-4 rounded-lg bg-background-input border-0 focus:outline-none focus:ring-2 focus:ring-primary text-sm"
         />
       </div>
 
       {/* Current rules summary */}
       {movementRules.length > 0 && (
-        <div className="bg-background-elevated rounded-lg p-4 space-y-3">
+        <Card variant="grouped" className="p-4 space-y-3">
           <p className="text-sm font-medium">Your preferences:</p>
-          
+
           {hardYes.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {hardYes.map((rule) => (
@@ -157,7 +157,7 @@ export function MovementsStep() {
               ))}
             </div>
           )}
-          
+
           {preferred.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {preferred.map((rule) => (
@@ -174,7 +174,7 @@ export function MovementsStep() {
               ))}
             </div>
           )}
-          
+
           {hardNos.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {hardNos.map((rule) => (
@@ -191,7 +191,7 @@ export function MovementsStep() {
               ))}
             </div>
           )}
-        </div>
+        </Card>
       )}
 
       {/* Movement list */}
@@ -224,8 +224,8 @@ export function MovementsStep() {
                       className={cn(
                         "h-8 w-8 rounded-lg flex items-center justify-center transition-colors",
                         rule?.rule_type === MovementRuleType.HARD_YES
-                          ? "bg-cta text-background"
-                          : "bg-background-elevated hover:bg-cta/20 text-foreground-muted"
+                          ? "bg-cta text-white"
+                          : "bg-background-input hover:bg-cta/20 text-foreground-muted"
                       )}
                       title="Must include"
                     >
@@ -239,8 +239,8 @@ export function MovementsStep() {
                       className={cn(
                         "h-8 w-8 rounded-lg flex items-center justify-center transition-colors",
                         rule?.rule_type === MovementRuleType.PREFERRED
-                          ? "bg-accent text-background"
-                          : "bg-background-elevated hover:bg-accent/20 text-foreground-muted"
+                          ? "bg-primary text-white"
+                          : "bg-background-input hover:bg-primary/20 text-foreground-muted"
                       )}
                       title="Prefer"
                     >
@@ -251,8 +251,8 @@ export function MovementsStep() {
                       className={cn(
                         "h-8 w-8 rounded-lg flex items-center justify-center transition-colors",
                         rule?.rule_type === MovementRuleType.HARD_NO
-                          ? "bg-error text-background"
-                          : "bg-background-elevated hover:bg-error/20 text-foreground-muted"
+                          ? "bg-error text-white"
+                          : "bg-background-input hover:bg-error/20 text-foreground-muted"
                       )}
                       title="Never include"
                     >

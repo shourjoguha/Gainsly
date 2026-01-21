@@ -17,15 +17,15 @@ export function Header() {
           {!isRootPath && canGoBack ? (
             <button
               onClick={() => router.history.back()}
-              className="flex h-10 w-10 items-center justify-center rounded-lg text-foreground-muted transition-colors hover:bg-background-elevated hover:text-foreground"
+              className="flex h-10 w-10 items-center justify-center rounded-lg text-foreground-muted transition-colors hover:bg-background-secondary hover:text-foreground"
               aria-label="Go back"
             >
               <ArrowLeft className="h-5 w-5" />
             </button>
           ) : (
             <Link to="/" className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent">
-                <span className="text-sm font-bold text-background">G</span>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+                <span className="text-sm font-bold text-white">G</span>
               </div>
               <span className="text-lg font-semibold text-foreground">Gainsly</span>
             </Link>
@@ -35,14 +35,14 @@ export function Header() {
         {/* Right side - Notifications and Menu */}
         <div className="flex items-center gap-1">
           <button
-            className="flex h-10 w-10 items-center justify-center rounded-lg text-foreground-muted transition-colors hover:bg-background-elevated hover:text-foreground"
+            className="flex h-10 w-10 items-center justify-center rounded-lg text-foreground-muted transition-colors hover:bg-background-secondary hover:text-foreground"
             aria-label="Notifications"
           >
             <Bell className="h-5 w-5" />
           </button>
           <button
             onClick={toggleMenu}
-            className="flex h-10 w-10 items-center justify-center rounded-lg text-foreground-muted transition-colors hover:bg-background-elevated hover:text-foreground"
+            className="flex h-10 w-10 items-center justify-center rounded-lg text-foreground-muted transition-colors hover:bg-background-secondary hover:text-foreground"
             aria-label="Open menu"
           >
             <Menu className="h-5 w-5" />

@@ -158,11 +158,11 @@ export function Dashboard() {
 
       {/* Program status card */}
       {programsLoading ? (
-        <Card className="p-6 text-center">
+        <Card variant="grouped" className="p-6 text-center">
           <Spinner size="sm" />
         </Card>
       ) : activeProgram ? (
-        <Card className="p-4">
+        <Card variant="grouped" className="p-4">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-sm text-foreground-muted">Active Program</div>
@@ -173,19 +173,19 @@ export function Dashboard() {
                 {activeProgram.duration_weeks} weeks
               </div>
             </div>
-            <Link 
-              to="/program/$programId" 
+            <Link
+              to="/program/$programId"
               params={{ programId: String(activeProgram.id) }}
-              className="text-accent hover:underline text-sm"
+              className="text-primary hover:underline text-sm"
             >
               View Details →
             </Link>
           </div>
         </Card>
       ) : (
-        <Card className="p-6 text-center">
+        <Card variant="grouped" className="p-6 text-center">
           <div className="text-foreground-muted">No active program</div>
-          <Link to="/program/new" className="text-accent hover:underline text-sm mt-2 inline-block">
+          <Link to="/program/new" className="text-primary hover:underline text-sm mt-2 inline-block">
             Create one now
           </Link>
         </Card>
@@ -202,8 +202,8 @@ interface StatCardProps {
 
 function StatCard({ value, label, sublabel }: StatCardProps) {
   return (
-    <Card className="p-4 text-center">
-      <div className="text-2xl font-bold text-accent">{value}</div>
+    <Card variant="grouped" className="p-4 text-center">
+      <div className="text-2xl font-bold text-primary">{value}</div>
       <div className="text-xs text-foreground-muted mt-1">{label}</div>
       {sublabel && (
         <div className="text-xs text-foreground-subtle mt-0.5">{sublabel}</div>

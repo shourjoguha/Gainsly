@@ -53,7 +53,7 @@ function ExerciseList({ exercises, title }: { exercises: ExerciseBlock[] | null 
                 </>
               )}
               {exercise.target_rpe && (
-                <span className="ml-1 text-accent">@{exercise.target_rpe}</span>
+                <span className="ml-1 text-primary">@{exercise.target_rpe}</span>
               )}
             </span>
           </div>
@@ -71,7 +71,7 @@ export function SessionCard({ session }: SessionCardProps) {
   const isRestDay = session.session_type === 'recovery';
 
   return (
-    <Card 
+    <Card variant="grouped"
       className={cn(
         "overflow-hidden transition-all",
         isRestDay && "opacity-60"
@@ -82,7 +82,7 @@ export function SessionCard({ session }: SessionCardProps) {
         onClick={() => hasContent && setIsExpanded(!isExpanded)}
         className={cn(
           "w-full p-4 flex items-center gap-3 text-left",
-          hasContent && "cursor-pointer hover:bg-background-elevated/50"
+          hasContent && "cursor-pointer hover:bg-background-secondary"
         )}
         disabled={!hasContent}
       >
@@ -141,7 +141,7 @@ export function SessionCard({ session }: SessionCardProps) {
               {session.intent_tags.map((tag) => (
                 <span
                   key={tag}
-                  className="text-xs px-2 py-0.5 bg-background-elevated rounded text-foreground-muted"
+                  className="text-xs px-2 py-0.5 bg-background-input rounded text-foreground-muted"
                 >
                   {tag.replace('_', ' ')}
                 </span>
@@ -163,24 +163,24 @@ export function SessionCard({ session }: SessionCardProps) {
               </h4>
               <div className="flex items-center justify-between text-sm mb-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-accent font-medium uppercase">
+                  <span className="text-primary font-medium uppercase">
                     {session.finisher.circuit_type || session.finisher.type}
                   </span>
                   {session.finisher.duration_minutes && (
-                    <span className="text-foreground-muted text-xs bg-background-elevated px-1.5 py-0.5 rounded">
+                    <span className="text-foreground-muted text-xs bg-background-input px-1.5 py-0.5 rounded">
                       {session.finisher.duration_minutes} min
                     </span>
                   )}
                 </div>
                 {session.finisher.rounds && (
-                  <span className="text-xs text-foreground-muted font-medium bg-background-elevated px-2 py-0.5 rounded">
+                  <span className="text-xs text-foreground-muted font-medium bg-background-input px-2 py-0.5 rounded">
                     {session.finisher.rounds}
                   </span>
                 )}
               </div>
-              
+
               {session.finisher.exercises && session.finisher.exercises.length > 0 && (
-                <div className="space-y-1.5 border-l-2 border-background-elevated pl-3">
+                <div className="space-y-1.5 border-l-2 border-background-input pl-3">
                   {session.finisher.exercises.map((ex, idx) => (
                     <div key={idx} className="flex items-center justify-between text-sm">
                       <span className="text-foreground">{ex.movement}</span>
@@ -204,7 +204,7 @@ export function SessionCard({ session }: SessionCardProps) {
 
           {/* Coach notes */}
           {session.coach_notes && (
-            <div className="mt-3 p-2 bg-background-elevated rounded text-xs text-foreground-muted">
+            <div className="mt-3 p-2 bg-background-input rounded text-xs text-foreground-muted">
               <span className="font-medium">Jerome's Notes:</span> {session.coach_notes}
             </div>
           )}

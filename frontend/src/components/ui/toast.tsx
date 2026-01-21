@@ -10,10 +10,10 @@ const icons = {
 };
 
 const styles = {
-  success: 'border-success bg-success-muted text-success',
-  error: 'border-error bg-error-muted text-error',
-  warning: 'border-warning bg-accent-muted text-warning',
-  info: 'border-accent bg-accent-muted text-accent',
+  success: 'bg-success text-white',
+  error: 'bg-error text-white',
+  warning: 'bg-warning text-white',
+  info: 'bg-primary text-white',
 };
 
 export function ToastContainer() {
@@ -41,7 +41,7 @@ export function ToastContainer() {
               </span>
               <button
                 onClick={() => removeToast(toast.id)}
-                className="flex-shrink-0 rounded p-1 hover:bg-background/20 transition-colors"
+                className="flex-shrink-0 rounded p-1 hover:bg-white/20 transition-colors"
                 aria-label="Dismiss"
               >
                 <X className="h-4 w-4" />
