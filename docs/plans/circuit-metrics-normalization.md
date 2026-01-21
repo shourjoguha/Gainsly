@@ -1,13 +1,15 @@
 # Circuit Metrics Normalization Implementation Plan
 
 ## Overview
-Create a unified metrics system that enables circuits to be treated as "super-movements" by the optimizer, allowing smarter circuit programming with comparable fatigue, stimulus, and recovery metrics.
+
+Create a unified metrics system that enables circuits to be treated as "super-movements" by optimizer, allowing smarter circuit programming with comparable fatigue, stimulus, and recovery metrics.
 
 ---
 
 ## Phase 1: Database Schema Update
 
 ### 1.1 Extend CircuitTemplate Model
+
 Add normalized metrics fields to [app/models/circuit.py](file:///Users/shourjosmac/Documents/Gainsly/app/models/circuit.py):
 
 ```python
@@ -27,6 +29,7 @@ effective_work_volume = Column(Float, nullable=True)             # Weighted work
 ```
 
 ### 1.2 Create Migration
+
 Generate alembic migration to add these columns to `circuit_templates` table with appropriate indexes for querying.
 
 ---
@@ -34,6 +37,7 @@ Generate alembic migration to add these columns to `circuit_templates` table wit
 ## Phase 2: Circuit Metrics Calculation Service
 
 ### 2.1 Create CircuitMetricsCalculator Service
+
 New service: [app/services/circuit_metrics.py](file:///Users/shourjosmac/Documents/Gainsly/app/services/circuit_metrics.py)
 
 ```python
@@ -54,7 +58,7 @@ class CircuitMetricsCalculator:
    - Fetch movement data (fatigue_factor, stimulus_factor, primary_muscle, secondary_muscles)
    - Calculate per-exercise contribution
 
-2. **Apply Circuit Multipliers**:
+2. **Apply Circuit Multipliers:**
    ```
    total_reps = sum(exercise.reps or 1 for exercise in exercises) * rounds
    estimated_work_seconds = sum(
@@ -63,7 +67,7 @@ class CircuitMetricsCalculator:
    ) * rounds
    ```
 
-3. **Calculate Fatigue Factor**:
+3. **Calculate Fatigue Factor:**
    ```
    circuit_fatigue = sum(movement.fatigue_factor for movement in exercises) / len(exercises)
    # Apply intensity modifier based on circuit type:
@@ -73,14 +77,14 @@ class CircuitMetricsCalculator:
    - EMOM: baseline (no modifier)
    ```
 
-4. **Calculate Stimulus Factor**:
+4. **Calculate Stimulus Factor:**
    ```
    circuit_stimulus = sum(movement.stimulus_factor for movement in exercises) / len(exercises)
    # Adjust for total work volume:
    circuit_stimulus *= (effective_work_volume / baseline_volume)
    ```
 
-5. **Calculate Muscle-Level Metrics**:
+5. **Calculate Muscle-Level Metrics:**
    ```
    for each exercise in exercises × rounds:
        primary_muscle: add exercise.fatigue_factor × rounds
@@ -89,7 +93,7 @@ class CircuitMetricsCalculator:
    Normalize to 0-1 scale for comparable muscle targeting
    ```
 
-6. **Determine Min Recovery Hours**:
+6. **Determine Min Recovery Hours:**
    ```
    base_recovery = max(movement.min_recovery_hours for movement in exercises)
    # Circuit type modifiers:
@@ -129,6 +133,7 @@ class CircuitMetricsCalculator:
 ## Phase 3: One-Time Population Script
 
 ### 3.1 Create Migration Script
+
 Script: [scripts/populate_circuit_metrics.py](file:///Users/shourjosmac/Documents/Gainsly/scripts/populate_circuit_metrics.py)
 
 ```python
@@ -156,6 +161,7 @@ async def populate_all_circuit_metrics():
 ## Phase 4: Optimizer Integration
 
 ### 4.1 Extend Optimization Engine
+
 Update [app/services/optimization.py](file:///Users/shourjosmac/Documents/Gainsly/app/services/optimization.py):
 
 ```python
@@ -179,6 +185,7 @@ class OptimizationRequest:
 ```
 
 ### 4.2 Modify Constraint Solver
+
 Update `solve_session()` to include circuits:
 
 ```python
@@ -206,6 +213,7 @@ fatigue_expr = (
 ```
 
 ### 4.3 Objective Function with Circuits
+
 ```python
 stimulus_expr = (
     sum(movement_vars[m.id] * m.stimulus_factor for m in available_movements if m.id in movement_vars) +
@@ -219,6 +227,7 @@ model.Maximize(stimulus_expr)
 ## Phase 5: Session Generator Integration
 
 ### 5.1 Add Circuit Selection Logic
+
 Update [app/services/session_generator.py](file:///Users/shourjosmac/Documents/Gainsly/app/services/session_generator.py):
 
 ```python
@@ -232,6 +241,7 @@ async def _load_available_circuits(
 ```
 
 ### 5.2 Hybrid Session Generation
+
 Modify session generation to support mixed circuits + movements:
 
 ```python
@@ -253,6 +263,7 @@ def _generate_draft_session():
 ```
 
 ### 5.3 Update Session Volume Calculation
+
 Modify [`_calculate_session_volume()`](file:///Users/shourjosmac/Documents/Gainsly/app/services/session_generator.py#L421) to handle circuits:
 
 ```python
@@ -277,6 +288,7 @@ async def _calculate_session_volume(self, db: AsyncSession, session: Session) ->
 ## Phase 6: Validation & Testing
 
 ### 6.1 Unit Tests
+
 Create test suite for CircuitMetricsCalculator:
 - Test each circuit type (AMRAP, EMOM, LADDER, ROUNDS_FOR_TIME)
 - Test muscle volume aggregation
@@ -285,12 +297,14 @@ Create test suite for CircuitMetricsCalculator:
 - Test missing default_rounds handling
 
 ### 6.2 Integration Tests
+
 - Session generation with circuits
 - Optimizer selection with mixed movements + circuits
 - Volume tracking with circuits
 - Recovery calculations with circuits
 
 ### 6.3 Manual Verification
+
 - Compare calculated metrics against expected values for sample circuits
 - Verify circuits appear in appropriate session types
 - Check fatigue/recovery tracking accuracy

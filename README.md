@@ -14,14 +14,19 @@ An AI-enabled workout coach that creates adaptive 8-12 week strength/fitness pro
 - **Coach Personas**: Customizable tone and programming aggressiveness
 - **Movement Variety System**: Prevents exercise duplication and enforces pattern diversity
 - **Real-time Streaming**: SSE-powered session adaptation with live LLM feedback
+- **Advanced Preferences**: Discipline priorities, cardio finishers, and scheduling options
+- **Circuit Support**: CrossFit-style circuits with AMRAP, EMOM, and other formats
+- **Goals System**: Long-term macro cycles with versioned goals and check-ins
+- **External Integrations**: Data lake architecture for Strava, Garmin, Apple Health, WHOOP, Oura
 
 ## Tech Stack
 
 - **Backend**: FastAPI (Python 3.11+)
 - **Database**: PostgreSQL (via SQLAlchemy async engine)
-- **LLM**: Ollama (local) with provider-agnostic interface
+- **LLM**: Ollama (local) with provider-agnostic interface (llama3.2:3b)
 - **HTTP Client**: httpx (async)
 - **Frontend**: React 19 + TypeScript + Vite + TanStack Router + Tailwind CSS
+- **Optimization**: OR-Tools constraint solver for session planning
 
 ## Quick Start
 
@@ -96,13 +101,18 @@ Gainsly/
 │   │   ├── user.py          # User configuration
 │   │   ├── program.py       # Program/session planning
 │   │   ├── logging.py       # Workout logging
-│   │   └── config.py        # Heuristic configs
+│   │   ├── config.py        # Heuristic configs
+│   │   └── circuit.py      # Circuit templates
 │   ├── schemas/             # Pydantic request/response schemas
 │   ├── services/
 │   │   ├── metrics.py       # e1RM and PSI calculations
 │   │   ├── time_estimation.py  # Session duration estimation
 │   │   ├── program.py       # Program generation with pattern interference
-│   │   └── session_generator.py  # LLM-powered session creation
+│   │   ├── session_generator.py  # LLM-powered session creation
+│   │   ├── adaptation.py    # Session adaptation logic
+│   │   ├── deload.py       # Deload scheduling
+│   │   ├── interference.py  # Goal validation and conflict detection
+│   │   └── optimization.py # OR-Tools constraint solver
 │   └── main.py              # FastAPI app entry point
 ├── frontend/
 │   ├── src/
@@ -115,7 +125,12 @@ Gainsly/
 ├── seed_data/
 │   ├── movements.json       # Pre-populated movement library
 │   └── heuristic_configs.json  # Default configurations
+├── scripts/                # Data ingestion and utility scripts
 ├── tests/
+├── docs/                   # Additional documentation
+│   ├── WARP.md             # WARP (warp.dev) development guide
+│   ├── PERFORMANCE_TESTING.md # Performance testing with Locust
+│   └── NOTES.md            # Development notes and architecture decisions
 ├── requirements.txt
 └── README.md
 ```
@@ -140,6 +155,8 @@ Gainsly/
 ### Settings & Configuration
 - `GET /settings` - Get user settings
 - `PUT /settings` - Update settings
+- `GET /settings/profile` - Get user profile with advanced preferences
+- `PUT /settings/profile` - Update user profile
 - `GET /configs` - List heuristic configurations
 - `PUT /configs/{name}/active` - Activate config version
 
@@ -184,6 +201,7 @@ Select 3 goals and assign weights that sum to 10:
 2. **Double Progression**: Increase reps, then weight
 3. **Paused Variations**: Add pauses for difficulty
 4. **Build to Drop**: Build reps, drop and add weight
+5. **Wave Loading**: Undulating intensity across sets
 
 ## Movement Variety System
 
@@ -199,6 +217,21 @@ Select 3 goals and assign weights that sum to 10:
 - Muscle group fatigue tracking to prevent overload
 - Movement history context passed to LLM
 
+## Session Structure
+
+Sessions have flexible, optional sections stored as JSON:
+- **warmup_json** - Always included
+- **main_json** - Main lifts or cardio block
+- **accessory_json** - Optional accessory work
+- **finisher_json** - Optional finisher (conditioning, cardio, or metabolic)
+- **cooldown_json** - Always included
+
+Session types determine middle piece structure:
+- **Strength/Hypertrophy**: Main lifts + (Accessory XOR Finisher)
+- **Cardio-only**: Dedicated cardio block only
+- **Conditioning-only**: Circuit-based conditioning (≥5 movements, ≥30 minutes)
+- **Mobility**: Extended warmup/cooldown with mobility work
+
 ## Frontend Design System
 
 ### Color Palette
@@ -213,6 +246,36 @@ Select 3 goals and assign weights that sum to 10:
 - Form components with real-time validation
 - Modal system with smooth animations
 - Loading states and skeleton components
+
+## Database Schema
+
+The database uses PostgreSQL with SQLAlchemy ORM. Key tables include:
+
+- **users** - User profiles, settings, and personas
+- **programs** - 8-12 week programs with goals and splits
+- **microcycles** - 7-10 day blocks within programs
+- **sessions** - Daily workout plans with JSON content sections
+- **movements** - Exercise library with patterns and muscle groups
+- **circuit_templates** - CrossFit-style circuits (AMRAP, EMOM, etc.)
+- **movement_relationships** - Progression, regression, variation edges
+- **workout_logs** - Completed workouts with performance data
+- **recovery_signals** - Recovery data from various sources
+- **macro_cycles** - Long-term (12-month) planning
+- **goals** - Versioned goals with check-ins
+- **external_provider_accounts** - Integration credentials
+- **external_activity_records** - Imported activity data
+
+For complete schema documentation, see [DATABASE_OVERVIEW.md](DATABASE_OVERVIEW.md).
+
+For detailed implementation plans and roadmap items, see [docs/plans/](docs/plans/).
+
+## e1RM Calculation
+
+**Supported formulas** (configurable per user):
+- `epley`: weight × (1 + reps/30)
+- `brzycki`: weight × 36 / (37 - reps)
+- `lombardi`: weight × reps^0.10
+- `oconner`: weight × (1 + reps/40)
 
 ## Testing
 
@@ -231,13 +294,31 @@ pip install locust
 locust -f tests/performance_test_locust.py
 ```
 
-## Future Enhancements
+See [docs/PERFORMANCE_TESTING.md](docs/PERFORMANCE_TESTING.md) for detailed performance testing guidance.
 
+## Development Notes
+
+For detailed architecture decisions, development patterns, and implementation notes, see:
+- [docs/NOTES.md](docs/NOTES.md) - Architecture decisions and design patterns
+- [docs/WARP.md](docs/WARP.md) - WARP (warp.dev) development guide
+- [SESSION_LOG.md](SESSION_LOG.md) - Development session history
+
+## Roadmap & Future Enhancements
+
+### Current Development
+- Ensemble coach architecture with multiple LLM providers
+- Circuit metrics normalization for optimizer integration
+- Goal-based weekly time distribution
+- External activity ingestion (Strava, Garmin, Apple Health)
+- Biometrics tracking and user profiles
+
+### Planned Features
 - [ ] JWT authentication for multi-user support
 - [ ] Cloud LLM providers (OpenAI, Anthropic)
 - [ ] Mobile native app (React Native)
-- [ ] Garmin integration for recovery signals
 - [ ] Advanced analytics and progress visualization
+- [ ] Social features (share programs, compete with friends)
+- [ ] Workout video analysis with computer vision
 
 ## License
 
