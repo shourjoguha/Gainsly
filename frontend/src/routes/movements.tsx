@@ -569,7 +569,7 @@ function MovementsPage() {
         </div>
       )}
 
-      <div className="rounded-lg border border-border bg-white">
+      <div className="rounded-2xl border border-border bg-white">
         {isLoading ? (
           <div className="py-10 text-center text-foreground-muted text-sm">
             Loading movements...
@@ -584,14 +584,14 @@ function MovementsPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <div className="max-h-[480px] overflow-y-auto">
+            <div className="max-h-[600px] overflow-y-auto">
               <table className="min-w-full text-left text-xs">
-                <thead className="sticky top-0 bg-background-input border-b border-border z-10">
+                <thead className="sticky top-0 bg-background-input border-b border-border z-10 rounded-t-2xl">
                   <tr>
                     {columnsToRender.map((col) => (
                       <th
                         key={col.id}
-                        className="px-3 py-2 font-semibold text-foreground-muted whitespace-nowrap cursor-pointer hover:text-foreground hover:bg-background-secondary select-none"
+                        className="px-4 py-3 font-semibold text-foreground-muted whitespace-nowrap cursor-pointer hover:text-foreground hover:bg-background-secondary select-none"
                         onClick={() => handleSort(col.id)}
                       >
                         <div className="flex items-center gap-1">
@@ -615,7 +615,7 @@ function MovementsPage() {
                       className="border-b border-border/60 last:border-b-0 hover:bg-background-secondary"
                     >
                       {columnsToRender.map((col) => (
-                        <td key={col.id} className="px-3 py-1.5 text-foreground whitespace-nowrap">
+                        <td key={col.id} className="px-4 py-2.5 text-foreground whitespace-nowrap">
                           {col.render(movement)}
                         </td>
                       ))}

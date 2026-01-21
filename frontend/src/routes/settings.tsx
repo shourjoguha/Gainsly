@@ -10,10 +10,10 @@ export const Route = createFileRoute('/settings')({
 
 function SettingsPage() {
   return (
-    <div className="container-app py-6">
+    <div className="container-app py-6 flex flex-col min-h-0">
       <h1 className="text-2xl font-bold text-foreground mb-6">Settings</h1>
-      
-      <Tabs defaultValue="profile" className="space-y-6">
+
+      <Tabs defaultValue="profile" className="space-y-6 flex flex-col min-h-0">
         <TabsList className="w-full justify-start border-b border-border bg-transparent p-0">
           <TabsTrigger
             value="profile"
@@ -35,15 +35,15 @@ function SettingsPage() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="profile" className="mt-6">
+        <TabsContent value="profile" className="mt-6 flex flex-col min-h-0">
           <ProfileTab />
         </TabsContent>
-        
-        <TabsContent value="programs" className="mt-6">
+
+        <TabsContent value="programs" className="mt-6 flex flex-col min-h-0">
           <ProgramsTab />
         </TabsContent>
-        
-        <TabsContent value="favorites" className="mt-6">
+
+        <TabsContent value="favorites" className="mt-6 flex flex-col min-h-0">
           <FavoritesTab />
         </TabsContent>
       </Tabs>
