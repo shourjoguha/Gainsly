@@ -69,6 +69,7 @@ export function SessionCard({ session }: SessionCardProps) {
   const config = SESSION_TYPE_CONFIG[session.session_type] || SESSION_TYPE_CONFIG.custom;
   const hasContent = session.main && session.main.length > 0;
   const isRestDay = session.session_type === 'recovery';
+  const isGenerating = !isRestDay && !hasContent;
 
   return (
     <Card variant="grouped"
@@ -100,6 +101,9 @@ export function SessionCard({ session }: SessionCardProps) {
           <div className="flex items-center gap-2">
             <span className="font-medium">{config.label}</span>
             {isRestDay && <Coffee className="h-3 w-3 text-foreground-muted" />}
+            {isGenerating && (
+              <span className="text-xs text-foreground-muted">Generating…</span>
+            )}
           </div>
           <div className="text-xs text-foreground-muted flex items-center gap-2">
             <span>Day {session.day_number}</span>

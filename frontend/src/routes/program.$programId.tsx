@@ -70,10 +70,18 @@ function useProgramWithGeneration(programId: number) {
 
   const { data, isLoading, error, refetch } = query;
 
-  const trainingSessions =
-    data?.upcoming_sessions.filter(
-      (s) => s.session_type !== SessionType.RECOVERY
-    ) ?? [];
+  const activeSeq = data?.active_microcycle?.sequence_number;
+  const activeMicrocycleSessions =
+    activeSeq && data?.microcycles
+      ? data.microcycles.find((mc) => mc.sequence_number === activeSeq)?.sessions ?? []
+      : [];
+
+  const templateSessions =
+    activeMicrocycleSessions.length > 0 ? activeMicrocycleSessions : data?.upcoming_sessions ?? [];
+
+  const trainingSessions = templateSessions.filter(
+    (s) => s.session_type !== SessionType.RECOVERY
+  );
 
   const totalTraining = trainingSessions.length;
   const generatedCount = trainingSessions.filter(sessionHasContent).length;
@@ -108,10 +116,26 @@ function useProgramWithGeneration(programId: number) {
 
 function ProgramDetailPage() {
   const { programId } = Route.useParams();
+  const programIdNum = Number(programId);
   const { data, isLoading, error, isGenerating } = useProgramWithGeneration(
-    Number(programId)
+    programIdNum
   );
-  const [weekOffset, setWeekOffset] = useState(0);
+  const [cycleOffset, setCycleOffset] = useState(0);
+
+  if (!Number.isFinite(programIdNum)) {
+    return (
+      <div className="container-app py-6">
+        <div className="text-center py-12">
+          <h2 className="text-xl font-semibold text-foreground-muted">
+            Invalid program ID
+          </h2>
+          <Link to="/" className="text-accent hover:underline mt-2 inline-block">
+            Return to Dashboard
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -145,86 +169,31 @@ function ProgramDetailPage() {
     { goal: program.goal_3, weight: program.goal_weight_3 },
   ].sort((a, b) => b.weight - a.weight);
 
-  const totalWeeks = program.duration_weeks;
-  const baseWeek = active_microcycle?.sequence_number ?? 1;
-  const weekInView = Math.min(
-    totalWeeks,
-    Math.max(1, baseWeek + weekOffset),
-  );
+  const totalCycles = microcycles?.length ?? 0;
+  const activeCycle = active_microcycle?.sequence_number ?? 1;
+  const cycleInView = totalCycles
+    ? Math.min(totalCycles, Math.max(1, activeCycle + cycleOffset))
+    : activeCycle;
 
-  const baseWeekMicroSessions =
-    microcycles?.find((mc) => mc.sequence_number === baseWeek)?.sessions ?? [];
+  const sessionsForCycle =
+    microcycles?.find((mc) => mc.sequence_number === cycleInView)?.sessions ?? upcoming_sessions;
 
-  const baseTemplateSessions =
-    baseWeekMicroSessions.some(sessionHasContent) && baseWeekMicroSessions.length > 0
-      ? baseWeekMicroSessions
-      : upcoming_sessions;
-
-  const currentWeekMicroSessions =
-    microcycles?.find((mc) => mc.sequence_number === weekInView)?.sessions ?? [];
-
-  const sessionsForWeek: Session[] = [];
-
-  const maxLength = Math.max(
-    baseTemplateSessions.length,
-    currentWeekMicroSessions.length,
-  );
-
-  for (let i = 0; i < maxLength; i += 1) {
-    const templateSession = baseTemplateSessions[i];
-    const weekSession =
-      weekInView === baseWeek
-        ? currentWeekMicroSessions[i] ?? templateSession
-        : currentWeekMicroSessions[i];
-
-    if (!weekSession && templateSession) {
-      sessionsForWeek.push(templateSession);
-      continue;
-    }
-
-    if (!weekSession) {
-      continue;
-    }
-
-    if (weekInView === baseWeek) {
-      if (sessionHasContent(weekSession) || !templateSession) {
-        sessionsForWeek.push(weekSession);
-      } else {
-        sessionsForWeek.push(templateSession);
-      }
-      continue;
-    }
-
-    if (sessionHasContent(weekSession) || !templateSession) {
-      sessionsForWeek.push(weekSession);
-    } else {
-      sessionsForWeek.push({
-        ...templateSession,
-        id: weekSession.id,
-        microcycle_id: weekSession.microcycle_id,
-        day_number: weekSession.day_number,
-        session_date: weekSession.session_date,
-      });
-    }
-  }
-
-  // Group sessions by training vs rest
-  const trainingSessions = sessionsForWeek.filter(
+  const trainingSessions = sessionsForCycle.filter(
     (s) => s.session_type !== SessionType.RECOVERY
   );
 
-  const handlePrevWeek = () => {
-    setWeekOffset((prev) => {
-      const current = baseWeek + prev;
+  const handlePrevCycle = () => {
+    setCycleOffset((prev: number) => {
+      const current = activeCycle + prev;
       if (current <= 1) return prev;
       return prev - 1;
     });
   };
 
-  const handleNextWeek = () => {
-    setWeekOffset((prev) => {
-      const current = baseWeek + prev;
-      if (current >= totalWeeks) return prev;
+  const handleNextCycle = () => {
+    setCycleOffset((prev: number) => {
+      const current = activeCycle + prev;
+      if (totalCycles && current >= totalCycles) return prev;
       return prev + 1;
     });
   };
@@ -250,26 +219,26 @@ function ProgramDetailPage() {
 
       {/* Main Content */}
       <main className="flex-1 container-app py-6 space-y-6">
-        {/* Week Navigation */}
+        {/* Microcycle Navigation */}
         <section className="flex justify-center">
           <div className="inline-flex items-center gap-4 rounded-full border border-border bg-background-elevated px-4 py-1.5 text-xs">
             <button
               type="button"
-              onClick={handlePrevWeek}
-              disabled={weekInView <= 1}
+              onClick={handlePrevCycle}
+              disabled={cycleInView <= 1}
               className="text-foreground-muted disabled:opacity-40 disabled:cursor-default"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
             <div className="flex items-baseline gap-1">
-              <span className="text-foreground-muted">Week</span>
-              <span className="text-sm font-medium">{weekInView}</span>
-              <span className="text-xs text-foreground-muted">/ {totalWeeks}</span>
+              <span className="text-foreground-muted">Microcycle</span>
+              <span className="text-sm font-medium">{cycleInView}</span>
+              <span className="text-xs text-foreground-muted">/ {totalCycles || '—'}</span>
             </div>
             <button
               type="button"
-              onClick={handleNextWeek}
-              disabled={weekInView >= totalWeeks}
+              onClick={handleNextCycle}
+              disabled={!!totalCycles && cycleInView >= totalCycles}
               className="text-foreground-muted disabled:opacity-40 disabled:cursor-default"
             >
               <ChevronRight className="h-4 w-4" />
@@ -354,23 +323,23 @@ function ProgramDetailPage() {
         <section>
           <h2 className="text-sm font-medium text-foreground-muted mb-3 flex items-center gap-2">
             <Dumbbell className="h-4 w-4" />
-            Week {weekInView} Sessions ({trainingSessions.length})
+            Sessions ({trainingSessions.length})
           </h2>
 
-          {isGenerating && weekInView === baseWeek && (
+          {isGenerating && cycleInView === activeCycle && (
             <div className="mb-3 flex items-center gap-2 text-xs text-foreground-muted">
               <Spinner size="sm" />
               <span>Jerome is building your sessions. This can take up to a minute.</span>
             </div>
           )}
           
-          {sessionsForWeek.length === 0 ? (
+          {sessionsForCycle.length === 0 ? (
             <Card className="p-6 text-center">
               <p className="text-foreground-muted">No sessions scheduled</p>
             </Card>
           ) : (
             <div className="space-y-3">
-              {sessionsForWeek.map((session) => (
+              {sessionsForCycle.map((session: Session) => (
                 <SessionCard key={session.id} session={session} />
               ))}
             </div>
@@ -403,7 +372,7 @@ function ProgramDetailPage() {
               <div>
                 <span className="text-foreground-muted">Deload</span>
                 <p className="font-medium">
-                  Every {program.deload_every_n_microcycles} weeks
+                  Every {program.deload_every_n_microcycles} microcycles
                 </p>
               </div>
             </div>

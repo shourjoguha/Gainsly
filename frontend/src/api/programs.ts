@@ -55,7 +55,7 @@ export function useProgram(id: number) {
   return useQuery({
     queryKey: programKeys.detail(id),
     queryFn: () => fetchProgram(id),
-    enabled: !!id,
+    enabled: Number.isFinite(id),
   });
 }
 

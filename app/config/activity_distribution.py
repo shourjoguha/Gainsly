@@ -64,6 +64,10 @@ goal_bucket_weights = {
     "mobility": {"mobility": 1.0},
 }
 
+endurance_heavy_dedicated_cardio_day_default: bool = True
+endurance_heavy_dedicated_cardio_day_min_weight: int = 6
+endurance_heavy_dedicated_cardio_day_min_cycle_length_days: int = 7
+
 BIAS_RATIONALE = {
     "fat_loss": "Bias toward higher weekly energy expenditure via cardio blocks and/or metabolic finishers while keeping lifting exposure for lean mass retention.",
     "endurance": "Bias toward time-under-aerobic-load via cardio blocks or interval-style finishers; lifting stays but is not the sole driver.",

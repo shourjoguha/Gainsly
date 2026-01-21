@@ -40,6 +40,7 @@ export function ProfileTab() {
         scheduling_preferences: profile.scheduling_preferences || {
           mix_disciplines: true,
           cardio_preference: 'finisher',
+          endurance_dedicated_cardio_day_policy: 'default',
           microcycle_length_days: 'auto',
           split_template_preference: 'none',
         },
@@ -339,8 +340,23 @@ export function ProfileTab() {
                   >
                     <option value="none">None / I do it separately</option>
                     <option value="finisher">Add as finishers (10-20 mins)</option>
-                    <option value="dedicated_day">Dedicated conditioning day</option>
+                    <option value="dedicated_day">Dedicated cardio or conditioning day</option>
                     <option value="mixed">Mix both (finishers + dedicated)</option>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Endurance-Heavy Cardio Day</label>
+                  <p className="text-xs text-foreground-muted">
+                    When endurance is your top goal, include at least one dedicated cardio day per 14-day microcycle.
+                  </p>
+                  <select
+                    {...register('scheduling_preferences.endurance_dedicated_cardio_day_policy' as any)}
+                    className="w-full rounded-md border-0 bg-background-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    <option value="default">Use system default</option>
+                    <option value="always">Always include a cardio day</option>
+                    <option value="never">Never include a cardio day</option>
                   </select>
                 </div>
 

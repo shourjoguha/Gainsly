@@ -35,6 +35,25 @@ def test_normalize_session_enforces_accessory_xor_finisher():
     assert normalized2.get("accessory") is None
 
 
+def test_normalize_session_converts_accessory_to_finisher_when_preferred():
+    svc = SessionGeneratorService()
+    content = {
+        "warmup": [{"movement": "Warmup", "duration_seconds": 60}],
+        "main": [{"movement": "Bench Press", "sets": 3}],
+        "accessory": [{"movement": "Curl", "sets": 3}],
+        "finisher": None,
+        "cooldown": [{"movement": "Cooldown", "duration_seconds": 60}],
+    }
+    normalized = svc._normalize_session_content(
+        content,
+        SessionType.UPPER,
+        ["prefer_finisher"],
+        {"strength": 0, "hypertrophy": 4, "fat_loss": 0, "endurance": 6, "mobility": 0},
+    )
+    assert normalized.get("finisher") is not None
+    assert normalized.get("accessory") is None
+
+
 def test_conditioning_only_session_has_no_accessory_or_finisher():
     svc = SessionGeneratorService()
     content = {
@@ -85,6 +104,113 @@ def test_goal_based_weekly_distribution_tags_days():
             if isinstance(focus, list):
                 focus_tags.extend(focus)
     assert ("prefer_finisher" in focus_tags) or ("prefer_accessory" in focus_tags)
+
+
+def test_endurance_heavy_adds_dedicated_cardio_day_by_default():
+    svc = ProgramService()
+    split_config = svc._build_freeform_split_config(cycle_length_days=7, days_per_week=4)
+    split_config = svc._assign_freeform_day_types_and_focus(split_config, days_per_week=4)
+    goals = [
+        GoalWeight(goal=Goal.ENDURANCE, weight=6),
+        GoalWeight(goal=Goal.HYPERTROPHY, weight=4),
+    ]
+    out = svc._apply_goal_based_cycle_distribution(
+        split_config=split_config,
+        goals=goals,
+        days_per_week=4,
+        cycle_length_days=7,
+        max_session_duration=60,
+        user_experience_level="intermediate",
+        scheduling_prefs={"cardio_preference": "finisher"},
+    )
+    assert any((d.get("type") == "cardio") for d in out["structure"])
+
+
+def test_endurance_heavy_cardio_day_can_be_disabled():
+    svc = ProgramService()
+    split_config = svc._build_freeform_split_config(cycle_length_days=7, days_per_week=4)
+    split_config = svc._assign_freeform_day_types_and_focus(split_config, days_per_week=4)
+    goals = [
+        GoalWeight(goal=Goal.ENDURANCE, weight=6),
+        GoalWeight(goal=Goal.HYPERTROPHY, weight=4),
+    ]
+    out = svc._apply_goal_based_cycle_distribution(
+        split_config=split_config,
+        goals=goals,
+        days_per_week=4,
+        cycle_length_days=7,
+        max_session_duration=60,
+        user_experience_level="intermediate",
+        scheduling_prefs={
+            "cardio_preference": "finisher",
+            "endurance_dedicated_cardio_day_policy": "never",
+        },
+    )
+    assert not any((d.get("type") == "cardio") for d in out["structure"])
+
+
+def test_dedicated_day_prefers_conditioning_when_fat_loss_dominant():
+    svc = ProgramService()
+    split_config = svc._build_freeform_split_config(cycle_length_days=10, days_per_week=4)
+    split_config = svc._assign_freeform_day_types_and_focus(split_config, days_per_week=4)
+    goals = [
+        GoalWeight(goal=Goal.FAT_LOSS, weight=6),
+        GoalWeight(goal=Goal.ENDURANCE, weight=4),
+    ]
+    out = svc._apply_goal_based_cycle_distribution(
+        split_config=split_config,
+        goals=goals,
+        days_per_week=4,
+        cycle_length_days=10,
+        max_session_duration=60,
+        user_experience_level="intermediate",
+        scheduling_prefs={"cardio_preference": "dedicated_day"},
+    )
+    assert any((d.get("type") == "conditioning") for d in out["structure"])
+    assert not any((d.get("type") == "cardio") for d in out["structure"])
+
+
+def test_dedicated_day_prefers_cardio_when_endurance_dominant():
+    svc = ProgramService()
+    split_config = svc._build_freeform_split_config(cycle_length_days=10, days_per_week=4)
+    split_config = svc._assign_freeform_day_types_and_focus(split_config, days_per_week=4)
+    goals = [
+        GoalWeight(goal=Goal.ENDURANCE, weight=6),
+        GoalWeight(goal=Goal.HYPERTROPHY, weight=4),
+    ]
+    out = svc._apply_goal_based_cycle_distribution(
+        split_config=split_config,
+        goals=goals,
+        days_per_week=4,
+        cycle_length_days=10,
+        max_session_duration=60,
+        user_experience_level="intermediate",
+        scheduling_prefs={"cardio_preference": "dedicated_day"},
+    )
+    assert any((d.get("type") == "cardio") for d in out["structure"])
+
+
+def test_avoid_cardio_days_uses_conditioning_for_endurance_heavy_force():
+    svc = ProgramService()
+    split_config = svc._build_freeform_split_config(cycle_length_days=7, days_per_week=4)
+    split_config = svc._assign_freeform_day_types_and_focus(split_config, days_per_week=4)
+    goals = [
+        GoalWeight(goal=Goal.ENDURANCE, weight=6),
+        GoalWeight(goal=Goal.HYPERTROPHY, weight=4),
+    ]
+    out = svc._apply_goal_based_cycle_distribution(
+        split_config=split_config,
+        goals=goals,
+        days_per_week=4,
+        cycle_length_days=7,
+        max_session_duration=60,
+        user_experience_level="intermediate",
+        scheduling_prefs={
+            "cardio_preference": "finisher",
+            "avoid_cardio_days": True,
+        },
+    )
+    assert any((d.get("type") == "conditioning") for d in out["structure"])
 
 
 @pytest.mark.asyncio

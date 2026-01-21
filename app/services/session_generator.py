@@ -758,6 +758,17 @@ class SessionGeneratorService:
             return normalized
         
         if has_accessory:
+            if self._prefer_finisher(goal_weights, tags):
+                finisher = self._build_goal_finisher(goal_weights)
+                if not finisher:
+                    if goal_weights.get("endurance", 0) >= goal_weights.get("fat_loss", 0):
+                        finisher = dict(activity_distribution_config.goal_finisher_presets.get("endurance", {}))
+                    else:
+                        finisher = dict(activity_distribution_config.goal_finisher_presets.get("fat_loss", {}))
+                if finisher:
+                    normalized["finisher"] = finisher
+                    normalized["accessory"] = None
+                    return normalized
             normalized["finisher"] = None
             return normalized
         

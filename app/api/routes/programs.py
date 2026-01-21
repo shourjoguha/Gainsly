@@ -165,20 +165,22 @@ async def get_program(
     )
     microcycles = list(microcycles_result.scalars().unique().all())
 
-    # Get upcoming sessions (next 7 days)
+    # Get upcoming sessions (rest of active microcycle)
     upcoming_sessions = []
     if active_microcycle:
         today = date.today()
+        from datetime import timedelta
+        microcycle_end = active_microcycle.start_date + timedelta(days=active_microcycle.length_days)
         sessions_result = await db.execute(
             select(Session)
             .where(
                 and_(
                     Session.microcycle_id == active_microcycle.id,
-                    Session.date >= today
+                    Session.date >= today,
+                    Session.date < microcycle_end,
                 )
             )
             .order_by(Session.date)
-            .limit(7)
         )
         upcoming_sessions = list(sessions_result.scalars().all())
     

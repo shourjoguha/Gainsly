@@ -204,8 +204,9 @@ class ExerciseBlock(BaseModel):
 class FinisherBlock(BaseModel):
     """Finisher block schema."""
     type: str  # EMOM, AMRAP, circuit, etc.
+    circuit_type: str | None = None
     duration_minutes: int | None = None
-    rounds: int | None = None
+    rounds: str | int | None = None
     duration_seconds: int | None = None
     rest_seconds: int | None = None
     exercises: list[ExerciseBlock] | None = None

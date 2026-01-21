@@ -12,16 +12,16 @@ Responsible for:
 from datetime import datetime, timedelta, date
 from typing import Optional, Dict, Any
 import logging
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import (
-    Program, Microcycle, Session, HeuristicConfig, User, Movement, UserProfile
+    Program, Microcycle, Session, HeuristicConfig, User, Movement, UserProfile, UserMovementRule
 )
 from app.schemas.program import ProgramCreate
 from app.models.enums import (
     Goal, SplitTemplate, SessionType, MicrocycleStatus, PersonaTone, PersonaAggression,
-    ProgressionStyle
+    ProgressionStyle, MovementRuleType
 )
 from app.services.interference import interference_service
 from app.services.session_generator import session_generator
@@ -97,8 +97,8 @@ class ProgramService:
         # Fetch user profile for advanced preferences
         user_profile = await db.get(UserProfile, user_id)
         discipline_prefs = user_profile.discipline_preferences if user_profile else None
-        scheduling_prefs = user_profile.scheduling_preferences if user_profile else {}
-        scheduling_prefs = scheduling_prefs or {}
+        scheduling_prefs = dict(user_profile.scheduling_preferences) if user_profile and user_profile.scheduling_preferences else {}
+        scheduling_prefs["avoid_cardio_days"] = await self._infer_avoid_cardio_days(db, user_id)
 
         split_template = request.split_template
         if not split_template:
@@ -240,6 +240,29 @@ class ProgramService:
         await db.commit()
         await db.refresh(program)
         return program
+
+    async def _infer_avoid_cardio_days(self, db: AsyncSession, user_id: int) -> bool:
+        try:
+            result = await db.execute(
+                select(UserMovementRule.id)
+                .join(Movement, Movement.id == UserMovementRule.movement_id)
+                .where(
+                    and_(
+                        UserMovementRule.user_id == user_id,
+                        UserMovementRule.rule_type == MovementRuleType.HARD_NO,
+                        or_(
+                            Movement.primary_discipline.ilike("%cardio%"),
+                            Movement.primary_discipline.ilike("%endurance%"),
+                            Movement.tags.contains(["cardio"]),
+                            Movement.discipline_tags.contains(["cardio"]),
+                        ),
+                    )
+                )
+                .limit(1)
+            )
+            return result.scalar_one_or_none() is not None
+        except Exception:
+            return False
     
     async def generate_active_microcycle_sessions(
         self,
@@ -858,8 +881,52 @@ class ProgramService:
         beginner = experience == "beginner"
         overtraining_risk = days_per_week >= 6
 
-        allow_cardio_only = bool(scheduling_prefs.get("allow_cardio_only_days")) or overtraining_risk or beginner
-        allow_conditioning_only = bool(scheduling_prefs.get("allow_conditioning_only_days")) and (not beginner) and (not overtraining_risk)
+        cardio_preference = scheduling_prefs.get("cardio_preference") or "finisher"
+        avoid_cardio_days = bool(scheduling_prefs.get("avoid_cardio_days"))
+        dedicated_day_mode = cardio_preference == "dedicated_day"
+
+        preferred_dedicated_type = "cardio"
+        if dedicated_day_mode:
+            if avoid_cardio_days:
+                preferred_dedicated_type = "conditioning"
+            else:
+                preferred_dedicated_type = "cardio" if goal_weights["endurance"] >= goal_weights["fat_loss"] else "conditioning"
+
+        endurance_cardio_policy = scheduling_prefs.get("endurance_dedicated_cardio_day_policy") or "default"
+        if endurance_cardio_policy not in {"default", "always", "never"}:
+            endurance_cardio_policy = "default"
+        endurance_heavy = goal_weights["endurance"] >= int(activity_distribution_config.endurance_heavy_dedicated_cardio_day_min_weight)
+        force_endurance_cardio_day = (
+            endurance_heavy
+            and cycle_length_days >= int(activity_distribution_config.endurance_heavy_dedicated_cardio_day_min_cycle_length_days)
+            and endurance_cardio_policy != "never"
+            and (
+                endurance_cardio_policy == "always"
+                or bool(activity_distribution_config.endurance_heavy_dedicated_cardio_day_default)
+            )
+        )
+        force_endurance_dedicated_type = "conditioning" if avoid_cardio_days else "cardio"
+
+        allow_cardio_only = (
+            cardio_preference in {"mixed"}
+            or bool(scheduling_prefs.get("allow_cardio_only_days"))
+            or overtraining_risk
+            or beginner
+            or (cardio_preference == "finisher" and cardio_signal >= 8)
+            or (force_endurance_cardio_day and force_endurance_dedicated_type == "cardio")
+        )
+        allow_conditioning_only = (
+            cardio_preference in {"mixed"}
+            or bool(scheduling_prefs.get("allow_conditioning_only_days"))
+            or (force_endurance_cardio_day and force_endurance_dedicated_type == "conditioning")
+        ) and (not overtraining_risk)
+
+        if dedicated_day_mode:
+            allow_cardio_only = preferred_dedicated_type == "cardio" or (force_endurance_cardio_day and force_endurance_dedicated_type == "cardio")
+            allow_conditioning_only = preferred_dedicated_type == "conditioning"
+
+        if avoid_cardio_days:
+            allow_cardio_only = False
 
         training_indexes = [i for i, d in enumerate(structure) if not is_rest_day(d)]
         lifting_indexes = [i for i in training_indexes if (structure[i].get("type") or "") not in {"cardio", "mobility"}]
@@ -882,6 +949,10 @@ class ProgramService:
         conditioning_days = 0
         available_conditioning_days = int(finisher_minutes // max(1, activity_distribution_config.min_conditioning_minutes))
         desired_conditioning_days = min(cycle_blocks, available_conditioning_days, max_convertible, len(convert_candidates))
+        if force_endurance_cardio_day and force_endurance_dedicated_type == "conditioning" and desired_conditioning_days == 0 and max_convertible > 0 and len(convert_candidates) > 0:
+            desired_conditioning_days = 1
+        if dedicated_day_mode and preferred_dedicated_type == "conditioning" and desired_conditioning_days == 0 and max_convertible > 0 and len(convert_candidates) > 0:
+            desired_conditioning_days = 1
         if allow_conditioning_only and desired_conditioning_days > 0:
             for _ in range(desired_conditioning_days):
                 idx = convert_candidates.pop(0)
@@ -893,6 +964,10 @@ class ProgramService:
         cardio_days = 0
         available_cardio_days = int(cardio_minutes // max(1, max_session_duration))
         desired_cardio_days = min(cycle_blocks, available_cardio_days, max_convertible, len(convert_candidates))
+        if force_endurance_cardio_day and desired_cardio_days == 0 and max_convertible > 0 and len(convert_candidates) > 0:
+            desired_cardio_days = 1
+        if dedicated_day_mode and preferred_dedicated_type == "cardio" and desired_cardio_days == 0 and max_convertible > 0 and len(convert_candidates) > 0:
+            desired_cardio_days = 1
         if allow_cardio_only and desired_cardio_days > 0:
             for _ in range(desired_cardio_days):
                 idx = convert_candidates.pop(0)
