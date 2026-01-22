@@ -65,6 +65,7 @@ function LogWorkoutPage() {
   });
   
   // Meta
+  const [workoutName, setWorkoutName] = useState('');
   const [notes, setNotes] = useState('');
   const [difficulty, setDifficulty] = useState(5);
   const [enjoyment, setEnjoyment] = useState(3);
@@ -169,7 +170,18 @@ function LogWorkoutPage() {
       </div>
 
       {/* Meta Fields */}
-      <Card className="p-4 grid grid-cols-2 gap-4">
+      <Card className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="col-span-1 md:col-span-2">
+          <label className="text-xs font-medium text-foreground-muted">Workout Name (Optional)</label>
+          <input 
+            type="text" 
+            value={workoutName} 
+            onChange={e => setWorkoutName(e.target.value)}
+            maxLength={50}
+            placeholder="e.g. Leg Day Destruction"
+            className="w-full bg-transparent border-b border-border focus:outline-none focus:border-primary py-1"
+          />
+        </div>
         <div>
           <label className="text-xs font-medium text-foreground-muted">Date</label>
           <input 

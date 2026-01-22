@@ -79,10 +79,10 @@ export function Dashboard() {
           <Button
             size="lg"
             className={cn(
-              "w-full justify-between transition-all duration-300 border-0",
+              "w-full justify-between transition-all duration-300 border-0 py-8 h-auto min-h-[6rem] relative",
               selectedSession 
-                ? "bg-cta hover:bg-cta-hover text-white shadow-md hover:shadow-lg" 
-                : "bg-cta hover:bg-cta-hover text-white shadow-md hover:shadow-lg"
+                ? "bg-cta hover:bg-cta-hover text-white shadow-[0_6px_0_0_rgb(0,0,0,0.2)] active:shadow-none active:translate-y-[6px]" 
+                : "bg-cta hover:bg-cta-hover text-white shadow-[0_6px_0_0_rgb(0,0,0,0.2)] active:shadow-none active:translate-y-[6px]"
             )}
             onClick={() => {
               if (!selectedSession) {
@@ -93,18 +93,18 @@ export function Dashboard() {
           >
             {selectedSession ? (
               <Link to="/program/$programId" params={{ programId: String(activeProgram.id) }}>
-                <Play className="h-5 w-5 mr-2 fill-current" />
-                Start Day {selectedSession.day_number}
-                <ChevronRight className="h-5 w-5 ml-auto" />
+                <Play className="h-10 w-10 mr-3 fill-current" />
+                <span className="text-3xl font-bold">Start Day {selectedSession.day_number}</span>
+                <ChevronRight className="h-10 w-10 ml-auto" />
               </Link>
             ) : (
-              <div className="w-full flex items-center justify-center font-bold text-lg cursor-pointer">
-                <Play className="h-5 w-5 mr-2 fill-current" />
-                {isPickerOpen ? "Select a Workout" : "Let's Go!"}
+              <div className="w-full flex items-center justify-center cursor-pointer">
+                <Play className="h-10 w-10 mr-4 fill-current" />
+                <span className="text-4xl font-bold">{isPickerOpen ? "Select Workout" : "Let's Go!"}</span>
                 {isPickerOpen ? (
-                  <ChevronUp className="h-5 w-5 ml-2" />
+                  <ChevronUp className="h-10 w-10 ml-4" />
                 ) : (
-                  <ChevronDown className="h-5 w-5 ml-2" />
+                  <ChevronDown className="h-10 w-10 ml-4" />
                 )}
               </div>
             )}

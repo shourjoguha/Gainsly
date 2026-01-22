@@ -104,6 +104,7 @@ class ActivityInstanceCreate(BaseModel):
     """Activity instance creation schema."""
     activity_definition_id: int
     duration_minutes: int = Field(ge=1)
+    distance_km: float | None = Field(default=None, ge=0)
     notes: str | None = Field(default=None, max_length=500)
     perceived_difficulty: int = Field(ge=1, le=10)
     enjoyment_rating: int = Field(ge=1, le=5)
@@ -125,6 +126,7 @@ class CustomExerciseCreate(BaseModel):
 class CustomWorkoutCreate(BaseModel):
     """Custom workout creation schema."""
     log_date: DateType
+    workout_name: str | None = Field(default=None, max_length=50)
     duration_minutes: int | None = None
     notes: str | None = None
     perceived_difficulty: int | None = Field(default=None, ge=1, le=10)

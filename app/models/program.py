@@ -324,9 +324,11 @@ class ActivityInstance(Base):
     source = Column(SQLEnum(ActivitySource), nullable=False, index=True)
 
     activity_definition_id = Column(Integer, ForeignKey("activity_definitions.id"), nullable=True, index=True)
+    name = Column(String(50), nullable=True)
     performed_start = Column(DateTime, nullable=True, index=True)
     performed_end = Column(DateTime, nullable=True)
     duration_seconds = Column(Integer, nullable=True)
+    distance_km = Column(Float, nullable=True)
 
     notes = Column(Text, nullable=True)
     perceived_difficulty = Column(Integer, nullable=True)

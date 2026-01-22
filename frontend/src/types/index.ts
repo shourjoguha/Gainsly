@@ -524,8 +524,10 @@ export interface ActivityDefinition {
 
 export interface ActivityInstanceCreate {
   activity_definition_id: number;
+  activity_name?: string;
   log_date?: string;
   duration_minutes: number;
+  distance_km?: number;
   notes?: string;
   perceived_difficulty?: number;
   enjoyment_rating?: number;
@@ -543,6 +545,7 @@ export interface CustomExerciseCreate {
 
 export interface CustomWorkoutCreate {
   log_date: string;
+  workout_name?: string;
   duration_minutes?: number;
   notes?: string;
   perceived_difficulty?: number;

@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ArrowLeft, Save } from 'lucide-react';
 import { useActivityDefinitions, useLogActivity } from '@/api/logs';
-import { cn } from '@/lib/utils';
 import { Spinner } from '@/components/common/Spinner';
 
 export const Route = createFileRoute('/log/activity')({
@@ -15,7 +14,9 @@ export const Route = createFileRoute('/log/activity')({
 
 const activitySchema = z.object({
   activity_definition_id: z.coerce.number().min(1, "Please select an activity"),
+  activity_name: z.string().max(50, "Max 50 characters").optional(),
   duration_minutes: z.coerce.number().min(1, "Duration must be at least 1 minute"),
+  distance_km: z.coerce.number().min(0, "Distance must be positive").optional(),
   notes: z.string().max(500, "Max 500 characters").optional(),
   perceived_difficulty: z.coerce.number().min(1).max(10),
   enjoyment_rating: z.coerce.number().min(1).max(5),
@@ -28,17 +29,27 @@ function LogActivityPage() {
   const { data: activities, isLoading: isLoadingActivities } = useActivityDefinitions();
   const { mutate: logActivity, isPending: isSubmitting } = useLogActivity();
 
-  const form = useForm<ActivityFormValues>({
+  const form = useForm({
     resolver: zodResolver(activitySchema),
     defaultValues: {
       perceived_difficulty: 5,
       enjoyment_rating: 3,
       duration_minutes: 30,
+      distance_km: 0,
+      activity_definition_id: 0,
     },
   });
 
+  const selectedActivityId = Number(form.watch('activity_definition_id'));
+  const selectedActivity = activities?.find(a => a.id === selectedActivityId);
+  // Check for 'cardio' (lowercase from enum) or 'CARDIO' (just in case)
+  const isCardio = selectedActivity?.category?.toLowerCase() === 'cardio';
+
   const onSubmit = (data: ActivityFormValues) => {
-    logActivity(data, {
+    logActivity({
+      ...data,
+      distance_km: isCardio && data.distance_km && data.distance_km > 0 ? data.distance_km : undefined,
+    }, {
       onSuccess: () => {
         navigate({ to: '/' });
       },
@@ -67,17 +78,27 @@ function LogActivityPage() {
           {/* Activity Selector */}
           <div className="space-y-2">
             <label className="text-sm font-medium">Activity</label>
-            <select
-              {...form.register('activity_definition_id')}
-              className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-            >
-              <option value="0">Select activity...</option>
-              {activities?.map((activity) => (
-                <option key={activity.id} value={activity.id}>
-                  {activity.name}
-                </option>
-              ))}
-            </select>
+            <div className="space-y-3">
+              <select
+                {...form.register('activity_definition_id')}
+                className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              >
+                <option value="0">Select activity...</option>
+                {activities?.map((activity) => (
+                  <option key={activity.id} value={activity.id}>
+                    {activity.name}
+                  </option>
+                ))}
+              </select>
+              
+              <input
+                type="text"
+                {...form.register('activity_name')}
+                placeholder="Name your activity (optional)"
+                maxLength={50}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              />
+            </div>
             {form.formState.errors.activity_definition_id && (
               <p className="text-sm text-destructive">{form.formState.errors.activity_definition_id.message}</p>
             )}
@@ -96,11 +117,27 @@ function LogActivityPage() {
             )}
           </div>
 
+          {/* Distance (Conditional for Cardio) */}
+          {isCardio && (
+            <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+              <label className="text-sm font-medium">Distance (km)</label>
+              <input
+                type="number"
+                step="0.01"
+                {...form.register('distance_km')}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              />
+              {form.formState.errors.distance_km && (
+                <p className="text-sm text-destructive">{form.formState.errors.distance_km.message}</p>
+              )}
+            </div>
+          )}
+
           {/* Difficulty */}
           <div className="space-y-2">
             <label className="text-sm font-medium flex justify-between">
               <span>Perceived Difficulty (1-10)</span>
-              <span className="text-foreground-muted font-normal">{form.watch('perceived_difficulty')}</span>
+              <span className="text-foreground-muted font-normal">{String(form.watch('perceived_difficulty'))}</span>
             </label>
             <input
               type="range"
@@ -120,7 +157,7 @@ function LogActivityPage() {
           <div className="space-y-2">
             <label className="text-sm font-medium flex justify-between">
               <span>Enjoyment Rating (1-5)</span>
-              <span className="text-foreground-muted font-normal">{form.watch('enjoyment_rating')}</span>
+              <span className="text-foreground-muted font-normal">{String(form.watch('enjoyment_rating'))}</span>
             </label>
             <input
               type="range"

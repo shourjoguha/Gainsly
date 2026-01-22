@@ -29,7 +29,9 @@ async def log_activity(
     instance = ActivityInstance(
         user_id=user_id,
         activity_definition_id=activity.activity_definition_id,
+        name=activity.activity_name,
         duration_seconds=activity.duration_minutes * 60,
+        distance_km=activity.distance_km,
         notes=activity.notes,
         perceived_difficulty=activity.perceived_difficulty,
         enjoyment_rating=activity.enjoyment_rating,

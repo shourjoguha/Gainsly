@@ -62,7 +62,7 @@ async def create_custom_workout_log(
         user_id=user_id,
         program_id=None,
         microcycle_id=None,
-        name=f"Custom Workout - {log.log_date}",
+        name=log.workout_name if log.workout_name else f"Custom Workout - {log.log_date}",
         order=0,
         day_number=0,
         total_stimulus=0.0,
