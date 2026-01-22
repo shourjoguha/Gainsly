@@ -137,7 +137,8 @@ class Session(Base):
     __tablename__ = "sessions"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    microcycle_id = Column(Integer, ForeignKey("microcycles.id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    microcycle_id = Column(Integer, ForeignKey("microcycles.id"), nullable=True, index=True)
     
     # Scheduling
     date = Column(Date, nullable=False, index=True)
@@ -171,7 +172,14 @@ class Session(Base):
     # Coach reasoning
     coach_notes = Column(Text, nullable=True)
     
+    # Session Metrics (Actuals)
+    total_stimulus = Column(Float, default=0.0)
+    total_fatigue = Column(Float, default=0.0)
+    cns_fatigue = Column(Float, default=0.0)
+    muscle_volume_json = Column(JSON, default=dict)
+    
     # Relationships
+    user = relationship("User", foreign_keys=[user_id])
     microcycle = relationship("Microcycle", back_populates="sessions")
     exercises = relationship("SessionExercise", back_populates="session", cascade="all, delete-orphan")
     workout_logs = relationship("WorkoutLog", back_populates="session")
@@ -189,6 +197,7 @@ class SessionExercise(Base):
     __tablename__ = "session_exercises"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
     session_id = Column(Integer, ForeignKey("sessions.id"), nullable=False, index=True)
     movement_id = Column(Integer, ForeignKey("movements.id"), nullable=False, index=True)
     
@@ -215,8 +224,13 @@ class SessionExercise(Base):
     # Notes
     notes = Column(Text, nullable=True)
     
+    # Custom Metrics
+    stimulus = Column(Float, nullable=True)
+    fatigue = Column(Float, nullable=True)
+
     # Relationships
     session = relationship("Session", back_populates="exercises")
+    user = relationship("User", foreign_keys=[user_id])
     movement = relationship("Movement", back_populates="session_exercises")
 
     def __repr__(self):

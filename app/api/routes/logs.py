@@ -15,10 +15,13 @@ from app.models import (
     RecoverySignal,
     PatternExposure,
     Session,
+    SessionExercise,
     Movement,
     MovementPattern,
     RecoverySource,
+    CircuitTemplate,
 )
+from app.models.enums import ExerciseRole
 from app.schemas.logging import (
     WorkoutLogCreate,
     WorkoutLogResponse,
@@ -30,6 +33,8 @@ from app.schemas.logging import (
     RecoverySignalResponse,
     PatternExposureResponse,
     WorkoutLogListResponse,
+    CustomWorkoutCreate,
+    CustomExerciseCreate,
 )
 from app.services.metrics import calculate_e1rm, E1RM_FORMULAS
 
@@ -42,7 +47,161 @@ def get_current_user_id() -> int:
     return settings.default_user_id
 
 
+
+@router.post("/workouts/custom", response_model=WorkoutLogResponse)
+async def create_custom_workout_log(
+    log: CustomWorkoutCreate,
+    db: AsyncSession = Depends(get_db),
+    user_id: int = Depends(get_current_user_id),
+):
+    """
+    Log a custom workout (create ad-hoc session and log it).
+    """
+    # 1. Create ad-hoc Session
+    session = Session(
+        user_id=user_id,
+        program_id=None,
+        microcycle_id=None,
+        name=f"Custom Workout - {log.log_date}",
+        order=0,
+        day_number=0,
+        total_stimulus=0.0,
+        total_fatigue=0.0,
+        cns_fatigue=0.0,
+        muscle_volume_json={},
+    )
+    db.add(session)
+    await db.flush()
+
+    # 2. Stats Accumulators
+    stats = {
+        "total_stimulus": 0.0,
+        "total_fatigue": 0.0,
+        "cns_fatigue": 0.0,
+        "muscle_volume": {}  # muscle -> sets
+    }
+    
+    cns_weights = {
+        "very_low": 0.5, "low": 1.0, "moderate": 2.0, "high": 3.0, "very_high": 4.0
+    }
+
+    async def update_stats(movement_id: int, sets: int):
+        movement = await db.get(Movement, movement_id)
+        if not movement:
+            return
+        
+        # Stimulus/Fatigue
+        stats["total_stimulus"] += sets * (movement.stimulus_factor or 1.0)
+        stats["total_fatigue"] += sets * (movement.fatigue_factor or 1.0)
+        
+        # CNS
+        cns_load = movement.cns_load.lower() if isinstance(movement.cns_load, str) else str(movement.cns_load).lower()
+        stats["cns_fatigue"] += sets * cns_weights.get(cns_load, 2.0)
+        
+        # Volume
+        pm = str(movement.primary_muscle) if hasattr(movement.primary_muscle, 'value') else str(movement.primary_muscle)
+        stats["muscle_volume"][pm] = stats["muscle_volume"].get(pm, 0) + sets
+        
+        for sm in (movement.secondary_muscles or []):
+            sm_str = str(sm) if hasattr(sm, 'value') else str(sm)
+            stats["muscle_volume"][sm_str] = stats["muscle_volume"].get(sm_str, 0) + (sets * 0.5)
+
+    # 3. Process Sections
+    async def process_exercises(exercises: list[CustomExerciseCreate], role: ExerciseRole, order_start: int) -> int:
+        current_order = order_start
+        for ex in exercises:
+            sets = ex.sets or 1
+            await update_stats(ex.movement_id, sets)
+            
+            session_exercise = SessionExercise(
+                session_id=session.id,
+                movement_id=ex.movement_id,
+                exercise_role=role,
+                order=current_order,
+                target_sets=sets,
+                target_rep_range_min=ex.reps,
+                target_rep_range_max=ex.reps,
+                notes=ex.notes or (f"Weight: {ex.weight}" if ex.weight else None),
+                target_duration_seconds=ex.duration_seconds,
+                stimulus=0.0, # Per-exercise stimulus could be calc here too, but schema implies session total?
+                fatigue=0.0,
+                user_id=user_id,
+            )
+            db.add(session_exercise)
+            current_order += 1
+        return current_order
+
+    order_counter = 1
+    if log.warmup:
+        order_counter = await process_exercises(log.warmup, ExerciseRole.WARM_UP, order_counter)
+    if log.main:
+        order_counter = await process_exercises(log.main, ExerciseRole.MAIN_LIFT, order_counter)
+    if log.accessory:
+        order_counter = await process_exercises(log.accessory, ExerciseRole.ACCESSORY, order_counter)
+    
+    # Process Circuits
+    async def process_circuit(circuit_id: int, role: ExerciseRole, order_start: int) -> int:
+        circuit = await db.get(CircuitTemplate, circuit_id)
+        if not circuit or not circuit.exercises_json:
+            return order_start
+        current_order = order_start
+        rounds = circuit.default_rounds or 3
+        
+        for ex_data in circuit.exercises_json:
+            movement_id = ex_data.get("movement_id")
+            if not movement_id:
+                continue
+                
+            await update_stats(movement_id, rounds)
+            
+            session_exercise = SessionExercise(
+                session_id=session.id,
+                movement_id=movement_id,
+                exercise_role=role,
+                order=current_order,
+                target_sets=rounds,
+                user_id=user_id,
+                notes=f"Part of Circuit: {circuit.name}"
+            )
+            db.add(session_exercise)
+            current_order += 1
+        return current_order
+
+    if log.main_circuit_id:
+        order_counter = await process_circuit(log.main_circuit_id, ExerciseRole.MAIN_LIFT, order_counter)
+    if log.finisher:
+        order_counter = await process_exercises(log.finisher, ExerciseRole.FINISHER, order_counter)
+    if log.finisher_circuit_id:
+        order_counter = await process_circuit(log.finisher_circuit_id, ExerciseRole.FINISHER, order_counter)
+    if log.cooldown:
+        order_counter = await process_exercises(log.cooldown, ExerciseRole.COOL_DOWN, order_counter)
+
+    # 4. Update Session Stats
+    session.total_stimulus = stats["total_stimulus"]
+    session.total_fatigue = stats["total_fatigue"]
+    session.cns_fatigue = stats["cns_fatigue"]
+    session.muscle_volume_json = stats["muscle_volume"]
+    db.add(session)
+
+    # 5. Create WorkoutLog
+    workout_log = WorkoutLog(
+        user_id=user_id,
+        session_id=session.id,
+        notes=log.notes,
+        date=log.log_date,
+        completed=True,
+        perceived_difficulty=log.perceived_difficulty,
+        enjoyment_rating=log.enjoyment_rating,
+        actual_duration_minutes=log.duration_minutes,
+    )
+    db.add(workout_log)
+    await db.commit()
+    await db.refresh(workout_log)
+    return workout_log
+
+
 @router.post("/workouts", response_model=WorkoutLogResponse)
+
 async def create_workout_log(
     log: WorkoutLogCreate,
     db: AsyncSession = Depends(get_db),

@@ -98,6 +98,50 @@ class SorenessLogCreate(BaseModel):
     notes: str | None = None
 
 
+# ============== Activity Logging Schemas ==============
+
+class ActivityInstanceCreate(BaseModel):
+    """Activity instance creation schema."""
+    activity_definition_id: int
+    duration_minutes: int = Field(ge=1)
+    notes: str | None = Field(default=None, max_length=500)
+    perceived_difficulty: int = Field(ge=1, le=10)
+    enjoyment_rating: int = Field(ge=1, le=5)
+    performed_start: DatetimeType | None = None
+
+
+# ============== Custom Workout Schemas ==============
+
+class CustomExerciseCreate(BaseModel):
+    """Exercise in a custom workout."""
+    movement_id: int
+    sets: int | None = None
+    reps: int | None = None
+    weight: float | None = None
+    distance_meters: float | None = None
+    duration_seconds: int | None = None
+    notes: str | None = None
+
+class CustomWorkoutCreate(BaseModel):
+    """Custom workout creation schema."""
+    log_date: DateType
+    duration_minutes: int | None = None
+    notes: str | None = None
+    perceived_difficulty: int | None = Field(default=None, ge=1, le=10)
+    enjoyment_rating: int | None = Field(default=None, ge=1, le=5)
+    
+    # Sections
+    warmup: list[CustomExerciseCreate] | None = None
+    main: list[CustomExerciseCreate] | None = None
+    accessory: list[CustomExerciseCreate] | None = None
+    finisher: list[CustomExerciseCreate] | None = None
+    cooldown: list[CustomExerciseCreate] | None = None
+    
+    # Circuits
+    main_circuit_id: int | None = None
+    finisher_circuit_id: int | None = None
+
+
 class SorenessLogResponse(BaseModel):
     """Soreness log response schema."""
     id: int

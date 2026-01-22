@@ -21,6 +21,9 @@ import { Route as ProgramWizardRouteImport } from './routes/program.wizard'
 import { Route as ProgramNewRouteImport } from './routes/program.new'
 import { Route as ProgramManualRouteImport } from './routes/program.manual'
 import { Route as ProgramProgramIdRouteImport } from './routes/program.$programId'
+import { Route as LogWorkoutRouteImport } from './routes/log.workout'
+import { Route as LogCustomRouteImport } from './routes/log.custom'
+import { Route as LogActivityRouteImport } from './routes/log.activity'
 import { Route as AdminCircuitsCircuitIdRouteImport } from './routes/admin.circuits.$circuitId'
 
 const TeamsRoute = TeamsRouteImport.update({
@@ -83,6 +86,21 @@ const ProgramProgramIdRoute = ProgramProgramIdRouteImport.update({
   path: '/program/$programId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LogWorkoutRoute = LogWorkoutRouteImport.update({
+  id: '/log/workout',
+  path: '/log/workout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LogCustomRoute = LogCustomRouteImport.update({
+  id: '/log/custom',
+  path: '/log/custom',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LogActivityRoute = LogActivityRouteImport.update({
+  id: '/log/activity',
+  path: '/log/activity',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminCircuitsCircuitIdRoute = AdminCircuitsCircuitIdRouteImport.update({
   id: '/admin/circuits/$circuitId',
   path: '/admin/circuits/$circuitId',
@@ -98,6 +116,9 @@ export interface FileRoutesByFullPath {
   '/programs': typeof ProgramsRoute
   '/settings': typeof SettingsRoute
   '/teams': typeof TeamsRoute
+  '/log/activity': typeof LogActivityRoute
+  '/log/custom': typeof LogCustomRoute
+  '/log/workout': typeof LogWorkoutRoute
   '/program/$programId': typeof ProgramProgramIdRoute
   '/program/manual': typeof ProgramManualRoute
   '/program/new': typeof ProgramNewRoute
@@ -113,6 +134,9 @@ export interface FileRoutesByTo {
   '/programs': typeof ProgramsRoute
   '/settings': typeof SettingsRoute
   '/teams': typeof TeamsRoute
+  '/log/activity': typeof LogActivityRoute
+  '/log/custom': typeof LogCustomRoute
+  '/log/workout': typeof LogWorkoutRoute
   '/program/$programId': typeof ProgramProgramIdRoute
   '/program/manual': typeof ProgramManualRoute
   '/program/new': typeof ProgramNewRoute
@@ -129,6 +153,9 @@ export interface FileRoutesById {
   '/programs': typeof ProgramsRoute
   '/settings': typeof SettingsRoute
   '/teams': typeof TeamsRoute
+  '/log/activity': typeof LogActivityRoute
+  '/log/custom': typeof LogCustomRoute
+  '/log/workout': typeof LogWorkoutRoute
   '/program/$programId': typeof ProgramProgramIdRoute
   '/program/manual': typeof ProgramManualRoute
   '/program/new': typeof ProgramNewRoute
@@ -146,6 +173,9 @@ export interface FileRouteTypes {
     | '/programs'
     | '/settings'
     | '/teams'
+    | '/log/activity'
+    | '/log/custom'
+    | '/log/workout'
     | '/program/$programId'
     | '/program/manual'
     | '/program/new'
@@ -161,6 +191,9 @@ export interface FileRouteTypes {
     | '/programs'
     | '/settings'
     | '/teams'
+    | '/log/activity'
+    | '/log/custom'
+    | '/log/workout'
     | '/program/$programId'
     | '/program/manual'
     | '/program/new'
@@ -176,6 +209,9 @@ export interface FileRouteTypes {
     | '/programs'
     | '/settings'
     | '/teams'
+    | '/log/activity'
+    | '/log/custom'
+    | '/log/workout'
     | '/program/$programId'
     | '/program/manual'
     | '/program/new'
@@ -192,6 +228,9 @@ export interface RootRouteChildren {
   ProgramsRoute: typeof ProgramsRoute
   SettingsRoute: typeof SettingsRoute
   TeamsRoute: typeof TeamsRoute
+  LogActivityRoute: typeof LogActivityRoute
+  LogCustomRoute: typeof LogCustomRoute
+  LogWorkoutRoute: typeof LogWorkoutRoute
   ProgramProgramIdRoute: typeof ProgramProgramIdRoute
   ProgramManualRoute: typeof ProgramManualRoute
   ProgramNewRoute: typeof ProgramNewRoute
@@ -285,6 +324,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProgramProgramIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/log/workout': {
+      id: '/log/workout'
+      path: '/log/workout'
+      fullPath: '/log/workout'
+      preLoaderRoute: typeof LogWorkoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/log/custom': {
+      id: '/log/custom'
+      path: '/log/custom'
+      fullPath: '/log/custom'
+      preLoaderRoute: typeof LogCustomRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/log/activity': {
+      id: '/log/activity'
+      path: '/log/activity'
+      fullPath: '/log/activity'
+      preLoaderRoute: typeof LogActivityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/circuits/$circuitId': {
       id: '/admin/circuits/$circuitId'
       path: '/admin/circuits/$circuitId'
@@ -304,6 +364,9 @@ const rootRouteChildren: RootRouteChildren = {
   ProgramsRoute: ProgramsRoute,
   SettingsRoute: SettingsRoute,
   TeamsRoute: TeamsRoute,
+  LogActivityRoute: LogActivityRoute,
+  LogCustomRoute: LogCustomRoute,
+  LogWorkoutRoute: LogWorkoutRoute,
   ProgramProgramIdRoute: ProgramProgramIdRoute,
   ProgramManualRoute: ProgramManualRoute,
   ProgramNewRoute: ProgramNewRoute,

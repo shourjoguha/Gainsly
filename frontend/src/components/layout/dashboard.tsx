@@ -162,7 +162,7 @@ export function Dashboard() {
 
               {/* Log custom workout - moved inside collapsible */}
               <Button variant="outline" className="w-full" asChild>
-                <Link to="/">
+                <Link to="/log/custom">
                   <Plus className="h-4 w-4 mr-2" />
                   Log Custom Workout
                 </Link>
@@ -170,8 +170,16 @@ export function Dashboard() {
 
               {/* Expanded Session Details */}
               {selectedSession && (
-                <div className="animate-slide-down">
+                <div className="animate-slide-down space-y-4">
                   <SessionCard key={selectedSession.id} session={selectedSession} defaultExpanded={true} />
+                  
+                  {/* Adapt Session Button */}
+                  <Button variant="secondary" className="w-full" asChild>
+                    <Link to="/">
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      Adapt Session
+                    </Link>
+                  </Button>
                 </div>
               )}
             </div>
@@ -189,12 +197,6 @@ export function Dashboard() {
 
       {/* Secondary actions */}
       <div className="flex gap-3">
-        <Button variant="secondary" className="flex-1" asChild>
-          <Link to="/">
-            <MessageSquare className="h-4 w-4 mr-2" />
-            Adapt Session
-          </Link>
-        </Button>
         <Button variant="secondary" className="flex-1" asChild>
           <Link to="/program/new">
             <RefreshCw className="h-4 w-4 mr-2" />

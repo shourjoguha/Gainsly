@@ -504,6 +504,61 @@ export interface RecoverySignal {
 }
 
 // ========================================
+// ACTIVITY & CUSTOM WORKOUT TYPES
+// ========================================
+
+export enum ExerciseRole {
+  WARM_UP = 'warm_up',
+  MAIN_LIFT = 'main_lift',
+  ACCESSORY = 'accessory',
+  FINISHER = 'finisher',
+  COOL_DOWN = 'cool_down',
+}
+
+export interface ActivityDefinition {
+  id: number;
+  name: string;
+  category: string;
+  is_custom: boolean;
+}
+
+export interface ActivityInstanceCreate {
+  activity_definition_id: number;
+  log_date?: string;
+  duration_minutes: number;
+  notes?: string;
+  perceived_difficulty?: number;
+  enjoyment_rating?: number;
+}
+
+export interface CustomExerciseCreate {
+  movement_id: number;
+  sets: number;
+  reps?: number;
+  weight?: number;
+  distance_meters?: number;
+  duration_seconds?: number;
+  notes?: string;
+}
+
+export interface CustomWorkoutCreate {
+  log_date: string;
+  duration_minutes?: number;
+  notes?: string;
+  perceived_difficulty?: number;
+  enjoyment_rating?: number;
+  
+  warmup?: CustomExerciseCreate[];
+  main?: CustomExerciseCreate[];
+  accessory?: CustomExerciseCreate[];
+  finisher?: CustomExerciseCreate[];
+  cooldown?: CustomExerciseCreate[];
+  
+  main_circuit_id?: number;
+  finisher_circuit_id?: number;
+}
+
+// ========================================
 // SETTINGS TYPES
 // ========================================
 
@@ -523,33 +578,34 @@ export interface Movement {
   id: number;
   name: string;
   primary_pattern?: MovementPattern;
-  secondary_patterns?: string[];
-  primary_muscles?: string[];
-  secondary_muscles?: string[];
-  primary_region?: string;
+  primary_region?: PrimaryRegion;
+  primary_muscles?: PrimaryMuscle[];
+  secondary_muscles?: PrimaryMuscle[];
   default_equipment?: string;
-  complexity?: string;
-  is_compound?: boolean;
-  cns_load?: string;
-  cns_demand?: number;
-  skill_level?: string;
-  metric_type?: string;
   equipment_tags?: string[];
-  discipline_tags?: string[];
+  complexity?: number;
+  skill_level?: SkillLevel;
+  is_compound: boolean;
+  cns_load?: CNSLoad;
+  metric_type?: MetricType;
+  description?: string;
   user_id?: number;
+  created_at?: string;
 }
 
 export interface MovementCreate {
   name: string;
-  pattern: MovementPattern;
-  primary_muscle?: PrimaryMuscle;
-  primary_region?: PrimaryRegion;
-  secondary_muscles?: PrimaryMuscle[];
+  primary_pattern: MovementPattern;
+  primary_region: PrimaryRegion;
+  primary_muscles: PrimaryMuscle[];
+  secondary_muscles: PrimaryMuscle[];
   default_equipment?: string;
-  skill_level?: SkillLevel;
-  cns_load?: CNSLoad;
-  metric_type?: MetricType;
-  compound?: boolean;
+  equipment_tags: string[];
+  complexity: number;
+  skill_level: SkillLevel;
+  is_compound: boolean;
+  cns_load: CNSLoad;
+  metric_type: MetricType;
   description?: string;
 }
 
