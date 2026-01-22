@@ -583,7 +583,7 @@ export interface Movement {
   secondary_muscles?: PrimaryMuscle[];
   default_equipment?: string;
   equipment_tags?: string[];
-  complexity?: number;
+  complexity?: string | number;
   skill_level?: SkillLevel;
   is_compound: boolean;
   cns_load?: CNSLoad;

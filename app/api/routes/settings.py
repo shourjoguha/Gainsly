@@ -469,6 +469,7 @@ async def list_movements(
                 primary_region=m.primary_region,
                 default_equipment=m.equipment_tags[0] if m.equipment_tags else None,
                 complexity=m.skill_level,
+                skill_level=m.skill_level,
                 is_compound=m.compound,
                 cns_load=m.cns_load,
                 user_id=m.user_id,
@@ -560,6 +561,7 @@ async def create_movement(
         primary_region=new_movement.primary_region,
         default_equipment=new_movement.equipment_tags[0] if new_movement.equipment_tags else None,
         complexity=new_movement.skill_level,
+        skill_level=new_movement.skill_level,
         is_compound=new_movement.compound,
         cns_load=new_movement.cns_load,
         metric_type=new_movement.metric_type,
@@ -588,6 +590,7 @@ async def get_movement(
         primary_region=movement.primary_region,
         default_equipment=movement.equipment_tags[0] if movement.equipment_tags else None,
         complexity=movement.skill_level,
+        skill_level=movement.skill_level,
         is_compound=movement.compound,
         cns_load=movement.cns_load,
     )

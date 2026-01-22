@@ -18,6 +18,9 @@ An AI-enabled workout coach that creates adaptive 8-12 week strength/fitness pro
 - **Circuit Support**: CrossFit-style circuits with AMRAP, EMOM, and other formats
 - **Goals System**: Long-term macro cycles with versioned goals and check-ins
 - **External Integrations**: Data lake architecture for Strava, Garmin, Apple Health, WHOOP, Oura
+- **Custom Workout Logging**: Log ad-hoc activities and custom workouts with detailed metrics
+- **Historic Tracking**: View and manage past programs and sessions
+
 
 ## Tech Stack
 
@@ -149,6 +152,7 @@ Gainsly/
 
 ### Logging
 - `POST /logs/workouts` - Log workout completion with feedback
+- `POST /logs/custom` - Log custom workout or activity
 - `POST /logs/soreness` - Log muscle soreness
 - `POST /logs/recovery` - Log recovery signals
 

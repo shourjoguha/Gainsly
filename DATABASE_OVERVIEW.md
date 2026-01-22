@@ -730,6 +730,7 @@ Model: `SessionExercise`
 - **FK**
   - `session_id` (FK → sessions.id, not null, indexed)
   - `movement_id` (FK → movements.id, not null, indexed)
+  - `user_id` (FK → users.id, nullable, indexed)
 - **Categorical**
   - `role` (SQLEnum(ExerciseRole), not null)
     - Values: `warmup`, `main`, `accessory`, `skill`, `finisher`, `cooldown`
@@ -963,3 +964,45 @@ Model: `ActivityInstance`
   - `activity_definition` → ActivityDefinition
   - `session` → Session (via planned_session_id)
 
+
+## 4. Debug & Troubleshooting
+
+### 4.1 Schema Mismatch / Missing Columns Error
+
+**Symptoms:**
+- Frontend fails to load lists (movements, sessions, circuits) with `500 Internal Server Error`.
+- Backend logs show `NameError: name 'user_id' is not defined` or `ProgrammingError: column "user_id" does not exist`.
+- "High Level Disjointment": Multiple independent features fail simultaneously.
+
+**Context:**
+Recent feature updates for Custom Workout Logging required adding ownership tracking (`user_id`) and metric columns to core tables (`sessions`, `movements`). If the Python models are updated but the database schema is not migrated, queries will fail when trying to select these new columns.
+
+**Affected Tables & Columns:**
+1.  **movements**:
+    - Missing `user_id` (Integer, FK)
+2.  **sessions**:
+    - Missing `user_id` (Integer, FK)
+    - Missing `total_stimulus`, `total_fatigue`, `cns_fatigue` (Float)
+    - Missing `muscle_volume_json` (JSON)
+3.  **session_exercises**:
+    - Missing `user_id` (Integer, FK)
+
+**Resolution:**
+Use the schema patch script or run raw SQL to manually add the missing columns if migrations fail.
+
+```sql
+-- PostgreSQL Patch
+ALTER TABLE movements ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id);
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id);
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS total_stimulus FLOAT DEFAULT 0.0;
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS total_fatigue FLOAT DEFAULT 0.0;
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS cns_fatigue FLOAT DEFAULT 0.0;
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS muscle_volume_json JSON DEFAULT '{}';
+ALTER TABLE session_exercises ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id);
+```
+
+**Verification:**
+Run `scripts/diagnose_system.py` (if available) or check endpoint health:
+- `GET /settings/movements`
+- `GET /circuits`
+- `GET /programs`

@@ -97,10 +97,10 @@ class MovementResponse(BaseModel):
     secondary_muscles: list[str] | None = None
     primary_region: PrimaryRegion | str | None = None
     default_equipment: str | None = None
-    complexity: str | None = None
+    complexity: str | int | None = None
     cns_load: str | None = None
     cns_demand: int | None = None
-    skill_level: int | None = None
+    skill_level: SkillLevel | str | None = None
     compound: bool | None = None
     is_compound: bool | None = None
     is_complex_lift: bool | None = None
