@@ -6,6 +6,7 @@ import type { Session, ExerciseBlock } from '@/types';
 
 interface SessionCardProps {
   session: Session;
+  defaultExpanded?: boolean;
 }
 
 // Session type display config
@@ -63,8 +64,8 @@ function ExerciseList({ exercises, title }: { exercises: ExerciseBlock[] | null 
   );
 }
 
-export function SessionCard({ session }: SessionCardProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+export function SessionCard({ session, defaultExpanded = false }: SessionCardProps) {
+  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   
   const config = SESSION_TYPE_CONFIG[session.session_type] || SESSION_TYPE_CONFIG.custom;
   const hasContent = session.main && session.main.length > 0;

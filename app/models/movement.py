@@ -42,6 +42,7 @@ class Movement(Base):
     
     # Movement classification
     pattern = Column(String(50), nullable=False, index=True)  # Stores enum value
+    block_type = Column(String(50), nullable=False, default="All", server_default="All", index=True)  # Populated based on pattern
     primary_muscle = Column(String(50), nullable=False, index=True)  # Stores enum value
     primary_region = Column(String(50), nullable=False, index=True)  # Stores enum value
     secondary_muscles = Column(JSON, default=list)  # List of PrimaryMuscle values

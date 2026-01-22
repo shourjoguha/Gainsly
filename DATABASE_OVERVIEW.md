@@ -770,6 +770,8 @@ Model: [Movement](file:///Users/shourjosmac/Documents/Gainsly/app/models/movemen
 - **Categorical / classification**
   - `pattern` (String(50), not null, indexed)
     - Intended values: **MovementPattern** enum values
+  - `block_type` (String(50), not null, default `"All"`, indexed)
+    - Intended values: `"mobility"`, `"olympic"`, `"Explosiveness"`, `"Endurance"`, `"Fat Loss"`, `"All"`
   - `primary_muscle` (String(50), not null, indexed)
     - Intended values: **PrimaryMuscle** enum values
   - `primary_region` (String(50), not null, indexed)

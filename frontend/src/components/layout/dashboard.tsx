@@ -1,10 +1,13 @@
+import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
-import { Play, MessageSquare, RefreshCw, Plus, ChevronLeft, ChevronRight, Eye, History } from 'lucide-react';
+import { Play, MessageSquare, RefreshCw, Plus, ChevronLeft, ChevronRight, Eye, History, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Spinner } from '@/components/common/Spinner';
-import { usePrograms } from '@/api/programs';
+import { usePrograms, useProgram } from '@/api/programs';
 import { useDashboardStats } from '@/api/stats';
+import { SessionCard } from '@/components/program/SessionCard';
+import { cn } from '@/lib/utils';
 
 export function Dashboard() {
   const userName = "Gain Smith";
@@ -12,6 +15,14 @@ export function Dashboard() {
   // Fetch active program
   const { data: programs, isLoading: programsLoading } = usePrograms(true);
   const activeProgram = programs?.[0];
+
+  // Fetch detailed program data for sessions
+  const { data: programDetails } = useProgram(activeProgram?.id ?? -1);
+  const sessions = programDetails?.upcoming_sessions || [];
+  
+  const [selectedSessionId, setSelectedSessionId] = useState<number | null>(null);
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const selectedSession = sessions.find(s => s.id === selectedSessionId);
   
   // Fetch dashboard stats
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
@@ -63,13 +74,109 @@ export function Dashboard() {
 
       {/* Primary CTA - Select/Start Workout */}
       {activeProgram ? (
-        <Button variant="cta" size="lg" className="w-full" asChild>
-          <Link to="/program/$programId" params={{ programId: String(activeProgram.id) }}>
-            <Play className="h-5 w-5 mr-2" />
-            View Program
-            <ChevronRight className="h-5 w-5 ml-auto" />
-          </Link>
-        </Button>
+        <div className="space-y-4">
+          {/* Main Action Button / Header */}
+          <Button
+            size="lg"
+            className={cn(
+              "w-full justify-between transition-all duration-300 border-0",
+              selectedSession 
+                ? "bg-cta hover:bg-cta-hover text-white shadow-md hover:shadow-lg" 
+                : "bg-cta hover:bg-cta-hover text-white shadow-md hover:shadow-lg"
+            )}
+            onClick={() => {
+              if (!selectedSession) {
+                setIsPickerOpen(!isPickerOpen);
+              }
+            }}
+            asChild={!!selectedSession}
+          >
+            {selectedSession ? (
+              <Link to="/program/$programId" params={{ programId: String(activeProgram.id) }}>
+                <Play className="h-5 w-5 mr-2 fill-current" />
+                Start Day {selectedSession.day_number}
+                <ChevronRight className="h-5 w-5 ml-auto" />
+              </Link>
+            ) : (
+              <div className="w-full flex items-center justify-center font-bold text-lg cursor-pointer">
+                <Play className="h-5 w-5 mr-2 fill-current" />
+                {isPickerOpen ? "Select a Workout" : "Let's Go!"}
+                {isPickerOpen ? (
+                  <ChevronUp className="h-5 w-5 ml-2" />
+                ) : (
+                  <ChevronDown className="h-5 w-5 ml-2" />
+                )}
+              </div>
+            )}
+          </Button>
+
+          {/* Collapsible Section */}
+          <div className={cn(
+            "grid transition-all duration-300 ease-in-out",
+            isPickerOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+          )}>
+            <div className="overflow-hidden space-y-4">
+              {/* Horizontal Session Picker */}
+              <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 pb-2 scrollbar-hide pt-1">
+                <div className="flex gap-3 min-w-max">
+                  {sessions.map((session) => {
+                    const isSelected = selectedSessionId === session.id;
+                    
+                    return (
+                      <button
+                        key={session.id}
+                        onClick={() => setSelectedSessionId(isSelected ? null : session.id)}
+                        className={cn(
+                          "flex flex-col items-center justify-center min-w-[100px] h-20 p-2 rounded-xl border-2 transition-all duration-200",
+                          isSelected 
+                            ? "bg-cta border-cta text-white shadow-md scale-105" 
+                            : "bg-background-elevated border-transparent hover:border-border text-foreground shadow-sm hover:shadow-md"
+                        )}
+                      >
+                        <span className={cn(
+                          "text-xs font-medium uppercase tracking-wider",
+                          isSelected ? "opacity-90" : "opacity-70"
+                        )}>Day</span>
+                        <span className="text-xl font-bold">{session.day_number}</span>
+                        {session.session_type && (
+                           <span className={cn(
+                             "text-[10px] mt-0.5 capitalize truncate w-full text-center",
+                             isSelected ? "opacity-80" : "opacity-60"
+                           )}>
+                             {session.session_type.replace('_', ' ')}
+                           </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                  
+                  {sessions.length === 0 && !programDetails && (
+                     <div className="flex gap-3">
+                       {[1, 2, 3].map(i => (
+                         <div key={i} className="w-[100px] h-20 rounded-xl bg-background-secondary animate-pulse" />
+                       ))}
+                     </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Log custom workout - moved inside collapsible */}
+              <Button variant="outline" className="w-full" asChild>
+                <Link to="/">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Log Custom Workout
+                </Link>
+              </Button>
+
+              {/* Expanded Session Details */}
+              {selectedSession && (
+                <div className="animate-slide-down">
+                  <SessionCard key={selectedSession.id} session={selectedSession} defaultExpanded={true} />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       ) : (
         <Button variant="cta" size="lg" className="w-full" asChild>
           <Link to="/program/new">
@@ -105,14 +212,6 @@ export function Dashboard() {
           <History className="h-4 w-4" />
         </Button>
       </div>
-
-      {/* Log custom workout */}
-      <Button variant="outline" className="w-full" asChild>
-        <Link to="/">
-          <Plus className="h-4 w-4 mr-2" />
-          Log Custom Workout
-        </Link>
-      </Button>
 
       {/* Stats cards - top row */}
       {statsLoading ? (
