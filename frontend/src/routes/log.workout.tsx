@@ -8,6 +8,7 @@ import { useCircuits } from '@/api/circuits';
 import { useLogCustomWorkout } from '@/api/logs';
 import { cn } from '@/lib/utils';
 import { Spinner } from '@/components/common/Spinner';
+import { SorenessTracker } from '@/components/visuals';
 import { 
   MetricType, 
   ExerciseRole,
@@ -70,6 +71,7 @@ function LogWorkoutPage() {
   const [difficulty, setDifficulty] = useState(5);
   const [enjoyment, setEnjoyment] = useState(3);
   const [duration, setDuration] = useState(60);
+  const [showSorenessTracker, setShowSorenessTracker] = useState(false);
 
   // Selector State
   const [selectorOpen, setSelectorOpen] = useState<{ section: SectionId, type: 'movement' | 'circuit' } | null>(null);
@@ -323,6 +325,25 @@ function LogWorkoutPage() {
           </div>
         ))}
       </div>
+
+      {/* Soreness Tracker Toggle */}
+      {!showSorenessTracker ? (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => setShowSorenessTracker(true)}
+          className="w-full border-dashed"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Log Muscle Soreness
+        </Button>
+      ) : (
+        <SorenessTracker
+          logDate={date}
+          onSuccess={() => setShowSorenessTracker(false)}
+          onCancel={() => setShowSorenessTracker(false)}
+        />
+      )}
 
       {/* Footer Meta */}
       <Card className="p-4 space-y-4">

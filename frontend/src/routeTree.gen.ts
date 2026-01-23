@@ -13,6 +13,7 @@ import { Route as TeamsRouteImport } from './routes/teams'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ProgramsRouteImport } from './routes/programs'
 import { Route as MovementsRouteImport } from './routes/movements'
+import { Route as LibraryRouteImport } from './routes/library'
 import { Route as FriendsRouteImport } from './routes/friends'
 import { Route as FavoritesRouteImport } from './routes/favorites'
 import { Route as CircuitsRouteImport } from './routes/circuits'
@@ -22,6 +23,7 @@ import { Route as ProgramNewRouteImport } from './routes/program.new'
 import { Route as ProgramManualRouteImport } from './routes/program.manual'
 import { Route as ProgramProgramIdRouteImport } from './routes/program.$programId'
 import { Route as LogWorkoutRouteImport } from './routes/log.workout'
+import { Route as LogSorenessRouteImport } from './routes/log.soreness'
 import { Route as LogCustomRouteImport } from './routes/log.custom'
 import { Route as LogActivityRouteImport } from './routes/log.activity'
 import { Route as AdminCircuitsCircuitIdRouteImport } from './routes/admin.circuits.$circuitId'
@@ -44,6 +46,11 @@ const ProgramsRoute = ProgramsRouteImport.update({
 const MovementsRoute = MovementsRouteImport.update({
   id: '/movements',
   path: '/movements',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LibraryRoute = LibraryRouteImport.update({
+  id: '/library',
+  path: '/library',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FriendsRoute = FriendsRouteImport.update({
@@ -91,6 +98,11 @@ const LogWorkoutRoute = LogWorkoutRouteImport.update({
   path: '/log/workout',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LogSorenessRoute = LogSorenessRouteImport.update({
+  id: '/log/soreness',
+  path: '/log/soreness',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LogCustomRoute = LogCustomRouteImport.update({
   id: '/log/custom',
   path: '/log/custom',
@@ -112,12 +124,14 @@ export interface FileRoutesByFullPath {
   '/circuits': typeof CircuitsRoute
   '/favorites': typeof FavoritesRoute
   '/friends': typeof FriendsRoute
+  '/library': typeof LibraryRoute
   '/movements': typeof MovementsRoute
   '/programs': typeof ProgramsRoute
   '/settings': typeof SettingsRoute
   '/teams': typeof TeamsRoute
   '/log/activity': typeof LogActivityRoute
   '/log/custom': typeof LogCustomRoute
+  '/log/soreness': typeof LogSorenessRoute
   '/log/workout': typeof LogWorkoutRoute
   '/program/$programId': typeof ProgramProgramIdRoute
   '/program/manual': typeof ProgramManualRoute
@@ -130,12 +144,14 @@ export interface FileRoutesByTo {
   '/circuits': typeof CircuitsRoute
   '/favorites': typeof FavoritesRoute
   '/friends': typeof FriendsRoute
+  '/library': typeof LibraryRoute
   '/movements': typeof MovementsRoute
   '/programs': typeof ProgramsRoute
   '/settings': typeof SettingsRoute
   '/teams': typeof TeamsRoute
   '/log/activity': typeof LogActivityRoute
   '/log/custom': typeof LogCustomRoute
+  '/log/soreness': typeof LogSorenessRoute
   '/log/workout': typeof LogWorkoutRoute
   '/program/$programId': typeof ProgramProgramIdRoute
   '/program/manual': typeof ProgramManualRoute
@@ -149,12 +165,14 @@ export interface FileRoutesById {
   '/circuits': typeof CircuitsRoute
   '/favorites': typeof FavoritesRoute
   '/friends': typeof FriendsRoute
+  '/library': typeof LibraryRoute
   '/movements': typeof MovementsRoute
   '/programs': typeof ProgramsRoute
   '/settings': typeof SettingsRoute
   '/teams': typeof TeamsRoute
   '/log/activity': typeof LogActivityRoute
   '/log/custom': typeof LogCustomRoute
+  '/log/soreness': typeof LogSorenessRoute
   '/log/workout': typeof LogWorkoutRoute
   '/program/$programId': typeof ProgramProgramIdRoute
   '/program/manual': typeof ProgramManualRoute
@@ -169,12 +187,14 @@ export interface FileRouteTypes {
     | '/circuits'
     | '/favorites'
     | '/friends'
+    | '/library'
     | '/movements'
     | '/programs'
     | '/settings'
     | '/teams'
     | '/log/activity'
     | '/log/custom'
+    | '/log/soreness'
     | '/log/workout'
     | '/program/$programId'
     | '/program/manual'
@@ -187,12 +207,14 @@ export interface FileRouteTypes {
     | '/circuits'
     | '/favorites'
     | '/friends'
+    | '/library'
     | '/movements'
     | '/programs'
     | '/settings'
     | '/teams'
     | '/log/activity'
     | '/log/custom'
+    | '/log/soreness'
     | '/log/workout'
     | '/program/$programId'
     | '/program/manual'
@@ -205,12 +227,14 @@ export interface FileRouteTypes {
     | '/circuits'
     | '/favorites'
     | '/friends'
+    | '/library'
     | '/movements'
     | '/programs'
     | '/settings'
     | '/teams'
     | '/log/activity'
     | '/log/custom'
+    | '/log/soreness'
     | '/log/workout'
     | '/program/$programId'
     | '/program/manual'
@@ -224,12 +248,14 @@ export interface RootRouteChildren {
   CircuitsRoute: typeof CircuitsRoute
   FavoritesRoute: typeof FavoritesRoute
   FriendsRoute: typeof FriendsRoute
+  LibraryRoute: typeof LibraryRoute
   MovementsRoute: typeof MovementsRoute
   ProgramsRoute: typeof ProgramsRoute
   SettingsRoute: typeof SettingsRoute
   TeamsRoute: typeof TeamsRoute
   LogActivityRoute: typeof LogActivityRoute
   LogCustomRoute: typeof LogCustomRoute
+  LogSorenessRoute: typeof LogSorenessRoute
   LogWorkoutRoute: typeof LogWorkoutRoute
   ProgramProgramIdRoute: typeof ProgramProgramIdRoute
   ProgramManualRoute: typeof ProgramManualRoute
@@ -266,6 +292,13 @@ declare module '@tanstack/react-router' {
       path: '/movements'
       fullPath: '/movements'
       preLoaderRoute: typeof MovementsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/library': {
+      id: '/library'
+      path: '/library'
+      fullPath: '/library'
+      preLoaderRoute: typeof LibraryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/friends': {
@@ -331,6 +364,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LogWorkoutRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/log/soreness': {
+      id: '/log/soreness'
+      path: '/log/soreness'
+      fullPath: '/log/soreness'
+      preLoaderRoute: typeof LogSorenessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/log/custom': {
       id: '/log/custom'
       path: '/log/custom'
@@ -360,12 +400,14 @@ const rootRouteChildren: RootRouteChildren = {
   CircuitsRoute: CircuitsRoute,
   FavoritesRoute: FavoritesRoute,
   FriendsRoute: FriendsRoute,
+  LibraryRoute: LibraryRoute,
   MovementsRoute: MovementsRoute,
   ProgramsRoute: ProgramsRoute,
   SettingsRoute: SettingsRoute,
   TeamsRoute: TeamsRoute,
   LogActivityRoute: LogActivityRoute,
   LogCustomRoute: LogCustomRoute,
+  LogSorenessRoute: LogSorenessRoute,
   LogWorkoutRoute: LogWorkoutRoute,
   ProgramProgramIdRoute: ProgramProgramIdRoute,
   ProgramManualRoute: ProgramManualRoute,

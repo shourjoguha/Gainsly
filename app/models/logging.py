@@ -177,3 +177,29 @@ class RecoverySignal(Base):
 
     def __repr__(self):
         return f"<RecoverySignal(id={self.id}, date={self.date}, source={self.source})>"
+
+
+class MuscleRecoveryState(Base):
+    """Current muscle recovery state for each muscle (not historic)."""
+    __tablename__ = "muscle_recovery_states"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    
+    # Muscle identification
+    muscle = Column(String(50), nullable=False, unique=True, index=True)
+    
+    # Recovery level (0-5, where 0 = fully recovered, 5 = severe soreness)
+    recovery_level = Column(Integer, nullable=False, default=0)
+    
+    # When this state was last updated
+    last_updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, index=True)
+    
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    user = relationship("User", back_populates="muscle_recovery_states")
+
+    def __repr__(self):
+        return f"<MuscleRecoveryState(id={self.id}, muscle='{self.muscle}', level={self.recovery_level})>"

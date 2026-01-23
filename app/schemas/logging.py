@@ -94,7 +94,7 @@ class SorenessLogCreate(BaseModel):
     """Soreness log creation schema."""
     log_date: DateType | None = None
     body_part: str
-    soreness_1_5: int = Field(ge=1, le=5)
+    soreness_1_5: int = Field(ge=0, le=5)
     notes: str | None = None
 
 
@@ -190,6 +190,19 @@ class RecoverySignalResponse(BaseModel):
     readiness: float | None = None
     raw_payload: dict | None = None
     notes: str | None = None
+    created_at: DatetimeType | None = None
+    
+    class Config:
+        from_attributes = True
+
+
+class MuscleRecoveryStateResponse(BaseModel):
+    """Muscle recovery state response schema."""
+    id: int
+    user_id: int | None = None
+    muscle: str
+    recovery_level: int
+    last_updated_at: DatetimeType | None = None
     created_at: DatetimeType | None = None
     
     class Config:

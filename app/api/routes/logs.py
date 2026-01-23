@@ -13,6 +13,7 @@ from app.models import (
     TopSetLog,
     SorenessLog,
     RecoverySignal,
+    MuscleRecoveryState,
     PatternExposure,
     Session,
     SessionExercise,
@@ -31,6 +32,7 @@ from app.schemas.logging import (
     SorenessLogResponse,
     RecoverySignalCreate,
     RecoverySignalResponse,
+    MuscleRecoveryStateResponse,
     PatternExposureResponse,
     WorkoutLogListResponse,
     CustomWorkoutCreate,
@@ -454,16 +456,51 @@ async def create_soreness_log(
     db: AsyncSession = Depends(get_db),
     user_id: int = Depends(get_current_user_id),
 ):
-    """Log muscle soreness for a body part."""
+    """Log muscle soreness for a body part and update recovery state."""
+    from datetime import datetime, timedelta
+    
+    log_date = log.log_date or date.today()
+    
+    # Create soreness log
     soreness = SorenessLog(
         user_id=user_id,
-        date=log.log_date or date.today(),
+        date=log_date,
         body_part=log.body_part,
         soreness_1_5=log.soreness_1_5,
         notes=log.notes,
     )
     db.add(soreness)
+    await db.flush()
+    
+    # Update muscle recovery state
+    # Get existing state or create new
+    existing_state = await db.execute(
+        select(MuscleRecoveryState).where(
+            MuscleRecoveryState.user_id == user_id,
+            MuscleRecoveryState.muscle == log.body_part
+        )
+    )
+    existing = existing_state.scalar_one_or_none()
+    
+    now = datetime.utcnow()
+    
+    if existing:
+        # Update existing state with new soreness level
+        existing.recovery_level = log.soreness_1_5
+        existing.last_updated_at = now
+        db.add(existing)
+    else:
+        # Create new state
+        recovery_state = MuscleRecoveryState(
+            user_id=user_id,
+            muscle=log.body_part,
+            recovery_level=log.soreness_1_5,
+            last_updated_at=now,
+        )
+        db.add(recovery_state)
+    
     await db.commit()
+    await db.refresh(soreness)
     
     return SorenessLogResponse(
         id=soreness.id,
@@ -507,7 +544,91 @@ async def list_soreness_logs(
             notes=log.notes,
         )
         for log in logs
-    ]
+]
+
+
+# Muscle recovery state endpoints
+@router.get("/muscle-recovery", response_model=List[MuscleRecoveryStateResponse])
+async def get_muscle_recovery_states(
+    db: AsyncSession = Depends(get_db),
+    user_id: int = Depends(get_current_user_id),
+):
+    """
+    Get current muscle recovery states with decay applied.
+    Returns recovery levels adjusted for time since last update (1 point per 10 hours decay).
+    """
+    from datetime import datetime, timedelta
+    
+    query = select(MuscleRecoveryState).where(
+        MuscleRecoveryState.user_id == user_id
+    )
+    
+    result = await db.execute(query)
+    states = list(result.scalars().all())
+    
+    # Apply decay function: 1 point per 10 hours
+    now = datetime.utcnow()
+    decayed_states = []
+    
+    for state in states:
+        hours_since_update = (now - state.last_updated_at).total_seconds() / 3600
+        decay_points = int(hours_since_update / 10)
+        
+        # Apply decay (minimum 0)
+        decayed_level = max(0, state.recovery_level - decay_points)
+        
+        decayed_states.append(MuscleRecoveryStateResponse(
+            id=state.id,
+            user_id=state.user_id,
+            muscle=state.muscle,
+            recovery_level=decayed_level,
+            last_updated_at=state.last_updated_at,
+            created_at=state.created_at,
+        ))
+    
+    return decayed_states
+
+
+@router.get("/muscle-recovery/{muscle}", response_model=MuscleRecoveryStateResponse)
+async def get_muscle_recovery_state(
+    muscle: str,
+    db: AsyncSession = Depends(get_db),
+    user_id: int = Depends(get_current_user_id),
+):
+    """
+    Get current recovery state for a specific muscle with decay applied.
+    Returns recovery level adjusted for time since last update (1 point per 10 hours decay).
+    """
+    from datetime import datetime, timedelta
+    
+    query = select(MuscleRecoveryState).where(
+        MuscleRecoveryState.user_id == user_id,
+        MuscleRecoveryState.muscle == muscle
+    )
+    
+    result = await db.execute(query)
+    state = result.scalar_one_or_none()
+    
+    if not state:
+        raise HTTPException(status_code=404, detail="Muscle recovery state not found")
+    
+    # Apply decay function using config setting
+    now = datetime.utcnow()
+    decay_hours = settings.soreness_decay_hours
+    hours_since_update = (now - state.last_updated_at).total_seconds() / 3600
+    decay_points = int(hours_since_update / decay_hours)
+    
+    # Apply decay (minimum 0)
+    decayed_level = max(0, state.recovery_level - decay_points)
+    
+    return MuscleRecoveryStateResponse(
+        id=state.id,
+        user_id=state.user_id,
+        muscle=state.muscle,
+        recovery_level=decayed_level,
+        last_updated_at=state.last_updated_at,
+        created_at=state.created_at,
+    )
 
 
 # Recovery signals

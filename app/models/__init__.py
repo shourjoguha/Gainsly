@@ -73,7 +73,7 @@ from app.models.program import (
     UserFatigueState,
     ActivityInstanceLink,
 )
-from app.models.logging import WorkoutLog, TopSetLog, PatternExposure, SorenessLog, RecoverySignal
+from app.models.logging import WorkoutLog, TopSetLog, PatternExposure, SorenessLog, RecoverySignal, MuscleRecoveryState
 from app.models.config import (
     HeuristicConfig,
     ConversationThread,

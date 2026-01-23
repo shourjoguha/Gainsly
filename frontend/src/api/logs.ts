@@ -10,6 +10,7 @@ export const logsKeys = {
   all: ['logs'] as const,
   activities: () => [...logsKeys.all, 'activities'] as const,
   definitions: () => [...logsKeys.activities(), 'definitions'] as const,
+  soreness: () => [...logsKeys.all, 'soreness'] as const,
 };
 
 // Activity Definitions
@@ -53,6 +54,40 @@ export function useLogCustomWorkout() {
     mutationFn: logCustomWorkout,
     onSuccess: () => {
       // Invalidate workout history/dashboard
+    },
+  });
+}
+
+interface SorenessLogCreate {
+  log_date?: string;
+  body_part: string;
+  soreness_1_5: number;
+  notes?: string;
+}
+
+interface SorenessLogResponse {
+  id: number;
+  user_id?: number;
+  log_date?: string;
+  body_part: string;
+  soreness_1_5: number;
+  inferred_cause_session_id?: number;
+  inferred_cause_description?: string;
+  notes?: string;
+  created_at?: string;
+}
+
+async function logSoreness(payload: SorenessLogCreate): Promise<SorenessLogResponse> {
+  const { data } = await apiClient.post('/logs/soreness', payload);
+  return data;
+}
+
+export function useLogSoreness() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: logSoreness,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: logsKeys.soreness() });
     },
   });
 }

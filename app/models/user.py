@@ -61,6 +61,7 @@ class User(Base):
     workout_logs = relationship("WorkoutLog", back_populates="user", cascade="all, delete-orphan")
     soreness_logs = relationship("SorenessLog", back_populates="user", cascade="all, delete-orphan")
     recovery_signals = relationship("RecoverySignal", back_populates="user", cascade="all, delete-orphan")
+    muscle_recovery_states = relationship("MuscleRecoveryState", back_populates="user", cascade="all, delete-orphan")
     settings = relationship("UserSettings", back_populates="user", uselist=False, cascade="all, delete-orphan")
     conversation_threads = relationship("ConversationThread", back_populates="user", cascade="all, delete-orphan")
     profile = relationship("UserProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")

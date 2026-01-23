@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     # e1RM formula options
     default_e1rm_formula: Literal["epley", "brzycki", "lombardi", "oconner"] = "epley"
     
+    # Recovery settings
+    soreness_decay_hours: int = 10  # Hours for 1 point of soreness decay
+    
     admin_api_token: str | None = "gainsly-admin-123"
     # also in .env file in the fronend folder
     class Config:
