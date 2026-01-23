@@ -22,7 +22,7 @@ from app.models import (
 from app.schemas.program import ProgramCreate
 from app.models.enums import (
     Goal, SplitTemplate, SessionType, MicrocycleStatus, PersonaTone, PersonaAggression,
-    ProgressionStyle, MovementRuleType, SessionSection, ExerciseRole
+    ProgressionStyle, MovementRuleType, ExerciseRole
 )
 from app.services.interference import interference_service
 from app.services.session_generator import session_generator
@@ -424,7 +424,7 @@ class ProgramService:
                                     session_movements.append(name)
                                     
                                     # Treat finisher as accessory for interference
-                                    if ex.session_section in [SessionSection.ACCESSORY, SessionSection.FINISHER]:
+                                    if ex.exercise_role in [ExerciseRole.ACCESSORY, ExerciseRole.FINISHER]:
                                         accessory_movements_used.append(name)
                         
                         # Update tracking sets

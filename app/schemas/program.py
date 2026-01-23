@@ -247,7 +247,7 @@ class SessionResponse(BaseModel):
     def populate_sections_from_exercises(cls, data: Any) -> Any:
         """Populate section fields from the exercises relationship."""
         # specific imports to avoid circular dependencies
-        from app.models.enums import SessionSection
+        from app.models.enums import ExerciseRole
         
         # If data is not an object with 'exercises' attribute, return as is
         if not hasattr(data, 'exercises'):
@@ -281,31 +281,31 @@ class SessionResponse(BaseModel):
         
         for ex in sorted_exercises:
             # Skip if no section defined (shouldn't happen)
-            if not ex.session_section:
+            if not ex.exercise_role:
                 continue
                 
             block = to_block(ex)
             
             # Robust comparison for Enum or string
-            section_val = ex.session_section
+            section_val = ex.exercise_role
             if hasattr(section_val, 'value'):
                 section_val = section_val.value
             
-            if section_val == SessionSection.WARMUP.value:
+            if section_val == ExerciseRole.WARMUP.value:
                 warmup.append(block)
-            elif section_val == SessionSection.MAIN.value:
+            elif section_val == ExerciseRole.MAIN.value:
                 main.append(block)
-            elif section_val == SessionSection.ACCESSORY.value:
+            elif section_val == ExerciseRole.ACCESSORY.value:
                 accessory.append(block)
-            elif section_val == SessionSection.COOLDOWN.value:
+            elif section_val == ExerciseRole.COOLDOWN.value:
                 cooldown.append(block)
-            elif section_val == SessionSection.FINISHER.value:
+            elif section_val == ExerciseRole.FINISHER.value:
                 # For finisher, we might have multiple exercises in a circuit
                 # This logic assumes simple mapping for now. 
                 pass
 
         # Handle Finisher specifically if needed
-        finisher_exercises = [ex for ex in sorted_exercises if (ex.session_section.value if hasattr(ex.session_section, 'value') else ex.session_section) == SessionSection.FINISHER.value]
+        finisher_exercises = [ex for ex in sorted_exercises if (ex.exercise_role.value if hasattr(ex.exercise_role, 'value') else ex.exercise_role) == ExerciseRole.FINISHER.value]
         if finisher_exercises:
              # Check if we have circuit details from the session object
              circuit_type = "circuit"

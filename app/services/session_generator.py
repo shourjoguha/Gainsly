@@ -18,7 +18,7 @@ from app.config.settings import get_settings
 from app.llm import get_llm_provider, LLMConfig, Message
 from app.models import Movement, Session, Program, Microcycle, UserMovementRule, UserProfile, SessionExercise
 from app.models.circuit import CircuitTemplate
-from app.models.enums import SessionType, MovementRuleType, SkillLevel, SessionSection, ExerciseRole, MuscleRole
+from app.models.enums import SessionType, MovementRuleType, SkillLevel, ExerciseRole, MuscleRole
 from app.services.optimization import ConstraintSolver, OptimizationRequest, SolverMovement, SolverCircuit
 
 logger = logging.getLogger(__name__)
@@ -472,7 +472,7 @@ class SessionGeneratorService:
         order_counter = 1
         
         # Helper to process a section
-        async def process_section(section_name: str, session_section: SessionSection):
+        async def process_section(section_name: str, exercise_role: ExerciseRole):
             nonlocal order_counter
             exercises = content.get(section_name)
             if not exercises:
@@ -488,22 +488,12 @@ class SessionGeneratorService:
                     logger.warning(f"Movement '{movement_name}' not found in map. Skipping.")
                     continue
                 
-                # Determine role
-                role = ExerciseRole.ACCESSORY
-                if section_name == "main":
-                    role = ExerciseRole.MAIN
-                elif section_name == "warmup":
-                    role = ExerciseRole.WARMUP
-                elif section_name == "cooldown":
-                    role = ExerciseRole.COOLDOWN
-                
                 # Create SessionExercise
                 session_ex = SessionExercise(
                     session_id=session.id,
                     user_id=user_id,
                     movement_id=movement_id,
-                    session_section=session_section,
-                    role=role,
+                    exercise_role=exercise_role,
                     order_in_session=order_counter,
                     target_sets=ex.get("sets", 3),
                     target_rep_range_min=ex.get("rep_range_min") or (ex.get("reps") if isinstance(ex.get("reps"), int) else None),
@@ -512,16 +502,16 @@ class SessionGeneratorService:
                     target_duration_seconds=ex.get("duration_seconds"),
                     default_rest_seconds=ex.get("rest_seconds"),
                     notes=ex.get("notes"),
-                    superset_group=None # TODO: Handle supersets if present in JSON
+                    superset_group=None
                 )
                 
                 db.add(session_ex)
                 order_counter += 1
 
-        await process_section("warmup", SessionSection.WARMUP)
-        await process_section("main", SessionSection.MAIN)
-        await process_section("accessory", SessionSection.ACCESSORY)
-        await process_section("cooldown", SessionSection.COOLDOWN)
+        await process_section("warmup", ExerciseRole.WARMUP)
+        await process_section("main", ExerciseRole.MAIN)
+        await process_section("accessory", ExerciseRole.ACCESSORY)
+        await process_section("cooldown", ExerciseRole.COOLDOWN)
         
         # Handle finisher separately as it might be a dict or list
         finisher = content.get("finisher")
@@ -539,10 +529,9 @@ class SessionGeneratorService:
                         session_id=session.id,
                         user_id=user_id,
                         movement_id=movement_id,
-                        session_section=SessionSection.FINISHER,
-                        role=ExerciseRole.FINISHER,
+                        exercise_role=ExerciseRole.FINISHER,
                         order_in_session=order_counter,
-                        target_sets=ex.get("sets", 1), # Finisher usually 1 set/round
+                        target_sets=ex.get("sets", 1),
                         target_rep_range_min=ex.get("reps") if isinstance(ex.get("reps"), int) else None,
                         target_rep_range_max=ex.get("reps") if isinstance(ex.get("reps"), int) else None,
                         target_duration_seconds=ex.get("duration_seconds"),
@@ -575,9 +564,9 @@ class SessionGeneratorService:
                     continue
                     
                 weight = 1
-                if ex.session_section == SessionSection.MAIN:
+                if ex.exercise_role == ExerciseRole.MAIN:
                     weight = 3
-                elif ex.session_section == SessionSection.ACCESSORY:
+                elif ex.exercise_role == ExerciseRole.ACCESSORY:
                     weight = 2
                 
                 # Primary muscle

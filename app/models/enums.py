@@ -29,8 +29,9 @@ class PrimaryRegion(str, Enum):
     ANTERIOR_UPPER = "anterior upper"
     POSTERIOR_UPPER = "posterior upper"
     FULL_BODY = "full body"
-    LOWER_BODY = "lower body" 
+    LOWER_BODY = "lower body"
     UPPER_BODY = "upper body"
+    CORE = "core"
 
 class PrimaryMuscle(str, Enum):
     """Primary muscle groups."""
@@ -150,10 +151,11 @@ class DisciplineType(str, Enum):
 
 
 class SessionSection(str, Enum):
-    """Section of a training session."""
+    """Section of a training session. Deprecated: Use ExerciseRole instead."""
     WARMUP = "warmup"
     MAIN = "main"
     ACCESSORY = "accessory"
+    SKILL = "skill"
     FINISHER = "finisher"
     COOLDOWN = "cooldown"
     CARDIO = "cardio"

@@ -24,7 +24,6 @@ from app.models.enums import (
     ActivityCategory,
     ActivitySource,
     MetricType,
-    SessionSection,
 )
 
 
@@ -203,22 +202,19 @@ class SessionExercise(Base):
     session_id = Column(Integer, ForeignKey("sessions.id"), nullable=False, index=True)
     movement_id = Column(Integer, ForeignKey("movements.id"), nullable=False, index=True)
     
-    # Section & Organization
-    session_section = Column(SQLEnum(SessionSection, values_callable=lambda obj: [e.value for e in obj]), nullable=False, default=SessionSection.MAIN, index=True)
+    # Section & Organization (unified ExerciseRole enum)
+    exercise_role = Column(SQLEnum(ExerciseRole, values_callable=lambda obj: [e.value for e in obj]), nullable=False, index=True)
     circuit_id = Column(Integer, ForeignKey("circuit_templates.id"), nullable=True, index=True)
-
-    # Exercise role and order
-    role = Column(SQLEnum(ExerciseRole, values_callable=lambda obj: [e.value for e in obj]), nullable=False)
     order_in_session = Column(Integer, nullable=False)
-    superset_group = Column(Integer, nullable=True)  # Exercises with same number are supersetted
+    superset_group = Column(Integer, nullable=True)
     
     # Prescription
     target_sets = Column(Integer, nullable=False)
     target_rep_range_min = Column(Integer, nullable=True)
     target_rep_range_max = Column(Integer, nullable=True)
-    target_rpe = Column(Float, nullable=True)  # 6-10 scale
-    target_rir = Column(Integer, nullable=True)  # Reps in reserve (alternative to RPE)
-    target_duration_seconds = Column(Integer, nullable=True)  # For time-based exercises
+    target_rpe = Column(Float, nullable=True)
+    target_rir = Column(Integer, nullable=True)
+    target_duration_seconds = Column(Integer, nullable=True)
     
     # Rest
     default_rest_seconds = Column(Integer, nullable=True)
