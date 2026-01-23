@@ -36,7 +36,18 @@ from app.models.enums import (
     ActivitySource,
     MuscleRole,
 )
-from app.models.movement import Movement, MovementRelationship, Muscle, MovementMuscleMap
+from app.models.movement import (
+    Movement, 
+    MovementRelationship, 
+    Muscle, 
+    MovementMuscleMap,
+    Equipment,
+    MovementEquipment,
+    MovementDiscipline,
+    Tag,
+    MovementTag,
+    MovementCoachingCue
+)
 from app.models.user import (
     User,
     UserMovementRule,
@@ -116,6 +127,12 @@ __all__ = [
     "MovementRelationship",
     "Muscle",
     "MovementMuscleMap",
+    "Equipment",
+    "MovementEquipment",
+    "MovementDiscipline",
+    "Tag",
+    "MovementTag",
+    "MovementCoachingCue",
     "User",
     "UserMovementRule",
     "UserEnjoyableActivity",

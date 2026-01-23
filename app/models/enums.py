@@ -114,6 +114,50 @@ class MovementRuleType(str, Enum):
     HARD_NO = "hard_no"  # Never include
     HARD_YES = "hard_yes"  # Must appear at least once per microcycle
     PREFERRED = "preferred"  # Must appear at least once every 2 weeks
+    INCLUDE = "include"
+    EXCLUDE = "exclude"
+    BIAS = "bias"
+
+
+class RuleOperator(str, Enum):
+    """Operator for movement rules."""
+    EQ = "eq"
+    GT = "gt"
+    LT = "lt"
+    LTE = "lte"
+    GTE = "gte"
+
+
+class SpinalCompression(str, Enum):
+    """Level of spinal loading."""
+    NONE = "none"
+    LOW = "low"
+    MODERATE = "moderate"
+    HIGH = "high"
+
+
+class DisciplineType(str, Enum):
+    """Standardized disciplines."""
+    POWERLIFTING = "powerlifting"
+    OLYMPIC_WEIGHTLIFTING = "olympic_weightlifting"
+    BODYBUILDING = "bodybuilding"
+    CROSSFIT = "crossfit"
+    STRONGMAN = "strongman"
+    CALISTHENICS = "calisthenics"
+    YOGA = "yoga"
+    RUNNING = "running"
+    OTHER = "other"
+
+
+class SessionSection(str, Enum):
+    """Section of a training session."""
+    WARMUP = "warmup"
+    MAIN = "main"
+    ACCESSORY = "accessory"
+    FINISHER = "finisher"
+    COOLDOWN = "cooldown"
+    CARDIO = "cardio"
+    CONDITIONING = "conditioning"
 
 
 class RuleCadence(str, Enum):
@@ -161,6 +205,8 @@ class ExerciseRole(str, Enum):
     SKILL = "skill"
     FINISHER = "finisher"
     COOLDOWN = "cooldown"
+    CARDIO = "cardio"
+    CONDITIONING = "conditioning"
 
 
 class MicrocycleStatus(str, Enum):

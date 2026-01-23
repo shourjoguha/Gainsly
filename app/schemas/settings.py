@@ -2,7 +2,7 @@
 from datetime import date, datetime
 from typing import Any, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, computed_field, model_validator
 
 from app.models.enums import (
     E1RMFormula,
@@ -16,6 +16,7 @@ from app.models.enums import (
     CNSLoad,
     MetricType,
     Sex,
+    MuscleRole,
 )
 
 
@@ -106,12 +107,76 @@ class MovementResponse(BaseModel):
     is_complex_lift: bool | None = None
     is_unilateral: bool | None = None
     metric_type: str | None = None
-    discipline_tags: list[str] | None = None
-    equipment_tags: list[str] | None = None
+    disciplines: list[str] | None = None
+    equipment: list[str] | None = None
     substitution_group: str | None = None
     description: str | None = None
     user_id: int | None = None  # Add user_id
     
+    @model_validator(mode='before')
+    @classmethod
+    def populate_lists(cls, data: Any) -> Any:
+        """Populate list fields from relationships/scalars."""
+        if hasattr(data, "__dict__"):
+            # It's an ORM object
+            
+            # 1. Primary Muscles (Scalar -> List)
+            if hasattr(data, "primary_muscle") and data.primary_muscle:
+                # Ensure we handle both Enum and raw value
+                val = data.primary_muscle.value if hasattr(data.primary_muscle, "value") else data.primary_muscle
+                setattr(data, "primary_muscles", [val])
+            
+            # 2. Secondary Muscles (Relationship -> List)
+            if hasattr(data, "muscle_maps") and data.muscle_maps:
+                # Filter for SECONDARY or STABILIZER
+                secondary = []
+                for mm in data.muscle_maps:
+                    # Check role
+                    role_name = mm.role.name if hasattr(mm.role, "name") else str(mm.role)
+                    if role_name in ["SECONDARY", "STABILIZER"]:
+                        if mm.muscle:
+                            secondary.append(mm.muscle.slug)
+                setattr(data, "secondary_muscles", secondary)
+            
+            # 3. Disciplines (Relationship -> List)
+            if hasattr(data, "disciplines") and data.disciplines:
+                discs = []
+                for d in data.disciplines:
+                    val = d.discipline.value if hasattr(d.discipline, "value") else d.discipline
+                    discs.append(val)
+                setattr(data, "disciplines", discs)
+                
+            # 4. Equipment (Relationship -> List)
+            if hasattr(data, "equipment") and data.equipment:
+                eqs = []
+                for e in data.equipment:
+                    if e.equipment:
+                        eqs.append(e.equipment.name)
+                setattr(data, "equipment", eqs)
+                if eqs:
+                    setattr(data, "default_equipment", eqs[0])
+
+            # 5. Pattern (Enum -> String/Enum)
+            if hasattr(data, "pattern") and data.pattern:
+                 setattr(data, "primary_pattern", data.pattern)
+
+        return data
+
+    @computed_field
+    def discipline_tags(self) -> list[str] | None:
+        """Backward compatibility for discipline_tags."""
+        return self.disciplines
+
+    @computed_field
+    def equipment_tags(self) -> list[str] | None:
+        """Backward compatibility for equipment_tags."""
+        return self.equipment
+
+    @computed_field
+    def primary_discipline(self) -> str | None:
+        """Backward compatibility for primary_discipline."""
+        return self.disciplines[0] if self.disciplines else None
+
     class Config:
         from_attributes = True
 
@@ -146,6 +211,7 @@ class MovementFiltersResponse(BaseModel):
     regions: list[str]
     equipment: list[str]
     primary_disciplines: list[str]
+    secondary_muscles: list[str] | None = None
     types: list[str] | None = None
 
 

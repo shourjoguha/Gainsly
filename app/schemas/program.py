@@ -221,21 +221,139 @@ class SessionResponse(BaseModel):
     day_number: int
     session_type: SessionType
     intent_tags: list[str] = []
-    warmup: list[ExerciseBlock] | None = Field(None, validation_alias="warmup_json")
-    main: list[ExerciseBlock] | None = Field(None, validation_alias="main_json")
-    accessory: list[ExerciseBlock] | None = Field(None, validation_alias="accessory_json")
-    finisher: FinisherBlock | None = Field(None, validation_alias="finisher_json")
-    cooldown: list[ExerciseBlock] | None = Field(None, validation_alias="cooldown_json")
+    
+    # Sections (populated from exercises relationship)
+    warmup: list[ExerciseBlock] | None = None
+    main: list[ExerciseBlock] | None = None
+    accessory: list[ExerciseBlock] | None = None
+    finisher: FinisherBlock | None = None
+    cooldown: list[ExerciseBlock] | None = None
+    
+    # Time estimation
     estimated_duration_minutes: int | None = None
     warmup_duration_minutes: int | None = None
     main_duration_minutes: int | None = None
     accessory_duration_minutes: int | None = None
     finisher_duration_minutes: int | None = None
     cooldown_duration_minutes: int | None = None
+    
     coach_notes: str | None
     
     class Config:
         from_attributes = True
+
+    @model_validator(mode='before')
+    @classmethod
+    def populate_sections_from_exercises(cls, data: Any) -> Any:
+        """Populate section fields from the exercises relationship."""
+        # specific imports to avoid circular dependencies
+        from app.models.enums import SessionSection
+        
+        # If data is not an object with 'exercises' attribute, return as is
+        if not hasattr(data, 'exercises'):
+            return data
+            
+        # Initialize sections
+        warmup = []
+        main = []
+        accessory = []
+        cooldown = []
+        finisher = None
+        
+        # Helper to convert SessionExercise to ExerciseBlock
+        def to_block(ex) -> dict:
+            return {
+                "movement": ex.movement.name if ex.movement else "Unknown Movement",
+                "movement_id": ex.movement_id,
+                "sets": ex.target_sets,
+                "rep_range_min": ex.target_rep_range_min,
+                "rep_range_max": ex.target_rep_range_max,
+                "target_rpe": ex.target_rpe,
+                "target_rir": ex.target_rir,
+                "duration_seconds": ex.target_duration_seconds,
+                "rest_seconds": ex.default_rest_seconds,
+                "superset_with": None, # Logic for superset naming could be added here
+                "notes": ex.notes
+            }
+
+        # Sort exercises by order
+        sorted_exercises = sorted(data.exercises, key=lambda x: x.order_in_session)
+        
+        for ex in sorted_exercises:
+            # Skip if no section defined (shouldn't happen)
+            if not ex.session_section:
+                continue
+                
+            block = to_block(ex)
+            
+            # Robust comparison for Enum or string
+            section_val = ex.session_section
+            if hasattr(section_val, 'value'):
+                section_val = section_val.value
+            
+            if section_val == SessionSection.WARMUP.value:
+                warmup.append(block)
+            elif section_val == SessionSection.MAIN.value:
+                main.append(block)
+            elif section_val == SessionSection.ACCESSORY.value:
+                accessory.append(block)
+            elif section_val == SessionSection.COOLDOWN.value:
+                cooldown.append(block)
+            elif section_val == SessionSection.FINISHER.value:
+                # For finisher, we might have multiple exercises in a circuit
+                # This logic assumes simple mapping for now. 
+                pass
+
+        # Handle Finisher specifically if needed
+        finisher_exercises = [ex for ex in sorted_exercises if (ex.session_section.value if hasattr(ex.session_section, 'value') else ex.session_section) == SessionSection.FINISHER.value]
+        if finisher_exercises:
+             # Check if we have circuit details from the session object
+             circuit_type = "circuit"
+             rounds = 1
+             duration_minutes = None
+             
+             if hasattr(data, 'finisher_circuit') and data.finisher_circuit:
+                 fc = data.finisher_circuit
+                 circuit_type = fc.circuit_type.value if hasattr(fc.circuit_type, 'value') else fc.circuit_type
+                 rounds = fc.default_rounds or 1
+                 if fc.default_duration_seconds:
+                     duration_minutes = fc.default_duration_seconds // 60
+             
+             finisher = {
+                 "type": circuit_type,
+                 "rounds": rounds,
+                 "duration_minutes": duration_minutes,
+                 "exercises": [to_block(ex) for ex in finisher_exercises]
+             }
+
+        # Set attributes on the object (if it's a model instance, this might not work directly 
+        # without modifying the instance, but Pydantic 'from_attributes' reads attributes.
+        # However, we are in 'before' validator. 'data' is the ORM model instance.
+        # We can't easily modify the ORM instance here safely.
+        # Instead, we should convert to dict if possible, or return an object that proxies lookup.
+        
+        # Better approach: Return a dict with all fields populated
+        result = {
+            "id": data.id,
+            "microcycle_id": data.microcycle_id,
+            "date": data.date,
+            "day_number": data.day_number,
+            "session_type": data.session_type,
+            "intent_tags": data.intent_tags,
+            "warmup": warmup,
+            "main": main,
+            "accessory": accessory,
+            "finisher": finisher,
+            "cooldown": cooldown,
+            "estimated_duration_minutes": data.estimated_duration_minutes,
+            "warmup_duration_minutes": data.warmup_duration_minutes,
+            "main_duration_minutes": data.main_duration_minutes,
+            "accessory_duration_minutes": data.accessory_duration_minutes,
+            "finisher_duration_minutes": data.finisher_duration_minutes,
+            "cooldown_duration_minutes": data.cooldown_duration_minutes,
+            "coach_notes": data.coach_notes
+        }
+        return result
 
 
 class ProgramWithMicrocycleResponse(BaseModel):

@@ -13,6 +13,7 @@ from app.models import (
     Program,
     Microcycle,
     Session,
+    SessionExercise,  # Added
     ConversationThread,
     ConversationTurn,
     SorenessLog,
@@ -20,6 +21,7 @@ from app.models import (
     MicrocycleStatus,
     RecoverySource,
 )
+from sqlalchemy.orm import selectinload  # Added
 from app.schemas.daily import (
     DailyPlanResponse,
     AdaptationRequest,
@@ -76,11 +78,17 @@ async def get_daily_plan(
     
     # Get session for the date
     session_result = await db.execute(
-        select(Session).where(
+        select(Session)
+        .where(
             and_(
                 Session.microcycle_id == microcycle.id,
                 Session.date == target_date
             )
+        )
+        .options(
+            selectinload(Session.exercises).selectinload(SessionExercise.movement),
+            selectinload(Session.main_circuit),
+            selectinload(Session.finisher_circuit)
         )
     )
     session = session_result.scalar_one_or_none()
@@ -118,24 +126,7 @@ async def get_daily_plan(
             pass
     
     # Convert to response
-    session_response = SessionResponse(
-        id=session.id,
-        microcycle_id=session.microcycle_id,
-        session_date=session.date,
-        day_number=session.day_number,
-        session_type=session.session_type,
-        intent_tags=session.intent_tags or [],
-        warmup=session.warmup_json,
-        main=session.main_json,
-        accessory=session.accessory_json,
-        finisher=session.finisher_json,
-        cooldown=session.cooldown_json,
-        estimated_duration_minutes=session.estimated_duration_minutes,
-        warmup_duration_minutes=session.warmup_duration_minutes,
-        main_duration_minutes=session.main_duration_minutes,
-        cooldown_duration_minutes=session.cooldown_duration_minutes,
-        coach_notes=session.coach_notes,
-    )
+    session_response = SessionResponse.model_validate(session)
     
     return DailyPlanResponse(
         plan_date=target_date,

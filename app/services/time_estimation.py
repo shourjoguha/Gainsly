@@ -303,6 +303,82 @@ class TimeEstimationService:
             total_minutes=total
         )
 
+    def calculate_session_duration(self, session) -> SessionTimeBreakdown:
+        """
+        Estimate duration for a session object with relational exercises.
+        
+        Args:
+            session: Session model instance with exercises loaded
+            
+        Returns:
+            SessionTimeBreakdown
+        """
+        # Group exercises by section
+        warmup = []
+        main = []
+        accessory = []
+        cooldown = []
+        finisher_exercises = []
+        
+        # Sort by order to ensure correct sequence
+        exercises = sorted(session.exercises, key=lambda x: x.order_in_session)
+        
+        for ex in exercises:
+            # Convert to dict format expected by estimation methods
+            ex_dict = {
+                "sets": ex.target_sets,
+                "reps": ex.target_rep_range_max, # Use max for estimation
+                "rest_seconds": ex.default_rest_seconds,
+                "metric_type": "time" if ex.target_duration_seconds else "reps",
+                "target_duration_seconds": ex.target_duration_seconds,
+                "superset_group": ex.superset_group,
+                "role": ex.role.value if hasattr(ex.role, 'value') else ex.role
+            }
+            
+            section = ex.session_section.value if hasattr(ex.session_section, 'value') else ex.session_section
+            
+            if section == "warmup":
+                warmup.append(ex_dict)
+            elif section == "main":
+                main.append(ex_dict)
+            elif section == "accessory":
+                accessory.append(ex_dict)
+            elif section == "cooldown":
+                cooldown.append(ex_dict)
+            elif section == "finisher":
+                finisher_exercises.append(ex_dict)
+        
+        # Construct finisher dict if needed
+        finisher = None
+        if finisher_exercises:
+            # Check for circuit details
+            c_type = "circuit"
+            c_rounds = 1
+            c_duration = None
+            
+            if hasattr(session, 'finisher_circuit') and session.finisher_circuit:
+                fc = session.finisher_circuit
+                c_type = fc.circuit_type.value if hasattr(fc.circuit_type, 'value') else fc.circuit_type
+                c_rounds = fc.default_rounds or 1
+                if fc.default_duration_seconds:
+                    c_duration = fc.default_duration_seconds // 60
+            
+            finisher = {
+                "type": c_type,
+                "exercises": finisher_exercises,
+                "rounds": c_rounds,
+                "duration_minutes": c_duration
+            }
+            
+        return self.estimate_session_time(
+            warmup=warmup,
+            main=main,
+            accessory=accessory,
+            finisher=finisher,
+            cooldown=cooldown,
+            intent=session.intent_tags[0] if session.intent_tags else "hypertrophy"
+        )
+
     async def estimate_session_duration(
         self,
         db: Any,

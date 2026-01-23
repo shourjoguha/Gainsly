@@ -24,6 +24,7 @@ from app.models.enums import (
     ActivityCategory,
     ActivitySource,
     MetricType,
+    SessionSection,
 )
 
 
@@ -150,11 +151,12 @@ class Session(Base):
     
     # Session content (JSON blocks) - ALL OPTIONAL
     # Each section can be None if not needed for this session type
-    warmup_json = Column(JSON, nullable=True)  # Optional: general preparation
-    main_json = Column(JSON, nullable=True)  # Optional: primary work
-    accessory_json = Column(JSON, nullable=True)  # Optional: supporting work
-    finisher_json = Column(JSON, nullable=True)  # Optional: brief high-effort completion
-    cooldown_json = Column(JSON, nullable=True)  # Optional: active recovery
+    # DEPRECATED: Moving to session_exercises table
+    # warmup_json = Column(JSON, nullable=True)  # Optional: general preparation
+    # main_json = Column(JSON, nullable=True)  # Optional: primary work
+    # accessory_json = Column(JSON, nullable=True)  # Optional: supporting work
+    # finisher_json = Column(JSON, nullable=True)  # Optional: brief high-effort completion
+    # cooldown_json = Column(JSON, nullable=True)  # Optional: active recovery
     
     # Circuit Integration
     # If this session IS a circuit (Hyrox/Crossfit day), these fields are used
@@ -201,8 +203,12 @@ class SessionExercise(Base):
     session_id = Column(Integer, ForeignKey("sessions.id"), nullable=False, index=True)
     movement_id = Column(Integer, ForeignKey("movements.id"), nullable=False, index=True)
     
+    # Section & Organization
+    session_section = Column(SQLEnum(SessionSection, values_callable=lambda obj: [e.value for e in obj]), nullable=False, default=SessionSection.MAIN, index=True)
+    circuit_id = Column(Integer, ForeignKey("circuit_templates.id"), nullable=True, index=True)
+
     # Exercise role and order
-    role = Column(SQLEnum(ExerciseRole), nullable=False)
+    role = Column(SQLEnum(ExerciseRole, values_callable=lambda obj: [e.value for e in obj]), nullable=False)
     order_in_session = Column(Integer, nullable=False)
     superset_group = Column(Integer, nullable=True)  # Exercises with same number are supersetted
     
@@ -232,6 +238,7 @@ class SessionExercise(Base):
     session = relationship("Session", back_populates="exercises")
     user = relationship("User", foreign_keys=[user_id])
     movement = relationship("Movement", back_populates="session_exercises")
+    circuit = relationship("CircuitTemplate", foreign_keys=[circuit_id])
 
     def __repr__(self):
         return f"<SessionExercise(id={self.id}, session_id={self.session_id}, movement_id={self.movement_id})>"

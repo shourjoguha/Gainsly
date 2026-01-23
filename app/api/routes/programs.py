@@ -20,6 +20,7 @@ from app.models import (
     UserEnjoyableActivity,
     MicrocycleStatus,
     EnjoyableActivity,
+    SessionExercise,
 )
 from app.schemas.program import (
     ProgramCreate,
@@ -180,7 +181,14 @@ async def get_program(
                 Microcycle.status == MicrocycleStatus.ACTIVE
             )
         )
-        .options(selectinload(Microcycle.sessions))
+        .options(
+            selectinload(Microcycle.sessions)
+            .options(
+                selectinload(Session.exercises).selectinload(SessionExercise.movement),
+                selectinload(Session.main_circuit),
+                selectinload(Session.finisher_circuit)
+            )
+        )
     )
     active_microcycle = active_microcycle_result.scalar_one_or_none()
 
@@ -188,7 +196,14 @@ async def get_program(
     microcycles_result = await db.execute(
         select(Microcycle)
         .where(Microcycle.program_id == program_id)
-        .options(selectinload(Microcycle.sessions))
+        .options(
+            selectinload(Microcycle.sessions)
+            .options(
+                selectinload(Session.exercises).selectinload(SessionExercise.movement),
+                selectinload(Session.main_circuit),
+                selectinload(Session.finisher_circuit)
+            )
+        )
         .order_by(Microcycle.sequence_number)
     )
     microcycles = list(microcycles_result.scalars().unique().all())
@@ -208,6 +223,11 @@ async def get_program(
                     Session.date < microcycle_end,
                 )
             )
+            .options(
+                selectinload(Session.exercises).selectinload(SessionExercise.movement),
+                selectinload(Session.main_circuit),
+                selectinload(Session.finisher_circuit)
+            )
             .order_by(Session.date)
         )
         upcoming_sessions = list(sessions_result.scalars().all())
@@ -218,7 +238,7 @@ async def get_program(
     for session in upcoming_sessions:
         if not session.estimated_duration_minutes:
             try:
-                breakdown = time_estimation_service.estimate_session_duration(session)
+                breakdown = time_estimation_service.calculate_session_duration(session)
                 session.estimated_duration_minutes = breakdown.total_minutes
                 session.warmup_duration_minutes = breakdown.warmup_minutes
                 session.main_duration_minutes = breakdown.main_minutes
@@ -227,7 +247,7 @@ async def get_program(
                 session.cooldown_duration_minutes = breakdown.cooldown_minutes
             except Exception:
                 # Simple estimation: 4 mins per exercise + 10 mins warmup
-                exercise_count = len(session.main_json or []) + len(session.accessory_json or [])
+                exercise_count = len(session.exercises) if session.exercises else 0
                 session.estimated_duration_minutes = 10 + (exercise_count * 4)
             
         session_responses.append(SessionResponse.model_validate(session))
@@ -243,9 +263,14 @@ async def get_program(
         )
         for session in ordered_sessions:
             if not session.estimated_duration_minutes:
-                # Simple estimation: 4 mins per exercise + 10 mins warmup
-                exercise_count = len(session.main_json or []) + len(session.accessory_json or [])
-                session.estimated_duration_minutes = 10 + (exercise_count * 4)
+                try:
+                    # Attempt calculation if not set
+                    breakdown = time_estimation_service.calculate_session_duration(session)
+                    session.estimated_duration_minutes = breakdown.total_minutes
+                except Exception:
+                    # Simple estimation: 4 mins per exercise + 10 mins warmup
+                    exercise_count = len(session.exercises) if session.exercises else 0
+                    session.estimated_duration_minutes = 10 + (exercise_count * 4)
 
             microcycle_sessions.append(SessionResponse.model_validate(session))
 

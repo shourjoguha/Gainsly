@@ -1,6 +1,6 @@
 """User and user configuration models."""
 from datetime import datetime
-from sqlalchemy import Boolean, Column, Integer, String, ForeignKey, Enum as SQLEnum, Text
+from sqlalchemy import Boolean, Column, Integer, String, ForeignKey, Enum as SQLEnum, Text, CheckConstraint
 from sqlalchemy import Date, DateTime, Float, JSON
 from sqlalchemy.orm import relationship
 
@@ -17,6 +17,8 @@ from app.models.enums import (
     Sex,
     DataSource,
     BiometricMetricType,
+    RuleOperator,
+    DisciplineType,
 )
 
 
@@ -32,6 +34,11 @@ class User(Base):
     experience_level = Column(
         SQLEnum(ExperienceLevel),
         nullable=False,
+        default=ExperienceLevel.INTERMEDIATE
+    )
+    macro_experience_level = Column(
+        SQLEnum(ExperienceLevel),
+        nullable=True,
         default=ExperienceLevel.INTERMEDIATE
     )
     
@@ -77,8 +84,9 @@ class UserMovementRule(Base):
     movement_id = Column(Integer, ForeignKey("movements.id"), nullable=False, index=True)
     
     rule_type = Column(SQLEnum(MovementRuleType), nullable=False)
+    rule_operator = Column(SQLEnum(RuleOperator, values_callable=lambda obj: [e.value for e in obj]), nullable=False, default=RuleOperator.EQ)
     cadence = Column(SQLEnum(RuleCadence), nullable=False, default=RuleCadence.PER_MICROCYCLE)
-    notes = Column(Text, nullable=True)
+    # notes = Column(Text, nullable=True)
     
     # Relationships
     user = relationship("User", back_populates="movement_rules")
@@ -181,6 +189,7 @@ class UserSkill(Base):
     discipline_id = Column(Integer, ForeignKey("disciplines.id"), nullable=False, index=True)
     
     skill_level = Column(SQLEnum(SkillLevel), nullable=False, default=SkillLevel.BEGINNER)
+    interest_level = Column(Integer, CheckConstraint('interest_level >= 0 AND interest_level <= 10'), nullable=False, default=5)
     experience_years = Column(Float, nullable=True)
     
     notes = Column(Text, nullable=True)

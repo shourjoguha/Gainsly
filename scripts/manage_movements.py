@@ -1,3 +1,9 @@
+# python3 scripts/manage_movements.py ingest-exercemus --dry-run
+# python3 scripts/manage_movements.py ingest-exercemus --commit
+# python3 scripts/manage_movements.py enrich
+# python3 scripts/manage_movements.py fix-json
+# python3 scripts/manage_movements.py verify
+
 import asyncio
 import argparse
 import json

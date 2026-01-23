@@ -3,6 +3,7 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.database import get_db
@@ -14,6 +15,11 @@ from app.models import (
     UserMovementRule,
     UserEnjoyableActivity,
     Movement,
+    MovementDiscipline,
+    MovementEquipment,
+    MovementMuscleMap,
+    Muscle,
+    Equipment,
     HeuristicConfig,
     MovementPattern,
 )
@@ -32,6 +38,7 @@ from app.schemas.settings import (
     MovementCreate,
     MovementFiltersResponse,
 )
+from app.models.enums import MuscleRole
 
 router = APIRouter()
 settings = get_settings()
@@ -429,7 +436,11 @@ async def list_movements(
     user_id: int = Depends(get_current_user_id),
 ):
     """List available movements from the repository."""
-    query = select(Movement)
+    query = select(Movement).options(
+        selectinload(Movement.disciplines),
+        selectinload(Movement.equipment).selectinload(MovementEquipment.equipment),
+        selectinload(Movement.muscle_maps).selectinload(MovementMuscleMap.muscle)
+    )
     
     # Filter by user (system movements + user's movements)
     query = query.where((Movement.user_id.is_(None)) | (Movement.user_id == user_id))
@@ -438,6 +449,8 @@ async def list_movements(
         query = query.where(Movement.pattern == pattern)
     if search:
         query = query.where(Movement.name.ilike(f"%{search}%"))
+    if equipment:
+        query = query.join(Movement.equipment).join(MovementEquipment.equipment).where(Equipment.name == equipment)
     
     # Get total
     from sqlalchemy import func
@@ -448,6 +461,8 @@ async def list_movements(
         count_query = count_query.where(Movement.pattern == pattern)
     if search:
         count_query = count_query.where(Movement.name.ilike(f"%{search}%"))
+    if equipment:
+        count_query = count_query.join(Movement.equipment).join(MovementEquipment.equipment).where(Equipment.name == equipment)
     
     count_result = await db.execute(count_query)
     total = count_result.scalar() or 0
@@ -462,17 +477,27 @@ async def list_movements(
             MovementResponse(
                 id=m.id,
                 name=m.name,
+                pattern=m.pattern.value,
                 primary_pattern=m.pattern,
-                secondary_patterns=m.secondary_muscles,
-                primary_muscles=[m.primary_muscle],
-                secondary_muscles=m.secondary_muscles,
+                primary_muscle=m.primary_muscle.value if m.primary_muscle else None,
+                primary_muscles=[m.primary_muscle.value] if m.primary_muscle else [],
+                secondary_muscles=[
+                    mm.muscle.slug for mm in m.muscle_maps 
+                    if mm.role in [MuscleRole.SECONDARY, MuscleRole.STABILIZER] and mm.muscle
+                ] if m.muscle_maps else [],
                 primary_region=m.primary_region,
-                default_equipment=m.equipment_tags[0] if m.equipment_tags else None,
-                complexity=m.skill_level,
-                skill_level=m.skill_level,
+                compound=m.compound,
                 is_compound=m.compound,
-                cns_load=m.cns_load,
+                skill_level=m.skill_level,
+                cns_load=m.cns_load.value,
+                metric_type=m.metric_type.value,
+                is_complex_lift=m.is_complex_lift,
+                is_unilateral=m.is_unilateral,
+                substitution_group=m.substitution_group,
+                description=m.description,
                 user_id=m.user_id,
+                disciplines=[d.discipline.value for d in m.disciplines] if m.disciplines else [],
+                equipment=[e.equipment.name for e in m.equipment if e.equipment] if m.equipment else [],
             )
             for m in movements
         ],
@@ -498,24 +523,39 @@ async def get_movement_filters(
     result = await db.execute(query)
     movements = list(result.scalars().all())
 
-    patterns = sorted({m.pattern for m in movements if m.pattern})
+    patterns = sorted({m.pattern.value for m in movements if m.pattern})
     regions = sorted({m.primary_region for m in movements if m.primary_region})
-    disciplines = sorted({getattr(m, "primary_discipline", None) for m in movements if getattr(m, "primary_discipline", None)})
+    
+    # Get distinct disciplines for visible movements
+    disc_query = select(MovementDiscipline.discipline).join(Movement).where(
+        (Movement.user_id.is_(None)) | (Movement.user_id == user_id)
+    ).distinct()
+    disc_result = await db.execute(disc_query)
+    disciplines = sorted([d.value for d in disc_result.scalars().all() if d])
 
-    equipment_set: set[str] = set()
-    for m in movements:
-        tags = getattr(m, "equipment_tags", None) or []
-        for tag in tags:
-            if tag:
-                equipment_set.add(tag)
+    # Get distinct equipment for visible movements
+    eq_query = select(Equipment.name).join(MovementEquipment).join(Movement).where(
+        (Movement.user_id.is_(None)) | (Movement.user_id == user_id)
+    ).distinct()
+    eq_result = await db.execute(eq_query)
+    equipment = sorted([e for e in eq_result.scalars().all() if e])
+
+    # Get distinct secondary muscles for visible movements
+    mus_query = select(Muscle.slug).join(MovementMuscleMap).join(Movement).where(
+        (Movement.user_id.is_(None)) | (Movement.user_id == user_id),
+        MovementMuscleMap.role.in_([MuscleRole.SECONDARY, MuscleRole.STABILIZER])
+    ).distinct()
+    mus_result = await db.execute(mus_query)
+    secondary_muscles = sorted([m for m in mus_result.scalars().all() if m])
 
     types = ["compound", "accessory"]
 
     return MovementFiltersResponse(
         patterns=patterns,
         regions=regions,
-        equipment=sorted(equipment_set),
+        equipment=equipment,
         primary_disciplines=disciplines,
+        secondary_muscles=secondary_muscles,
         types=types,
     )
 
@@ -537,7 +577,6 @@ async def create_movement(
         pattern=movement.pattern,
         primary_muscle=movement.primary_muscle or "other",
         primary_region=movement.primary_region or "full_body",
-        secondary_muscles=movement.secondary_muscles or [],
         compound=movement.compound,
         description=movement.description,
         user_id=user_id,
@@ -545,27 +584,78 @@ async def create_movement(
         cns_load=movement.cns_load or "moderate",
         skill_level=movement.skill_level or "intermediate",
         metric_type=movement.metric_type or "reps",
-        equipment_tags=[movement.default_equipment] if movement.default_equipment else [],
     )
     
     db.add(new_movement)
+    await db.flush()
+
+    # Handle Secondary Muscles
+    if movement.secondary_muscles:
+        for muscle_enum in movement.secondary_muscles:
+            # Find muscle by slug (assuming enum value == slug)
+            muscle_slug = muscle_enum.value if hasattr(muscle_enum, 'value') else muscle_enum
+            muscle_res = await db.execute(select(Muscle).where(Muscle.slug == muscle_slug))
+            muscle = muscle_res.scalar_one_or_none()
+            if muscle:
+                mm = MovementMuscleMap(
+                    movement_id=new_movement.id, 
+                    muscle_id=muscle.id, 
+                    role=MuscleRole.SECONDARY
+                )
+                db.add(mm)
+    
+    # Handle Equipment
+    if movement.default_equipment:
+        # Find or create equipment
+        eq_name = movement.default_equipment
+        eq_result = await db.execute(select(Equipment).where(Equipment.name == eq_name))
+        eq = eq_result.scalar_one_or_none()
+        if not eq:
+            eq = Equipment(name=eq_name)
+            db.add(eq)
+            await db.flush()
+        
+        # Link
+        me = MovementEquipment(movement_id=new_movement.id, equipment_id=eq.id)
+        db.add(me)
+    
     await db.commit()
     await db.refresh(new_movement)
+    
+    # Refresh relations
+    query = select(Movement).where(Movement.id == new_movement.id).options(
+        selectinload(Movement.disciplines),
+        selectinload(Movement.equipment).selectinload(MovementEquipment.equipment),
+        selectinload(Movement.muscle_maps).selectinload(MovementMuscleMap.muscle)
+    )
+    result = await db.execute(query)
+    new_movement = result.scalar_one()
     
     return MovementResponse(
         id=new_movement.id,
         name=new_movement.name,
+        pattern=new_movement.pattern.value,
         primary_pattern=new_movement.pattern,
-        primary_muscles=[new_movement.primary_muscle],
-        secondary_muscles=new_movement.secondary_muscles,
+        primary_muscle=new_movement.primary_muscle.value,
+        primary_muscles=[new_movement.primary_muscle.value],
+        secondary_muscles=[
+            mm.muscle.slug for mm in new_movement.muscle_maps 
+            if mm.role in [MuscleRole.SECONDARY, MuscleRole.STABILIZER] and mm.muscle
+        ] if new_movement.muscle_maps else [],
         primary_region=new_movement.primary_region,
-        default_equipment=new_movement.equipment_tags[0] if new_movement.equipment_tags else None,
+        default_equipment=new_movement.equipment[0].equipment.name if new_movement.equipment else None,
         complexity=new_movement.skill_level,
         skill_level=new_movement.skill_level,
         is_compound=new_movement.compound,
-        cns_load=new_movement.cns_load,
-        metric_type=new_movement.metric_type,
+        cns_load=new_movement.cns_load.value,
+        metric_type=new_movement.metric_type.value,
+        is_complex_lift=new_movement.is_complex_lift,
+        is_unilateral=new_movement.is_unilateral,
+        substitution_group=new_movement.substitution_group,
+        description=new_movement.description,
         user_id=new_movement.user_id,
+        disciplines=[d.discipline.value for d in new_movement.disciplines] if new_movement.disciplines else [],
+        equipment=[e.equipment.name for e in new_movement.equipment if e.equipment] if new_movement.equipment else [],
     )
 
 
@@ -575,7 +665,13 @@ async def get_movement(
     db: AsyncSession = Depends(get_db),
 ):
     """Get details for a specific movement."""
-    movement = await db.get(Movement, movement_id)
+    query = select(Movement).where(Movement.id == movement_id).options(
+        selectinload(Movement.disciplines),
+        selectinload(Movement.equipment).selectinload(MovementEquipment.equipment),
+        selectinload(Movement.muscle_maps).selectinload(MovementMuscleMap.muscle)
+    )
+    result = await db.execute(query)
+    movement = result.scalar_one_or_none()
     
     if not movement:
         raise HTTPException(status_code=404, detail="Movement not found")
@@ -583,14 +679,26 @@ async def get_movement(
     return MovementResponse(
         id=movement.id,
         name=movement.name,
+        pattern=movement.pattern.value if movement.pattern else None,
         primary_pattern=movement.pattern,
-        secondary_patterns=movement.secondary_muscles,
-        primary_muscles=[movement.primary_muscle],
-        secondary_muscles=movement.secondary_muscles,
+        primary_muscle=movement.primary_muscle.value if movement.primary_muscle else None,
+        primary_muscles=[movement.primary_muscle.value] if movement.primary_muscle else [],
+        secondary_muscles=[
+            mm.muscle.slug for mm in movement.muscle_maps 
+            if mm.role in [MuscleRole.SECONDARY, MuscleRole.STABILIZER] and mm.muscle
+        ] if movement.muscle_maps else [],
         primary_region=movement.primary_region,
-        default_equipment=movement.equipment_tags[0] if movement.equipment_tags else None,
+        default_equipment=movement.equipment[0].equipment.name if movement.equipment else None,
         complexity=movement.skill_level,
         skill_level=movement.skill_level,
         is_compound=movement.compound,
-        cns_load=movement.cns_load,
+        cns_load=movement.cns_load.value if movement.cns_load else None,
+        metric_type=movement.metric_type.value if movement.metric_type else None,
+        is_complex_lift=movement.is_complex_lift,
+        is_unilateral=movement.is_unilateral,
+        substitution_group=movement.substitution_group,
+        description=movement.description,
+        user_id=movement.user_id,
+        disciplines=[d.discipline.value for d in movement.disciplines] if movement.disciplines else [],
+        equipment=[e.equipment.name for e in movement.equipment if e.equipment] if movement.equipment else [],
     )

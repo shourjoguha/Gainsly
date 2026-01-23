@@ -10,14 +10,15 @@ import logging
 from typing import Any
 
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import activity_distribution as activity_distribution_config
 from app.config.settings import get_settings
 from app.llm import get_llm_provider, LLMConfig, Message
-from app.models import Movement, Session, Program, Microcycle, UserMovementRule, UserProfile
+from app.models import Movement, Session, Program, Microcycle, UserMovementRule, UserProfile, SessionExercise
 from app.models.circuit import CircuitTemplate
-from app.models.enums import SessionType, MovementRuleType, SkillLevel
+from app.models.enums import SessionType, MovementRuleType, SkillLevel, SessionSection, ExerciseRole, MuscleRole
 from app.services.optimization import ConstraintSolver, OptimizationRequest, SolverMovement, SolverCircuit
 
 logger = logging.getLogger(__name__)
@@ -328,13 +329,33 @@ class SessionGeneratorService:
         async with async_session_maker() as db:
             session = await db.get(Session, session_id)
             if session:
-                session.warmup_json = content.get("warmup")
-                session.main_json = content.get("main")
-                session.accessory_json = content.get("accessory")
-                session.finisher_json = content.get("finisher")
-                session.cooldown_json = content.get("cooldown")
+                # session.warmup_json = content.get("warmup") # DEPRECATED
+                # session.main_json = content.get("main") # DEPRECATED
+                # session.accessory_json = content.get("accessory") # DEPRECATED
+                # session.finisher_json = content.get("finisher") # DEPRECATED
+                # session.cooldown_json = content.get("cooldown") # DEPRECATED
                 session.estimated_duration_minutes = content.get("estimated_duration_minutes", 60)
                 session.coach_notes = content.get("reasoning")
+                
+                # Create movement map from context for ID lookup
+                all_movements = context_data.get("all_movements", [])
+                movement_map = {}
+                for m in all_movements:
+                    # Handle both object and dict just in case
+                    m_name = getattr(m, "name", None) or m.get("name")
+                    m_id = getattr(m, "id", None) or m.get("id")
+                    if m_name and m_id:
+                        movement_map[m_name] = m_id
+                
+                # Save normalized session exercises
+                await self._save_session_exercises(
+                    db,
+                    session,
+                    content,
+                    movement_map,
+                    context_data["program"]["user_id"]
+                )
+
                 db.add(session)
                 await db.commit()
                 
@@ -432,16 +453,182 @@ class SessionGeneratorService:
         )
         return content
 
+    async def _save_session_exercises(
+        self,
+        db: AsyncSession,
+        session: Session,
+        content: dict[str, Any],
+        movement_map: dict[str, int],
+        user_id: int,
+    ) -> None:
+        """
+        Convert content dict to SessionExercise objects and save to DB.
+        """
+        from sqlalchemy import delete
+        
+        # Clear existing exercises for this session
+        await db.execute(delete(SessionExercise).where(SessionExercise.session_id == session.id))
+        
+        order_counter = 1
+        
+        # Helper to process a section
+        async def process_section(section_name: str, session_section: SessionSection):
+            nonlocal order_counter
+            exercises = content.get(section_name)
+            if not exercises:
+                return
+                
+            for ex in exercises:
+                movement_name = ex.get("movement")
+                if not movement_name:
+                    continue
+                    
+                movement_id = movement_map.get(movement_name)
+                if not movement_id:
+                    logger.warning(f"Movement '{movement_name}' not found in map. Skipping.")
+                    continue
+                
+                # Determine role
+                role = ExerciseRole.ACCESSORY
+                if section_name == "main":
+                    role = ExerciseRole.MAIN
+                elif section_name == "warmup":
+                    role = ExerciseRole.WARMUP
+                elif section_name == "cooldown":
+                    role = ExerciseRole.COOLDOWN
+                
+                # Create SessionExercise
+                session_ex = SessionExercise(
+                    session_id=session.id,
+                    user_id=user_id,
+                    movement_id=movement_id,
+                    session_section=session_section,
+                    role=role,
+                    order_in_session=order_counter,
+                    target_sets=ex.get("sets", 3),
+                    target_rep_range_min=ex.get("rep_range_min") or (ex.get("reps") if isinstance(ex.get("reps"), int) else None),
+                    target_rep_range_max=ex.get("rep_range_max") or (ex.get("reps") if isinstance(ex.get("reps"), int) else None),
+                    target_rpe=float(ex.get("target_rpe")) if ex.get("target_rpe") else None,
+                    target_duration_seconds=ex.get("duration_seconds"),
+                    default_rest_seconds=ex.get("rest_seconds"),
+                    notes=ex.get("notes"),
+                    superset_group=None # TODO: Handle supersets if present in JSON
+                )
+                
+                db.add(session_ex)
+                order_counter += 1
+
+        await process_section("warmup", SessionSection.WARMUP)
+        await process_section("main", SessionSection.MAIN)
+        await process_section("accessory", SessionSection.ACCESSORY)
+        await process_section("cooldown", SessionSection.COOLDOWN)
+        
+        # Handle finisher separately as it might be a dict or list
+        finisher = content.get("finisher")
+        if finisher:
+            if isinstance(finisher, dict) and finisher.get("exercises"):
+                for ex in finisher.get("exercises"):
+                    movement_name = ex.get("movement")
+                    if not movement_name:
+                        continue
+                    movement_id = movement_map.get(movement_name)
+                    if not movement_id:
+                        continue
+                        
+                    session_ex = SessionExercise(
+                        session_id=session.id,
+                        user_id=user_id,
+                        movement_id=movement_id,
+                        session_section=SessionSection.FINISHER,
+                        role=ExerciseRole.FINISHER,
+                        order_in_session=order_counter,
+                        target_sets=ex.get("sets", 1), # Finisher usually 1 set/round
+                        target_rep_range_min=ex.get("reps") if isinstance(ex.get("reps"), int) else None,
+                        target_rep_range_max=ex.get("reps") if isinstance(ex.get("reps"), int) else None,
+                        target_duration_seconds=ex.get("duration_seconds"),
+                        notes=ex.get("notes"),
+                    )
+                    db.add(session_ex)
+                    order_counter += 1
+
     async def _calculate_session_volume(self, db: AsyncSession, session: Session) -> dict[str, int]:
         """Helper to calculate volume after session is saved."""
         current_session_volume = {}
-        all_movements = []
         
-        if session.main_json: all_movements.extend([(m["movement"], 3) for m in session.main_json if "movement" in m])
-        if session.accessory_json: all_movements.extend([(m["movement"], 2) for m in session.accessory_json if "movement" in m])
-        if session.finisher_json and session.finisher_json.get("exercises"):
-            all_movements.extend([(m["movement"], 1) for m in session.finisher_json["exercises"] if "movement" in m])
-            
+        # 1. Calculate from SessionExercise (Preferred)
+        # Always query DB to ensure we have the latest data and avoid lazy loading issues
+        # especially after a commit where the session object might be expired
+        from app.models.movement import MovementMuscleMap
+        
+        result = await db.execute(
+            select(SessionExercise)
+            .options(
+                selectinload(SessionExercise.movement).selectinload(Movement.muscle_maps).selectinload(MovementMuscleMap.muscle)
+            )
+            .where(SessionExercise.session_id == session.id)
+        )
+        exercises = result.scalars().all()
+        
+        if exercises:
+            for ex in exercises:
+                if not ex.movement:
+                    continue
+                    
+                weight = 1
+                if ex.session_section == SessionSection.MAIN:
+                    weight = 3
+                elif ex.session_section == SessionSection.ACCESSORY:
+                    weight = 2
+                
+                # Primary muscle
+                mov = ex.movement
+                p_muscle = str(mov.primary_muscle.value) if hasattr(mov.primary_muscle, 'value') else str(mov.primary_muscle)
+                current_session_volume[p_muscle] = current_session_volume.get(p_muscle, 0) + weight
+                
+                # Secondary muscles via muscle_maps
+                if mov.muscle_maps:
+                    for mm in mov.muscle_maps:
+                        role_val = mm.role.value if hasattr(mm.role, 'value') else mm.role
+                        if role_val == MuscleRole.SECONDARY.value:
+                            if mm.muscle:
+                                sec = mm.muscle.slug
+                                current_session_volume[sec] = current_session_volume.get(sec, 0) + (weight // 2)
+        else:
+            # Fallback to JSON (Legacy support)
+            all_movements = []
+            if session.main_json: all_movements.extend([(m["movement"], 3) for m in session.main_json if "movement" in m])
+            if session.accessory_json: all_movements.extend([(m["movement"], 2) for m in session.accessory_json if "movement" in m])
+            if session.finisher_json and session.finisher_json.get("exercises"):
+                all_movements.extend([(m["movement"], 1) for m in session.finisher_json["exercises"] if "movement" in m])
+                
+            if all_movements:
+                names = [m[0] for m in all_movements]
+                unique_names = list(set(names))
+                
+                from app.models.movement import MovementMuscleMap
+                result = await db.execute(
+                    select(Movement)
+                    .options(
+                        selectinload(Movement.muscle_maps).selectinload(MovementMuscleMap.muscle)
+                    )
+                    .where(Movement.name.in_(unique_names))
+                )
+                found_movements = {m.name: m for m in result.scalars().all()}
+                
+                for name, weight in all_movements:
+                    mov = found_movements.get(name)
+                    if mov:
+                        p_muscle = str(mov.primary_muscle.value) if hasattr(mov.primary_muscle, 'value') else str(mov.primary_muscle)
+                        current_session_volume[p_muscle] = current_session_volume.get(p_muscle, 0) + weight
+                        
+                        if mov.muscle_maps:
+                            for mm in mov.muscle_maps:
+                                role_val = mm.role.value if hasattr(mm.role, 'value') else mm.role
+                                if role_val == MuscleRole.SECONDARY.value:
+                                    if mm.muscle:
+                                        sec = mm.muscle.slug
+                                        current_session_volume[sec] = current_session_volume.get(sec, 0) + (weight // 2)
+
         # Process circuits (main_circuit_id, finisher_circuit_id)
         from app.models.circuit import CircuitTemplate
         if session.main_circuit_id:
@@ -455,26 +642,7 @@ class SessionGeneratorService:
             if circuit and circuit.muscle_volume:
                 for muscle, volume in circuit.muscle_volume.items():
                     current_session_volume[muscle] = current_session_volume.get(muscle, 0) + (volume // 2)
-            
-        if all_movements:
-            names = [m[0] for m in all_movements]
-            # Use unique names to reduce query size
-            unique_names = list(set(names))
-            result = await db.execute(select(Movement).where(Movement.name.in_(unique_names)))
-            found_movements = {m.name: m for m in result.scalars().all()}
-            
-            for name, weight in all_movements:
-                mov = found_movements.get(name)
-                if mov:
-                    # Access Enums or attributes carefully if detached
-                    p_muscle = str(mov.primary_muscle.value) if hasattr(mov.primary_muscle, 'value') else str(mov.primary_muscle)
-                    current_session_volume[p_muscle] = current_session_volume.get(p_muscle, 0) + weight
                     
-                    if mov.secondary_muscles:
-                        secs = mov.secondary_muscles if isinstance(mov.secondary_muscles, list) else []
-                        for sec in secs:
-                            current_session_volume[sec] = current_session_volume.get(sec, 0) + (weight // 2)
-                            
         return current_session_volume
 
     async def _generate_draft_session_offline(
@@ -574,44 +742,35 @@ class SessionGeneratorService:
                     )
         
         # Update session fields
-        session.warmup_json = content.get("warmup")
-        session.main_json = content.get("main")
-        session.accessory_json = content.get("accessory")
-        session.finisher_json = content.get("finisher")
-        session.cooldown_json = content.get("cooldown")
         session.estimated_duration_minutes = content.get("estimated_duration_minutes", 60)
         session.coach_notes = content.get("reasoning")
+        
+        # Populate SessionExercises
+        all_movement_names = set()
+        for section in ["warmup", "main", "accessory", "cooldown"]:
+            if section in content and content[section]:
+                for ex in content[section]:
+                    if "movement" in ex:
+                        all_movement_names.add(ex["movement"])
+        
+        if content.get("finisher") and isinstance(content["finisher"], dict) and content["finisher"].get("exercises"):
+             for ex in content["finisher"]["exercises"]:
+                if "movement" in ex:
+                    all_movement_names.add(ex["movement"])
+
+        movement_map = {}
+        if all_movement_names:
+            stmt = select(Movement.name, Movement.id).where(Movement.name.in_(list(all_movement_names)))
+            result = await db.execute(stmt)
+            movement_map = {name: id for name, id in result.all()}
+            
+        await self._save_session_exercises(db, session, content, movement_map, program.user_id)
+        
         db.add(session)
         await db.flush()
         
         # Calculate volume for this session to pass to next day
-        current_session_volume = {}
-        all_movements = []
-        
-        if session.main_json: all_movements.extend([(m["movement"], 3) for m in session.main_json if "movement" in m])
-        if session.accessory_json: all_movements.extend([(m["movement"], 2) for m in session.accessory_json if "movement" in m])
-        if session.finisher_json and session.finisher_json.get("exercises"):
-            all_movements.extend([(m["movement"], 1) for m in session.finisher_json["exercises"] if "movement" in m])
-            
-        if all_movements:
-            names = [m[0] for m in all_movements]
-            # Use unique names to reduce query size
-            unique_names = list(set(names))
-            result = await db.execute(select(Movement).where(Movement.name.in_(unique_names)))
-            found_movements = {m.name: m for m in result.scalars().all()}
-            
-            for name, weight in all_movements:
-                mov = found_movements.get(name)
-                if mov:
-                    # Access Enums or attributes carefully if detached (but here we are in active session)
-                    p_muscle = str(mov.primary_muscle.value) if hasattr(mov.primary_muscle, 'value') else str(mov.primary_muscle)
-                    current_session_volume[p_muscle] = current_session_volume.get(p_muscle, 0) + weight
-                    if mov.secondary_muscles:
-                        secs = mov.secondary_muscles if isinstance(mov.secondary_muscles, list) else []
-                        for sec in secs:
-                            current_session_volume[sec] = current_session_volume.get(sec, 0) + (weight // 2)
-                            
-        return current_session_volume
+        return await self._calculate_session_volume(db, session)
     
     async def _load_movements_by_pattern(
         self,

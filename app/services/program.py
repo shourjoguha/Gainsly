@@ -13,15 +13,16 @@ from datetime import datetime, timedelta, date
 from typing import Optional, Dict, Any
 import logging
 from sqlalchemy import select, and_, or_, cast, String
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import (
-    Program, Microcycle, Session, HeuristicConfig, User, Movement, UserProfile, UserMovementRule
+    Program, Microcycle, Session, HeuristicConfig, User, Movement, UserProfile, UserMovementRule, SessionExercise
 )
 from app.schemas.program import ProgramCreate
 from app.models.enums import (
     Goal, SplitTemplate, SessionType, MicrocycleStatus, PersonaTone, PersonaAggression,
-    ProgressionStyle, MovementRuleType
+    ProgressionStyle, MovementRuleType, SessionSection, ExerciseRole
 )
 from app.services.interference import interference_service
 from app.services.session_generator import session_generator
@@ -404,29 +405,27 @@ class ProgramService:
             if current_volume:
                 # Re-fetch session to get updated content
                 async with async_session_maker() as db:
-                    updated_session = await db.get(Session, session.id)
+                    stmt = select(Session).options(
+                        selectinload(Session.exercises).selectinload(SessionExercise.movement)
+                    ).where(Session.id == session.id)
+                    result = await db.execute(stmt)
+                    updated_session = result.scalar_one_or_none()
+                    
                     if updated_session:
                         # Track individual movements
                         session_movements = []
                         main_patterns_used = []
                         accessory_movements_used = []
                         
-                        if updated_session.main_json:
-                            for ex in updated_session.main_json:
-                                if ex.get("movement"):
-                                    session_movements.append(ex["movement"])
-                        if updated_session.accessory_json:
-                            for ex in updated_session.accessory_json:
-                                if ex.get("movement"):
-                                    session_movements.append(ex["movement"])
-                                    accessory_movements_used.append(ex["movement"])
-                        if updated_session.finisher_json:
-                            if updated_session.finisher_json.get("exercises"):
-                                for ex in updated_session.finisher_json["exercises"]:
-                                    if ex.get("movement"):
-                                        session_movements.append(ex["movement"])
-                                        # Treat finisher as accessory for interference
-                                        accessory_movements_used.append(ex["movement"])
+                        if updated_session.exercises:
+                            for ex in updated_session.exercises:
+                                if ex.movement:
+                                    name = ex.movement.name
+                                    session_movements.append(name)
+                                    
+                                    # Treat finisher as accessory for interference
+                                    if ex.session_section in [SessionSection.ACCESSORY, SessionSection.FINISHER]:
+                                        accessory_movements_used.append(name)
                         
                         # Update tracking sets
                         for movement_name in session_movements:
