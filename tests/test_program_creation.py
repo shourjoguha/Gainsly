@@ -51,10 +51,11 @@ async def test_program_creation():
             print(f"\n✓ Program created successfully!")
             print(f"  - Program ID: {program.id}")
             print(f"  - Days per week (stored): {program.days_per_week}")
-            print(f"  - Disciplines (stored): {program.disciplines_json}")
-            
+
             # Check microcycles and sessions
-            await db.refresh(program, ["microcycles"])
+            await db.refresh(program, ["microcycles", "program_disciplines"])
+            if program.program_disciplines:
+                print(f"  - Disciplines (stored): {[(pd.discipline_type, pd.weight) for pd in program.program_disciplines]}")
             if program.microcycles:
                 active_mc = next((mc for mc in program.microcycles if mc.status.value == "active"), None)
                 if active_mc:

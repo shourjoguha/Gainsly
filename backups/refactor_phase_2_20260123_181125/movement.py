@@ -99,6 +99,7 @@ class Movement(Base):
     
     # Movement classification
     pattern = Column(SQLEnum(MovementPattern, values_callable=lambda obj: [e.value for e in obj]), nullable=False, index=True)
+    block_type = Column(String(50), nullable=False, default="All", server_default="All", index=True)  # Populated based on pattern
     primary_muscle = Column(SQLEnum(PrimaryMuscle, values_callable=lambda obj: [e.value for e in obj]), nullable=False, index=True)
     primary_region = Column(SQLEnum(PrimaryRegion, values_callable=lambda obj: [e.value for e in obj]), nullable=False, index=True)
     # secondary_muscles = Column(JSON, default=list)  # REMOVED: Use muscle_maps
@@ -172,6 +173,7 @@ class Muscle(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     slug = Column(String(100), nullable=False, unique=True, index=True)
+    name = Column(String(200), nullable=False)
     region = Column(SQLEnum(PrimaryRegion, values_callable=lambda x: [e.value for e in x]), nullable=True)
     stimulus_coefficient = Column(Float, nullable=False, default=1.0)
     fatigue_coefficient = Column(Float, nullable=False, default=1.0)

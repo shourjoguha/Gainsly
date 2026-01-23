@@ -25,12 +25,12 @@ export const Route = createFileRoute('/log/workout')({
 
 // Sections definition
 const SECTIONS = [
-  { id: 'warmup', label: 'Warm Up', role: ExerciseRole.WARM_UP },
-  { id: 'main', label: 'Main Lifts', role: ExerciseRole.MAIN_LIFT },
+  { id: 'warmup', label: 'Warm Up', role: ExerciseRole.WARMUP },
+  { id: 'main', label: 'Main Lifts', role: ExerciseRole.MAIN },
   { id: 'accessory', label: 'Accessories', role: ExerciseRole.ACCESSORY },
   { id: 'finisher', label: 'Finisher', role: ExerciseRole.FINISHER },
-  { id: 'circuit', label: 'Circuit', role: ExerciseRole.MAIN_LIFT }, // Mapping to Main for now, special handling
-  { id: 'cooldown', label: 'Cool Down', role: ExerciseRole.COOL_DOWN },
+  { id: 'circuit', label: 'Circuit', role: ExerciseRole.MAIN }, // Mapping to Main for now, special handling
+  { id: 'cooldown', label: 'Cool Down', role: ExerciseRole.COOLDOWN },
 ] as const;
 
 type SectionId = typeof SECTIONS[number]['id'];

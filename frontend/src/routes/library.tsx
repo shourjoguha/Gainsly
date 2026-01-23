@@ -147,12 +147,14 @@ function AddMovementModal({ onClose, equipmentOptions }: { onClose: () => void; 
   const createMutation = useCreateMovement();
   const [formData, setFormData] = useState<MovementCreate>({
     name: '',
-    pattern: MovementPattern.SQUAT,
-    compound: true,
+    primary_pattern: MovementPattern.SQUAT,
+    is_compound: true,
     default_equipment: 'Barbell',
     primary_region: PrimaryRegion.ANTERIOR_LOWER,
-    primary_muscle: PrimaryMuscle.QUADRICEPS,
+    primary_muscles: [PrimaryMuscle.QUADRICEPS],
     secondary_muscles: [],
+    equipment_tags: [],
+    complexity: 3,
     skill_level: SkillLevel.INTERMEDIATE,
     cns_load: CNSLoad.MODERATE,
     metric_type: MetricType.REPS,
@@ -217,8 +219,8 @@ function AddMovementModal({ onClose, equipmentOptions }: { onClose: () => void; 
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-foreground">Pattern</label>
                 <select
-                  value={formData.pattern}
-                  onChange={(e) => setFormData({ ...formData, pattern: e.target.value as MovementPattern })}
+                  value={formData.primary_pattern}
+                  onChange={(e) => setFormData({ ...formData, primary_pattern: e.target.value as MovementPattern })}
                   className="w-full rounded-lg border-0 bg-background-input px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary capitalize"
                 >
                   {Object.values(MovementPattern).map((p) => (
@@ -243,10 +245,11 @@ function AddMovementModal({ onClose, equipmentOptions }: { onClose: () => void; 
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-foreground">Primary Muscle</label>
                 <select
-                  value={formData.primary_muscle}
-                  onChange={(e) => setFormData({ ...formData, primary_muscle: e.target.value as PrimaryMuscle })}
+                  value={formData.primary_muscles?.[0] || ''}
+                  onChange={(e) => setFormData({ ...formData, primary_muscles: [e.target.value as PrimaryMuscle] })}
                   className="w-full rounded-lg border-0 bg-background-input px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary capitalize"
                 >
+                  <option value="">Select Primary Muscle</option>
                   {Object.values(PrimaryMuscle).map((m) => (
                     <option key={m} value={m}>{m.replace('_', ' ')}</option>
                   ))}
@@ -311,8 +314,8 @@ function AddMovementModal({ onClose, equipmentOptions }: { onClose: () => void; 
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={formData.compound}
-                    onChange={(e) => setFormData({ ...formData, compound: e.target.checked })}
+                    checked={formData.is_compound}
+                    onChange={(e) => setFormData({ ...formData, is_compound: e.target.checked })}
                     className="h-4 w-4 rounded border-border bg-background text-primary accent-primary"
                   />
                   <span className="text-sm font-medium text-foreground">Compound Movement</span>

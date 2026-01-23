@@ -508,14 +508,11 @@ export interface RecoverySignal {
 // ========================================
 
 export enum ExerciseRole {
-  WARMUP = 'warmup',
-  MAIN = 'main',
+  WARM_UP = 'warm_up',
+  MAIN_LIFT = 'main_lift',
   ACCESSORY = 'accessory',
-  SKILL = 'skill',
   FINISHER = 'finisher',
-  COOLDOWN = 'cooldown',
-  CARDIO = 'cardio',
-  CONDITIONING = 'conditioning',
+  COOL_DOWN = 'cool_down',
 }
 
 export interface ActivityDefinition {

@@ -17,7 +17,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import (
-    Program, Microcycle, Session, HeuristicConfig, User, Movement, UserProfile, UserMovementRule, SessionExercise
+    Program, Microcycle, Session, HeuristicConfig, User, Movement, UserProfile, UserMovementRule, SessionExercise, ProgramDiscipline
 )
 from app.schemas.program import ProgramCreate
 from app.models.enums import (
@@ -63,15 +63,21 @@ class ProgramService:
         Raises:
             ValueError: If split template not found, goals empty, week_count invalid, interference conflict detected
         """
+        logger.info("ProgramService.create_program called for user_id=%s", user_id)
+        
         # Validate week count
         if not (8 <= request.duration_weeks <= 12):
+            logger.error("Invalid duration_weeks=%s (must be 8-12)", request.duration_weeks)
             raise ValueError("Program must be 8-12 weeks")
         if request.duration_weeks % 2 != 0:
+            logger.error("Invalid duration_weeks=%s (must be even)", request.duration_weeks)
             raise ValueError("Program must be an even number of weeks")
         
         # Extract goals from request (1-3 goals allowed)
         goals = request.goals  # List of GoalWeight objects
+        logger.info("Processing %d goals from request", len(goals))
         if not (1 <= len(goals) <= 3):
+            logger.error("Invalid number of goals=%s (must be 1-3)", len(goals))
             raise ValueError("1-3 goals required")
         
         # Pad goals list to 3 items if needed (with dummy goal of 0 weight)
@@ -80,10 +86,12 @@ class ProgramService:
             used_goals = {g.goal for g in goals}
             unused_goal = next(g for g in Goal if g not in used_goals)
             goals.append(type(goals[0])(goal=unused_goal, weight=0))
+        logger.info("Goals processed successfully: %s", [(g.goal, g.weight) for g in goals])
         
         # Check for goal interference (only for goals with weight > 0)
         active_goals = [g.goal for g in goals if g.weight > 0]
         if len(active_goals) >= 2:
+            logger.info("Validating %d active goals for interference", len(active_goals))
             # Pad active_goals to 3 for validation if needed
             validation_goals = active_goals[:]
             while len(validation_goals) < 3:
@@ -93,13 +101,16 @@ class ProgramService:
                 db, validation_goals[0], validation_goals[1], validation_goals[2]
             )
             if not is_valid:
+                logger.error("Goal validation failed: %s", warnings)
                 raise ValueError(f"Goal validation failed: {warnings}")
         
         # Fetch user profile for advanced preferences
+        logger.info("Fetching user profile for user_id=%s", user_id)
         user_profile = await db.get(UserProfile, user_id)
         discipline_prefs = user_profile.discipline_preferences if user_profile else None
         scheduling_prefs = dict(user_profile.scheduling_preferences) if user_profile and user_profile.scheduling_preferences else {}
         scheduling_prefs["avoid_cardio_days"] = await self._infer_avoid_cardio_days(db, user_id)
+        logger.info("User profile fetched successfully")
 
         split_template = request.split_template
         if not split_template:
@@ -111,11 +122,14 @@ class ProgramService:
                     split_template = None
         if not split_template:
             split_template = SplitTemplate.HYBRID
+        logger.info("Using split_template=%s", split_template)
 
         preferred_cycle_length_days = self._resolve_preferred_microcycle_length_days(scheduling_prefs)
+        logger.info("Preferred microcycle length=%s days", preferred_cycle_length_days)
         
         # Get user for defaults
         user = await db.get(User, user_id)
+        logger.info("User fetched for user_id=%s, experience_level=%s", user_id, user.experience_level if user else "unknown")
         
         # Determine progression style if not provided
         progression_style = request.progression_style
@@ -128,36 +142,19 @@ class ProgramService:
             else:
                 # Intermediate defaults to Double Progression
                 progression_style = ProgressionStyle.DOUBLE_PROGRESSION
+        logger.info("Using progression_style=%s", progression_style)
         
         # Determine persona settings (from request or user defaults)
         persona_tone = request.persona_tone or (user.persona_tone if user else PersonaTone.SUPPORTIVE)
         persona_aggression = request.persona_aggression or (user.persona_aggression if user else PersonaAggression.BALANCED)
+        logger.info("Persona settings: tone=%s, aggression=%s", persona_tone, persona_aggression)
         
         # Create program
         start_date = request.program_start_date or date.today()
         
-        # Prepare disciplines JSON
-        disciplines_json = None
-        if request.disciplines:
-            disciplines_json = [{"discipline": d.discipline, "weight": d.weight} for d in request.disciplines]
-        elif discipline_prefs:
-            # Fallback to profile preferences if request doesn't specify
-            disciplines_json = [{"discipline": k, "weight": v} for k, v in discipline_prefs.items()]
-        else:
-            # Fallback based on experience level
-            # Default to Bodybuilding if no other signals
-            default_discipline = "bodybuilding"
-            if user and user.experience_level == "beginner":
-                disciplines_json = [{"discipline": "bodybuilding", "weight": 10}]
-            elif user and user.experience_level == "intermediate":
-                disciplines_json = [{"discipline": "bodybuilding", "weight": 6}, {"discipline": "powerlifting", "weight": 4}]
-            else:
-                # Advanced/Expert/Other
-                disciplines_json = [{"discipline": "bodybuilding", "weight": 5}, {"discipline": "powerlifting", "weight": 5}]
-        
         program = Program(
             user_id=user_id,
-            name=request.name,  # Add name from request
+            name=request.name,
             split_template=split_template,
             days_per_week=request.days_per_week,
             max_session_duration=request.max_session_duration,
@@ -173,11 +170,11 @@ class ProgramService:
             deload_every_n_microcycles=request.deload_every_n_microcycles or 4,
             persona_tone=persona_tone,
             persona_aggression=persona_aggression,
-            disciplines_json=disciplines_json,
             is_active=True,
         )
         
         # Deactivate other active programs for this user
+        logger.info("Deactivating other active programs for user_id=%s", user_id)
         other_active = await db.execute(
             select(Program).where(
                 and_(
@@ -191,9 +188,70 @@ class ProgramService:
             
         db.add(program)
         await db.flush()  # Get program.id
+        logger.info("Program created with id=%s, flushing to get program.id", program.id)
+        
+        # Create program disciplines from request or defaults
+        logger.info("Creating program disciplines for program_id=%s", program.id)
+        if request.disciplines:
+            logger.info("Using %d disciplines from request", len(request.disciplines))
+            for discipline_data in request.disciplines:
+                program_discipline = ProgramDiscipline(
+                    program_id=program.id,
+                    discipline_type=discipline_data.discipline,
+                    weight=discipline_data.weight,
+                )
+                db.add(program_discipline)
+        elif discipline_prefs:
+            logger.info("Using %d discipline preferences", len(discipline_prefs))
+            for discipline_type, weight in discipline_prefs.items():
+                program_discipline = ProgramDiscipline(
+                    program_id=program.id,
+                    discipline_type=discipline_type,
+                    weight=weight,
+                )
+                db.add(program_discipline)
+        else:
+            # Fallback based on experience level
+            logger.info("Using fallback disciplines based on experience level=%s", user.experience_level if user else "unknown")
+            default_discipline = "bodybuilding"
+            default_weight = 10
+            if user and user.experience_level == "beginner":
+                program_discipline = ProgramDiscipline(
+                    program_id=program.id,
+                    discipline_type=default_discipline,
+                    weight=default_weight,
+                )
+                db.add(program_discipline)
+            elif user and user.experience_level == "intermediate":
+                program_discipline1 = ProgramDiscipline(
+                    program_id=program.id,
+                    discipline_type="bodybuilding",
+                    weight=6,
+                )
+                program_discipline2 = ProgramDiscipline(
+                    program_id=program.id,
+                    discipline_type="powerlifting",
+                    weight=4,
+                )
+                db.add(program_discipline1)
+                db.add(program_discipline2)
+            else:
+                program_discipline1 = ProgramDiscipline(
+                    program_id=program.id,
+                    discipline_type="bodybuilding",
+                    weight=5,
+                )
+                program_discipline2 = ProgramDiscipline(
+                    program_id=program.id,
+                    discipline_type="powerlifting",
+                    weight=5,
+                )
+                db.add(program_discipline1)
+                db.add(program_discipline2)
         
         total_days = request.duration_weeks * 7
         microcycle_lengths = self._partition_microcycle_lengths(total_days, preferred_cycle_length_days)
+        logger.info("Microcycle lengths: %s", microcycle_lengths)
         
         # Generate microcycles with sessions
         current_date = start_date
@@ -203,7 +261,9 @@ class ProgramService:
         active_microcycle = None
         
         for mc_idx, cycle_length_days in enumerate(microcycle_lengths):
+            logger.info("Creating microcycle %d with length=%s days", mc_idx, cycle_length_days)
             is_deload = ((mc_idx + 1) % deload_frequency == 0)
+            logger.info("Microcycle %d is_deload=%s", mc_idx, is_deload)
 
             split_config = self._build_freeform_split_config(
                 cycle_length_days=cycle_length_days,
@@ -231,6 +291,7 @@ class ProgramService:
                 split_config=split_config,
                 is_deload=is_deload,
             )
+            logger.info("Microcycle %d created with id=%s", mc_idx, microcycle.id)
             
             # Keep reference to active (first) microcycle
             if mc_idx == 0:
@@ -238,8 +299,11 @@ class ProgramService:
             
             current_date += timedelta(days=cycle_length_days)
         
+        logger.info("Committing program creation transaction")
         await db.commit()
+        logger.info("Program creation committed successfully")
         await db.refresh(program)
+        logger.info("Program refreshed successfully, returning program id=%s", program.id)
         return program
 
     async def _infer_avoid_cardio_days(self, db: AsyncSession, user_id: int) -> bool:
@@ -274,10 +338,13 @@ class ProgramService:
         program_id: int,
     ) -> None:
         from app.db.database import async_session_maker
+        
+        logger.info(f"[generate_active_microcycle_sessions] START - program_id={program_id}")
 
         async with async_session_maker() as db:
             program = await db.get(Program, program_id)
             if not program:
+                logger.error(f"[generate_active_microcycle_sessions] Program not found: {program_id}")
                 return
 
             result = await db.execute(
@@ -288,9 +355,12 @@ class ProgramService:
             )
             microcycle = result.scalar_one_or_none()
             if not microcycle:
+                logger.error(f"[generate_active_microcycle_sessions] Active microcycle not found for program {program_id}")
                 return
 
+        logger.info(f"[generate_active_microcycle_sessions] Found active microcycle {microcycle.id}, starting generation...")
         await self._generate_session_content_async(program_id, microcycle.id)
+        logger.info(f"[generate_active_microcycle_sessions] COMPLETED for program {program_id}")
     
     async def _generate_session_content_async(
         self,
@@ -309,6 +379,8 @@ class ProgramService:
         """
         from app.db.database import async_session_maker
         
+        logger.info(f"[_generate_session_content_async] START - program_id={program_id}, microcycle_id={microcycle_id}")
+        
         # Create a new DB session for reading program and sessions
         async with async_session_maker() as db:
             # Fetch program and microcycle
@@ -316,6 +388,7 @@ class ProgramService:
             microcycle = await db.get(Microcycle, microcycle_id)
             
             if not program or not microcycle:
+                logger.error(f"[_generate_session_content_async] FAILED - program={program}, microcycle={microcycle}")
                 return
             
             # Get all sessions for this microcycle
@@ -324,6 +397,8 @@ class ProgramService:
                 .order_by(Session.day_number)
             )
             sessions = list(sessions_result.scalars().all())
+            
+            logger.info(f"[_generate_session_content_async] Found {len(sessions)} sessions to generate")
         
         # Track used movements to ensure variety
         used_movements = set()
@@ -336,8 +411,11 @@ class ProgramService:
         
         # Generate content for each session independently
         for session in sessions:
+            logger.info(f"[_generate_session_content_async] Processing session {session.id} - type={session.session_type}, day={session.day_number}")
+            
             # Skip recovery/rest sessions - they get default content
             if session.session_type == SessionType.RECOVERY:
+                logger.info(f"[_generate_session_content_async] Skipping RECOVERY session {session.id}")
                 previous_day_volume = {}  # Recovery clears fatigue
                 continue
             

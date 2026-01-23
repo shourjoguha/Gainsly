@@ -332,10 +332,10 @@ class TimeEstimationService:
                 "metric_type": "time" if ex.target_duration_seconds else "reps",
                 "target_duration_seconds": ex.target_duration_seconds,
                 "superset_group": ex.superset_group,
-                "role": ex.role.value if hasattr(ex.role, 'value') else ex.role
+                "role": ex.exercise_role.value if hasattr(ex.exercise_role, 'value') else ex.exercise_role
             }
             
-            section = ex.session_section.value if hasattr(ex.session_section, 'value') else ex.session_section
+            section = ex.exercise_role.value if hasattr(ex.exercise_role, 'value') else ex.exercise_role
             
             if section == "warmup":
                 warmup.append(ex_dict)

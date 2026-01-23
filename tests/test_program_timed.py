@@ -52,8 +52,12 @@ async def test_program_creation():
             print(f"[{time.strftime('%H:%M:%S')}] ✓ Program created in {elapsed:.1f}s")
             print(f"\nProgram ID: {program.id}")
             print(f"Days per week: {program.days_per_week}")
-            print(f"Disciplines: {program.disciplines_json}")
-            
+
+            # Check disciplines
+            await db.refresh(program, ["program_disciplines"])
+            if program.program_disciplines:
+                print(f"Disciplines: {[(pd.discipline_type, pd.weight) for pd in program.program_disciplines]}")
+
             # Check sessions
             await db.refresh(program, ["microcycles"])
             if program.microcycles:
@@ -106,7 +110,7 @@ async def test_program_creation():
                     print(f"SUCCESS CRITERIA:")
                     print(f"  ✓ User's 4 days/week respected: {len(training_sessions) == 4}")
                     print(f"  ✓ All sessions complete: {complete_count == len(training_sessions)}")
-                    print(f"  ✓ Disciplines stored: {program.disciplines_json is not None}")
+                    print(f"  ✓ Disciplines stored: {program.program_disciplines is not None and len(program.program_disciplines) > 0}")
             
         except Exception as e:
             elapsed = time.time() - start

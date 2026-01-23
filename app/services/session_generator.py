@@ -244,21 +244,35 @@ class SessionGeneratorService:
         """
         from app.db.database import async_session_maker
         
+        logger.info(f"[populate_session_by_id] START - session_id={session_id}, program_id={program_id}, microcycle_id={microcycle_id}")
+        
         # 1. Fetch all necessary context (short DB transaction)
         context_data = {}
         async with async_session_maker() as db:
+            from sqlalchemy.orm import selectinload
             session = await db.get(Session, session_id)
-            program = await db.get(Program, program_id)
+            program = await db.get(Program, program_id, options=[selectinload(Program.program_disciplines)])
             microcycle = await db.get(Microcycle, microcycle_id)
             
             if not session or not program or not microcycle:
+                logger.error(f"[populate_session_by_id] FAILED - session={session}, program={program}, microcycle={microcycle}")
                 return {}
+            
+            logger.info(f"[populate_session_by_id] Fetched session type={session.session_type}, day={session.day_number}")
             
             # Fetch supporting data
             movements_by_pattern = await self._load_movements_by_pattern(db)
             movement_rules = await self._load_user_movement_rules(db, program.user_id)
             user_profile = await db.get(UserProfile, program.user_id)
             all_movements = await self._load_all_movements(db)
+            
+            # Load program disciplines from junction table
+            program_disciplines = []
+            for pd in program.program_disciplines:
+                program_disciplines.append({
+                    "discipline": pd.discipline_type,
+                    "weight": pd.weight
+                })
             
             # Store in context (convert Enums to values for safety)
             context_data = {
@@ -274,7 +288,7 @@ class SessionGeneratorService:
                     "progression_style": program.progression_style,
                     "duration_weeks": program.duration_weeks,
                     "deload_every_n_microcycles": program.deload_every_n_microcycles,
-                    "disciplines_json": program.disciplines_json,
+                    "disciplines_json": program_disciplines,
                     "user_id": program.user_id,
                     "max_session_duration": program.max_session_duration,
                 },
@@ -312,6 +326,8 @@ class SessionGeneratorService:
             fatigued_muscles
         )
         
+        logger.info(f"[populate_session_by_id] Generated content: {list(content.keys())}")
+        
         # Post-processing (duplicates removal)
         if used_accessory_movements:
             current_day = context_data["session"]["day_number"]
@@ -326,6 +342,7 @@ class SessionGeneratorService:
 
         # 3. Save Results (Short DB transaction)
         current_session_volume = {}
+        logger.info(f"[populate_session_by_id] SAVING to database...")
         async with async_session_maker() as db:
             session = await db.get(Session, session_id)
             if session:
@@ -464,10 +481,17 @@ class SessionGeneratorService:
         """
         Convert content dict to SessionExercise objects and save to DB.
         """
-        from sqlalchemy import delete
+        from sqlalchemy import delete, text
+        
+        logger.info(f"[_save_session_exercises] START - session_id={session.id}, content_keys={list(content.keys())}")
         
         # Clear existing exercises for this session
         await db.execute(delete(SessionExercise).where(SessionExercise.session_id == session.id))
+        
+        # Reset the sequence to avoid duplicate key violations
+        await db.execute(text("SELECT setval('session_exercises_id_seq', (SELECT COALESCE(MAX(id), 1) FROM session_exercises))"))
+        
+        logger.info(f"[_save_session_exercises] Cleared existing exercises for session {session.id}")
         
         order_counter = 1
         
@@ -477,7 +501,9 @@ class SessionGeneratorService:
             exercises = content.get(section_name)
             if not exercises:
                 return
-                
+            
+            logger.info(f"[_save_session_exercises] Processing section '{section_name}' with {len(exercises)} exercises")
+            
             for ex in exercises:
                 movement_name = ex.get("movement")
                 if not movement_name:
@@ -495,7 +521,7 @@ class SessionGeneratorService:
                     movement_id=movement_id,
                     exercise_role=exercise_role,
                     order_in_session=order_counter,
-                    target_sets=ex.get("sets", 3),
+                    target_sets=ex.get("sets") if ex.get("sets") is not None else 3,
                     target_rep_range_min=ex.get("rep_range_min") or (ex.get("reps") if isinstance(ex.get("reps"), int) else None),
                     target_rep_range_max=ex.get("rep_range_max") or (ex.get("reps") if isinstance(ex.get("reps"), int) else None),
                     target_rpe=float(ex.get("target_rpe")) if ex.get("target_rpe") else None,
@@ -531,7 +557,7 @@ class SessionGeneratorService:
                         movement_id=movement_id,
                         exercise_role=ExerciseRole.FINISHER,
                         order_in_session=order_counter,
-                        target_sets=ex.get("sets", 1),
+                        target_sets=ex.get("sets") if ex.get("sets") is not None else 1,
                         target_rep_range_min=ex.get("reps") if isinstance(ex.get("reps"), int) else None,
                         target_rep_range_max=ex.get("reps") if isinstance(ex.get("reps"), int) else None,
                         target_duration_seconds=ex.get("duration_seconds"),

@@ -1,88 +1,96 @@
 export type MuscleGroup =
-  | 'Quadriceps'
-  | 'Hamstrings'
-  | 'Glutes'
-  | 'Calves'
-  | 'Chest'
-  | 'Lats'
-  | 'Upper Back'
-  | 'Rear Delts'
-  | 'Front Delts'
-  | 'Side Delts'
-  | 'Biceps'
-  | 'Triceps'
-  | 'Forearms'
-  | 'Core'
-  | 'Obliques'
-  | 'Lower Back'
-  | 'Hip Flexors'
-  | 'Adductors';
+  | 'quadriceps'
+  | 'hamstrings'
+  | 'glutes'
+  | 'calves'
+  | 'chest'
+  | 'lats'
+  | 'upper_back'
+  | 'rear_delts'
+  | 'front_delts'
+  | 'side_delts'
+  | 'biceps'
+  | 'triceps'
+  | 'forearms'
+  | 'core'
+  | 'obliques'
+  | 'lower_back'
+  | 'hip_flexors'
+  | 'adductors'
+  | 'full_body';
 
 export type BodyZone =
-  | 'posterior_upper'
-  | 'anterior_upper'
-  | 'full_body'
+  | 'posterior upper'
+  | 'anterior upper'
+  | 'full body'
   | 'shoulder'
   | 'core'
-  | 'posterior_lower'
-  | 'anterior_lower';
+  | 'posterior lower'
+  | 'anterior lower'
+  | 'upper body'
+  | 'lower body';
 
 export const ZONE_MAPPING: Record<BodyZone, MuscleGroup[]> = {
-  posterior_upper: ['Upper Back', 'Lats', 'Rear Delts'],
-  anterior_upper: ['Chest', 'Front Delts', 'Biceps'],
-  shoulder: ['Front Delts', 'Side Delts', 'Rear Delts'],
-  core: ['Core', 'Obliques', 'Lower Back'],
-  posterior_lower: ['Hamstrings', 'Glutes', 'Calves'],
-  anterior_lower: ['Quadriceps', 'Hip Flexors', 'Adductors'],
-  full_body: [
-    'Quadriceps',
-    'Hamstrings',
-    'Glutes',
-    'Calves',
-    'Chest',
-    'Lats',
-    'Upper Back',
-    'Rear Delts',
-    'Front Delts',
-    'Side Delts',
-    'Biceps',
-    'Triceps',
-    'Forearms',
-    'Core',
-    'Obliques',
-    'Lower Back',
-    'Hip Flexors',
-    'Adductors',
+  'posterior upper': ['upper_back', 'lats', 'rear_delts'],
+  'anterior upper': ['chest', 'front_delts', 'biceps'],
+  shoulder: ['front_delts', 'side_delts', 'rear_delts'],
+  core: ['core', 'obliques', 'lower_back'],
+  'posterior lower': ['hamstrings', 'glutes', 'calves'],
+  'anterior lower': ['quadriceps', 'hip_flexors', 'adductors'],
+  'full body': [
+    'quadriceps',
+    'hamstrings',
+    'glutes',
+    'calves',
+    'chest',
+    'lats',
+    'upper_back',
+    'rear_delts',
+    'front_delts',
+    'side_delts',
+    'biceps',
+    'triceps',
+    'forearms',
+    'core',
+    'obliques',
+    'lower_back',
+    'hip_flexors',
+    'adductors',
   ],
+  'upper body': ['chest', 'lats', 'upper_back', 'rear_delts', 'front_delts', 'side_delts', 'biceps', 'triceps', 'forearms'],
+  'lower body': ['quadriceps', 'hamstrings', 'glutes', 'calves', 'hip_flexors', 'adductors'],
 };
 
 export const BODY_ZONE_LABELS: Record<BodyZone, string> = {
-  posterior_upper: 'Posterior Upper',
-  anterior_upper: 'Anterior Upper',
-  full_body: 'Full Body',
+  'posterior upper': 'Posterior Upper',
+  'anterior upper': 'Anterior Upper',
+  'full body': 'Full Body',
   shoulder: 'Shoulder',
   core: 'Core',
-  posterior_lower: 'Posterior Lower',
-  anterior_lower: 'Anterior Lower',
+  'posterior lower': 'Posterior Lower',
+  'anterior lower': 'Anterior Lower',
+  'upper body': 'Upper Body',
+  'lower body': 'Lower Body',
 };
 
 export const MUSCLE_DISPLAY_NAMES: Record<MuscleGroup, string> = {
-  Quadriceps: 'Quadriceps',
-  Hamstrings: 'Hamstrings',
-  Glutes: 'Glutes',
-  Calves: 'Calves',
-  Chest: 'Chest',
-  Lats: 'Lats',
-  'Upper Back': 'Upper Back',
-  'Rear Delts': 'Rear Delts',
-  'Front Delts': 'Front Delts',
-  'Side Delts': 'Side Delts',
-  Biceps: 'Biceps',
-  Triceps: 'Triceps',
-  Forearms: 'Forearms',
-  Core: 'Core',
-  Obliques: 'Obliques',
-  'Lower Back': 'Lower Back',
-  'Hip Flexors': 'Hip Flexors',
-  Adductors: 'Adductors',
+  quadriceps: 'Quadriceps',
+  hamstrings: 'Hamstrings',
+  glutes: 'Glutes',
+  calves: 'Calves',
+  chest: 'Chest',
+  lats: 'Lats',
+  upper_back: 'Upper Back',
+  rear_delts: 'Rear Delts',
+  front_delts: 'Front Delts',
+  side_delts: 'Side Delts',
+  biceps: 'Biceps',
+  triceps: 'Triceps',
+  forearms: 'Forearms',
+  core: 'Core',
+  obliques: 'Obliques',
+  lower_back: 'Lower Back',
+  hip_flexors: 'Hip Flexors',
+  adductors: 'Adductors',
+  full_body: 'Full Body',
 };

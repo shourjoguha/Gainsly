@@ -17,13 +17,10 @@ export interface DisciplineWeight {
 export const DISCIPLINES = [
   { id: 'bodybuilding', name: 'Bodybuilding', description: 'Hypertrophy-focused training for muscle size and aesthetics', icon: '💪' },
   { id: 'powerlifting', name: 'Powerlifting', description: 'Strength training focused on squat, bench, and deadlift', icon: '🏋️' },
-  { id: 'olympic_weightlifting', name: 'Olympic Weightlifting', description: 'Explosive movements like cleans, snatches, and jerks', icon: '⚡' },
-  { id: 'strongman', name: 'Strongman', description: 'Functional strength with heavy carries and implements', icon: '🏋️' },
+  { id: 'olympic_lifting', name: 'Olympic Lifting', description: 'Explosive movements like cleans, snatches, and jerks', icon: '⚡' },
+  { id: 'athletic_drills', name: 'Athletic Drills', description: 'Speed, agility, and power exercises for performance', icon: '🏃' },
   { id: 'calisthenics', name: 'Calisthenics', description: 'Bodyweight training for strength and control', icon: '🤸' },
-  { id: 'crossfit', name: 'CrossFit', description: 'High-intensity functional movements', icon: '🔥' },
-  { id: 'yoga', name: 'Yoga', description: 'Flexibility, balance, and mindfulness practices', icon: '🧘' },
-  { id: 'running', name: 'Running', description: 'Cardiovascular endurance and leg conditioning', icon: '🏃' },
-  { id: 'other', name: 'Other', description: 'Any other training discipline', icon: '🎯' },
+  { id: 'crossfit', name: 'CrossFit Style', description: 'High-intensity functional movements', icon: '🔥' },
 ] as const;
 
 // Communication style options for step 7
@@ -93,7 +90,7 @@ const initialState = {
   maxDuration: 60,
   splitPreference: null,
   disciplines: [],
-  progressionStyle: ProgressionStyle.DOUBLE_PROGRESSION,
+  progressionStyle: null,
   movementRules: [],
   enjoyableActivities: [],
   communicationStyle: 'encouraging',

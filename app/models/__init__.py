@@ -60,6 +60,7 @@ from app.models.user import (
 )
 from app.models.program import (
     Program,
+    ProgramDiscipline,
     Microcycle,
     Session,
     SessionExercise,
@@ -142,6 +143,7 @@ __all__ = [
     "UserSkill",
     "UserInjury",
     "Program",
+    "ProgramDiscipline",
     "Microcycle",
     "Session",
     "SessionExercise",

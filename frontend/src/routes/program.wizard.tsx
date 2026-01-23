@@ -6,7 +6,9 @@ import { useCreateProgram } from '@/api/programs';
 import { WizardContainer } from '@/components/wizard/WizardContainer';
 import {
   GoalsStep,
+  DisciplinesStep,
   SplitStep,
+  ProgressionStep,
   MovementsStep,
   ActivitiesStep,
   CoachStep,
@@ -24,7 +26,9 @@ export const Route = createFileRoute('/program/wizard')({
 
 const STEP_LABELS = [
   'Set Your Goals',
+  'Training Style',
   'Choose Your Schedule',
+  'Progression Style',
   'Exercise Preferences',
   'Favorite Activities',
   'Meet Your Coach',
@@ -47,6 +51,9 @@ function ProgramWizardPage() {
   const {
     goals,
     isGoalsValid,
+    disciplines,
+    isDisciplinesValid,
+    progressionStyle,
     daysPerWeek,
     maxDuration,
     movementRules,
@@ -66,13 +73,17 @@ function ProgramWizardPage() {
     switch (currentStep) {
       case 0: // Goals
         return isGoalsValid();
-      case 1: // Split
+      case 1: // Disciplines
+        return isDisciplinesValid();
+      case 2: // Split
         return true;
-      case 2: // Movements (optional)
+      case 3: // Progression
+        return progressionStyle !== null;
+      case 4: // Movements (optional)
         return true;
-      case 3: // Activities (optional)
+      case 5: // Activities (optional)
         return true;
-      case 4: // Coach
+      case 6: // Coach
         return true;
       default:
         return false;
@@ -96,10 +107,11 @@ function ProgramWizardPage() {
     const payload: ProgramCreate = {
       goals: goals,
       duration_weeks: durationWeeks,
-      days_per_week: daysPerWeek,  // User's training frequency preference
+      days_per_week: daysPerWeek,
       split_template: useProgramWizardStore.getState().splitPreference || undefined,
+      progression_style: progressionStyle || undefined,
       max_session_duration: maxDuration,
-      // progression_style is now auto-assigned by backend based on experience level
+      disciplines: disciplines.length > 0 ? disciplines : undefined,
       persona_tone: TONE_MAP[communicationStyle] || PersonaTone.SUPPORTIVE,
       persona_aggression: pushIntensity as PersonaAggression,
       movement_rules: movementRules.length > 0 ? movementRules : undefined,
@@ -154,12 +166,16 @@ function ProgramWizardPage() {
       case 0:
         return <GoalsStep />;
       case 1:
-        return <SplitStep />;
+        return <DisciplinesStep />;
       case 2:
-        return <MovementsStep />;
+        return <SplitStep />;
       case 3:
-        return <ActivitiesStep />;
+        return <ProgressionStep />;
       case 4:
+        return <MovementsStep />;
+      case 5:
+        return <ActivitiesStep />;
+      case 6:
         return <CoachStep />;
       default:
         return null;

@@ -50,8 +50,8 @@ export function SorenessTracker({ logDate, onSuccess, onCancel, className }: Sor
   };
 
   const toggleFullBody = () => {
-    const allMuscles = ZONE_MAPPING.full_body;
-    const isAllSelected = allMuscles.every((m) => selectedMuscles.includes(m));
+    const allMuscles = ZONE_MAPPING['full body'];
+    const isAllSelected = allMuscles.every((m: MuscleGroup) => selectedMuscles.includes(m));
     
     if (isAllSelected) {
       setSelectedMuscles([]);
@@ -59,7 +59,7 @@ export function SorenessTracker({ logDate, onSuccess, onCancel, className }: Sor
     } else {
       setSelectedMuscles(allMuscles);
       const newLevels = { ...sorenessLevels };
-      allMuscles.forEach((m) => {
+      allMuscles.forEach((m: MuscleGroup) => {
         newLevels[m] = fullBodyDefaultLevel;
       });
       setSorenessLevels(newLevels as Record<MuscleGroup, SorenessLevel>);
@@ -132,12 +132,12 @@ export function SorenessTracker({ logDate, onSuccess, onCancel, className }: Sor
             <div className="w-full mb-4 flex items-center gap-2">
               <Button
                 type="button"
-                variant={selectedMuscles.length === ZONE_MAPPING.full_body.length ? 'cta' : 'outline'}
+                variant={selectedMuscles.length === ZONE_MAPPING['full body'].length ? 'cta' : 'outline'}
                 onClick={toggleFullBody}
                 className="flex-1"
               >
                 <User className="w-4 h-4 mr-2" />
-                {selectedMuscles.length === ZONE_MAPPING.full_body.length ? 'Deselect All' : 'Select Full Body'}
+                {selectedMuscles.length === ZONE_MAPPING['full body'].length ? 'Deselect All' : 'Select Full Body'}
               </Button>
               <div className="flex items-center gap-2 bg-background-card border border-border rounded-md px-3 py-2">
                 <label htmlFor="fullBodyLevel" className="text-sm font-medium text-foreground whitespace-nowrap">

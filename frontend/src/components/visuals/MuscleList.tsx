@@ -12,11 +12,11 @@ interface MuscleListProps {
 
 const ZONES_ORDER: BodyZone[] = [
   'shoulder',
-  'anterior_upper',
-  'posterior_upper',
+  'anterior upper',
+  'posterior upper',
   'core',
-  'anterior_lower',
-  'posterior_lower',
+  'anterior lower',
+  'posterior lower',
 ];
 
 export function MuscleList({ selectedMuscles, onToggleMuscle, className }: MuscleListProps) {

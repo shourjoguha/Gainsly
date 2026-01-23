@@ -58,6 +58,10 @@ class Program(Base):
     # Stores the custom day-by-day structure or block composition
     hybrid_definition = Column(JSON, nullable=True)
     
+    # Disciplines/Training styles snapshot (ten-dollar method weights)
+    # Format: [{"discipline": "powerlifting", "weight": 5}, {"discipline": "crossfit", "weight": 5}]
+    disciplines_json = Column(JSON, nullable=True)
+    
     # Deload configuration
     deload_every_n_microcycles = Column(Integer, nullable=False, default=4)
     
@@ -83,29 +87,9 @@ class Program(Base):
     macro_cycle = relationship("MacroCycle", back_populates="programs")
     microcycles = relationship("Microcycle", back_populates="program", cascade="all, delete-orphan")
     goals = relationship("UserGoal", back_populates="program", cascade="all, delete-orphan")
-    program_disciplines = relationship("ProgramDiscipline", back_populates="program", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Program(id={self.id}, user_id={self.user_id}, split={self.split_template})>"
-
-
-class ProgramDiscipline(Base):
-    """Junction table for Program <-> DisciplineType with weights."""
-    __tablename__ = "program_disciplines"
-
-    program_id = Column(Integer, ForeignKey("programs.id"), nullable=False, primary_key=True)
-    discipline_type = Column(String(50), nullable=False, primary_key=True)
-    weight = Column(Integer, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-    program = relationship("Program", back_populates="program_disciplines")
-
-    @property
-    def discipline(self):
-        return self.discipline_type
-
-    def __repr__(self):
-        return f"<ProgramDiscipline(program_id={self.program_id}, discipline_type='{self.discipline_type}', weight={self.weight})>"
 
 
 class Microcycle(Base):
